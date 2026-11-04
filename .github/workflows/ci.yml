@@ -40,3 +40,30 @@ jobs:
           name: test-results
           path: test-results/
           if-no-files-found: ignore
+
+  # WHY: security invariants (plan §6) run against a throwaway local Postgres built from the
+  # migrations, so a failing test blocks the PR (CLAUDE.md "Testing & definition of done"). The
+  # runner has Docker; no secrets and no hosted project are involved.
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx supabase db start
+      # WHY: reset applies every migration in order, then seed.sql, exactly as a fresh developer would.
+      - run: npx supabase db reset
+      - run: npx supabase test db
+      # WHY: skipped until the types file exists (it is generated after the first applied migration).
+      # Uses --db-url because only the database container is running here, not the whole stack.
+      - name: Types drift check
+        if: ${{ hashFiles('lib/supabase/database.types.ts') != '' }}
+        run: |
+          npx supabase gen types typescript --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres --schema public > "$RUNNER_TEMP/database.types.ts"
+          diff -u lib/supabase/database.types.ts "$RUNNER_TEMP/database.types.ts"
