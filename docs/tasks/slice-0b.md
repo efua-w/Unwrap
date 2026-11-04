@@ -203,3 +203,17 @@
 - Verdict: PASS
 - Outstanding issues: whether `supabase test db` finds `supabase/tests/security/*.sql` is unverified until the first CI run; R2-1, R2-2, item 21.
 - Next action: owner approves the commit; PR.
+
+## Main session — first CI run — 2026-11-04
+- Task: slice-0b — first CI run on PR #2
+- Requirements: AC-12, AC-13; progress item 21
+- Files/components: `lib/supabase/database.types.ts`
+- Work completed (verified with `gh`):
+  - PR #2 (`slice-0b-database` → `main`), run 41798164837:
+    - `check` passed.
+    - `security`: `supabase db start/reset` applied `20261104080111_harden_defaults.sql` and the seed; `supabase test db` gave Files=6, Tests=38, "All tests successful", Result: PASS.
+    - The job failed only at the types drift step (formatting differences between connector and CLI output, as predicted in item 21).
+  - The CI-generated file was reconstructed by applying the job's `diff -u` output to the committed file, and is now canonical. typecheck, lint and tokens:check pass.
+  - PR #1 (`slice-0a-foundation` → `main`) is CLOSED, not merged; its `check` passed. PR #2 targets `main`, so it contains slice 0a as well.
+- Outstanding issues: CI re-run needed to confirm green; the owner decides how 0a lands.
+- Next action: push and re-check CI.
