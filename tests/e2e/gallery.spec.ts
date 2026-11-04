@@ -122,6 +122,25 @@ test.describe("AC-15 Toast", () => {
     await expect(toastRegion(page)).not.toContainText("Saved.");
   });
 
+  test("a toast raised under an open sheet is held, then shown with a usable action once it closes (item 12)", async ({
+    page,
+  }) => {
+    await openComponents(page);
+    await page.getByRole("button", { name: "Destructive sheet" }).click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Show toast from sheet" }).click();
+    await page.waitForTimeout(500);
+    await expect(toastRegion(page)).not.toContainText("Item deleted.");
+    await expect(page.getByRole("button", { name: "Undo" })).toHaveCount(0);
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toBeHidden();
+    const toast = toastRegion(page);
+    await expect(toast).toContainText("Item deleted.");
+    await toast.getByRole("button", { name: "Undo" }).click();
+    await expect(toast).toContainText("Restored.");
+  });
+
   test("hover holds the timer; the toast leaves once the remaining time runs out", async ({ page }) => {
     await openComponents(page);
     await page.clock.install({ time: 0 });

@@ -12,6 +12,7 @@ import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 export function SheetDemo() {
   const [open, setOpen] = useState<SheetVariant | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   const close = () => setOpen(null);
   return (
     <div className="flex flex-wrap gap-12">
@@ -53,6 +54,20 @@ export function SheetDemo() {
         }
       >
         {open === "form" ? <Field label="Name" name="name" maxLength={40} helper="Shown on the demo only." /> : null}
+        {open === "destructive" ? (
+          // Gallery fixture for open item 12: a toast raised while the sheet is open is held until it closes.
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast.show({
+                message: "Item deleted.",
+                action: { label: "Undo", onAction: () => toast.show({ message: "Restored." }) },
+              })
+            }
+          >
+            Show toast from sheet
+          </Button>
+        ) : null}
       </Sheet>
     </div>
   );

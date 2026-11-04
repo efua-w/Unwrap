@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { countLabel } from "../../components/ui/count-label.ts";
 import { initials } from "../../components/ui/initials.ts";
+import { fitTextareaHeight } from "../../components/ui/textarea-fit.ts";
 import { createPausableTimer } from "../../components/ui/pausable-timer.ts";
 import { initialNetworkState, isOffline, networkReducer } from "../../components/layout/network-status.ts";
 import { DEFAULT_TIME_ZONE, getViewerTimeZone, isValidTimeZone } from "../../lib/dates/timezone.ts";
@@ -32,6 +33,18 @@ describe("initials", () => {
   it("keeps accents and emoji whole", () => {
     expect(initials("Émile Zola")).toBe("ÉZ");
     expect(initials("👩🏽‍🎄 Ada")).toBe("👩🏽‍🎄A");
+  });
+});
+
+describe("fitTextareaHeight", () => {
+  it("fits the content plus the border", () => {
+    expect(fitTextareaHeight(150, 2, 96, Infinity)).toBe(152);
+  });
+  it("never goes below the minimum", () => {
+    expect(fitTextareaHeight(40, 2, 96, Infinity)).toBe(96);
+  });
+  it("stops at a designed maximum", () => {
+    expect(fitTextareaHeight(500, 2, 96, 240)).toBe(240);
   });
 });
 

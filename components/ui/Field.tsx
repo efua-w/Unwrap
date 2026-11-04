@@ -3,6 +3,7 @@ import { useId, type ComponentPropsWithoutRef } from "react";
 import { CharacterCount } from "./CharacterCount";
 import { cx } from "./cx";
 import { Icon } from "./Icon";
+import { TextareaAutoGrow } from "./TextareaAutoGrow";
 
 type Common = {
   label: string;
@@ -41,14 +42,17 @@ export function Field(props: FieldProps) {
         {label}
       </label>
       {multiline ? (
-        <textarea
-          {...(rest as ComponentPropsWithoutRef<"textarea">)}
-          id={id}
-          maxLength={maxLength}
-          aria-invalid={hasError || undefined}
-          aria-describedby={describedBy}
-          className={cx(CONTROL, border, "min-h-textarea-min field-sizing-content py-12")}
-        />
+        <>
+          <textarea
+            {...(rest as ComponentPropsWithoutRef<"textarea">)}
+            id={id}
+            maxLength={maxLength}
+            aria-invalid={hasError || undefined}
+            aria-describedby={describedBy}
+            className={cx(CONTROL, border, "min-h-textarea-min field-sizing-content py-12")}
+          />
+          <TextareaAutoGrow targetId={id} value={rest.value === undefined ? undefined : String(rest.value)} />
+        </>
       ) : (
         <input
           {...(rest as ComponentPropsWithoutRef<"input">)}
