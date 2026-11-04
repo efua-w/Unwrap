@@ -15,7 +15,7 @@ Read this file before writing code. Read the relevant story and board (a UI scre
 - Vercel
 - Playwright (end-to-end), Vitest (unit), pgTAP (database security tests)
 
-Commands (npm, Node 26.13.0 (`.nvmrc`); slice 0a). Slice 0b adds the database commands.
+Commands (npm, Node 26.13.0 (`.nvmrc`)).
 
 - `npm run dev` / `npm run build` / `npm start`
 - `npm run typecheck` (tsc), `npm run lint` (eslint), `npm test` (Vitest)
@@ -23,6 +23,10 @@ Commands (npm, Node 26.13.0 (`.nvmrc`); slice 0a). Slice 0b adds the database co
 - `npm run tokens:check` fails on hex, `px`, arbitrary values and off-scale utilities in source, and when `styles/tokens.css` is stale
 - `npm run e2e` runs the Playwright browser tests (Chromium at 390, 768 and 1440) against `next dev`; first run `npx playwright install chromium`. Port from `E2E_PORT` (default 3100). Full-page screenshots of the galleries go to `test-results/screenshots` (gitignored)
 - Dev-only galleries at `/dev/components` and `/dev/shell` (not in production builds)
+- `npm run db:migration:new -- <name>` creates a timestamped file in `supabase/migrations` (same as `npx supabase migration new <name>`)
+- `npm run db:test` runs the pgTAP security tests in `supabase/tests/security` (`supabase test db`; needs a local database, so CI runs it). Each file is also plain SQL inside `begin; … rollback;`, so it can be run through any SQL tool
+- `npm run db:types` generates `lib/supabase/database.types.ts` from a local database (CI). Without Docker, the main session generates it from the hosted dev project through the Supabase connector. Never hand-edit the file
+- Migration convention: one file per change; **never edit a migration after it has been applied** (write a new one). The main session applies migrations to the hosted dev project (`ulziqspdjtjszvdcwdek`) only with the owner's approval, then regenerates the types. `supabase/seed.sql` holds fake local/dev personas and never runs on production
 
 ## Source of truth
 

@@ -15,7 +15,10 @@
     "tokens:build": "node scripts/build-tokens.ts",
     "tokens:check": "node scripts/check-tokens.ts",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "db:migration:new": "supabase migration new",
+    "db:types": "supabase gen types typescript --local --schema public > lib/supabase/database.types.ts",
+    "db:test": "supabase test db"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -32,6 +35,7 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.4",
+    "supabase": "3.0.0",
     "tailwindcss": "^4.3.4",
     "typescript": "^6.0.3",
     "vitest": "^5.1.0"
