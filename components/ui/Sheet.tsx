@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode, type SyntheticEvent } from "react";
-import { announceTopLayerOpened } from "./top-layer";
+import { announceModalClosed } from "./top-layer";
 
 export type SheetVariant = "confirm" | "destructive" | "form";
 
@@ -34,7 +34,6 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
       returnFocusTo.current = document.activeElement;
       delete dialog.dataset.reopened;
       dialog.showModal();
-      announceTopLayerOpened();
       document.documentElement.classList.add("scroll-lock");
       // WHY: focus the heading, not the first button, so a destructive action is never pre-focused (A4).
       headingRef.current?.focus();
@@ -47,7 +46,11 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
     const dialog = dialogRef.current;
     return () => {
       document.documentElement.classList.remove("scroll-lock");
-      if (dialog?.open) dialog.close();
+      if (dialog?.open) {
+        dialog.close();
+        // WHY: the unmounted dialog's React close handler never runs, so tell held toasts (item 12).
+        announceModalClosed();
+      }
     };
   }, []);
 
@@ -60,7 +63,6 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
       // button, and the entrance animation is skipped because the dialog never really left (R2-2).
       dialog.dataset.reopened = "true";
       dialog.showModal();
-      announceTopLayerOpened();
       headingRef.current?.focus();
       return;
     }
@@ -70,6 +72,7 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
     returnFocusTo.current = null;
     if (target instanceof HTMLElement) target.focus();
     if (open) onClose();
+    announceModalClosed();
   }
 
   function handleCancel(event: SyntheticEvent<HTMLDialogElement>) {

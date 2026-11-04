@@ -9,8 +9,8 @@
 -- auth, storage, extensions or graphql_public.
 --
 -- WHAT THIS MIGRATION CAN AND CAN'T CHANGE (hosted Supabase):
---   * ALTER DEFAULT PRIVILEGES without FOR ROLE changes the defaults for the role that runs the
---     migration, `postgres`. Every table and function the app's migrations create is owned by
+--   * Every ALTER DEFAULT PRIVILEGES below names FOR ROLE postgres explicitly, the role that runs
+--     the migrations. Every table and function the app's migrations create is owned by
 --     `postgres`, so those defaults are the ones that matter.
 --   * Hosted Supabase also installs default ACLs owned by `supabase_admin` (global and for
 --     schema public). `postgres` is not a member of that role and cannot alter them. They apply

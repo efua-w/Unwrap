@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPausableTimer, type PausableTimer } from "./pausable-timer";
-import { TOP_LAYER_EVENT } from "./top-layer";
+import { isModalOpen, MODAL_CLOSED_EVENT } from "./top-layer";
 
 export const TOAST_MS = 4000;
 export const TOAST_WITH_ACTION_MS = 8000;
@@ -62,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToast(null);
   }, [restoreFocus]);
 
-  const show = useCallback(
+  const present = useCallback(
     (options: ToastOptions) => {
       timer.current?.cancel();
       hovered.current = false;
@@ -75,23 +75,40 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [dismiss, restoreFocus],
   );
 
+  // WHY: a modal makes everything outside it inert, so a toast shown under an open Sheet would
+  // have an Undo that can't be used (open item 12). Hold it, newest wins, and present it with its
+  // full duration once the last modal closes.
+  const pending = useRef<ToastOptions | null>(null);
+
+  const show = useCallback(
+    (options: ToastOptions) => {
+      if (isModalOpen()) pending.current = options;
+      else present(options);
+    },
+    [present],
+  );
+
+  useEffect(() => {
+    const flush = () => {
+      if (!pending.current || isModalOpen()) return;
+      const held = pending.current;
+      pending.current = null;
+      present(held);
+    };
+    window.addEventListener(MODAL_CLOSED_EVENT, flush);
+    return () => window.removeEventListener(MODAL_CLOSED_EVENT, flush);
+  }, [present]);
+
   useEffect(() => () => timer.current?.cancel(), []);
 
-  // WHY: a manual popover lives in the top layer, so the toast can sit above an open modal Sheet
-  // (R1-9). A later top-layer element covers an earlier one, so the region re-shows whenever a
-  // Sheet opens. It stays shown while empty so the live region keeps announcing. Browsers without
-  // the popover API ignore the attribute and fall back to the z-index.
+  // WHY: a manual popover lives in the top layer, so the toast stays above any stacking context on
+  // the page (R1-9). It is shown once on mount and stays shown while empty, so the live region keeps
+  // announcing. Browsers without the popover API ignore the attribute and fall back to the z-index.
   useEffect(() => {
     const el = regionRef.current;
     if (!el || typeof el.showPopover !== "function") return;
-    const show = () => {
-      if (el.matches(":popover-open")) el.hidePopover();
-      el.showPopover();
-    };
-    show();
-    window.addEventListener(TOP_LAYER_EVENT, show);
+    el.showPopover();
     return () => {
-      window.removeEventListener(TOP_LAYER_EVENT, show);
       if (el.matches(":popover-open")) el.hidePopover();
     };
   }, []);
