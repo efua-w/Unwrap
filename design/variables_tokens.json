@@ -2438,6 +2438,66 @@
             "description": "72px. Minimum height of a list row. No matching primitive; kept as a raw value."
           },
           {
+            "name": "size/textarea-min",
+            "token": "size-textarea-min",
+            "type": "float",
+            "value": 96,
+            "values": {
+              "tokens": 96
+            },
+            "description": "96px. Minimum height of a long-text field (textarea). No matching primitive; kept as a raw value."
+          },
+          {
+            "name": "size/toast-max",
+            "token": "size-toast-max",
+            "type": "float",
+            "value": 400,
+            "values": {
+              "tokens": 400
+            },
+            "description": "400px. Maximum toast width on desktop. On mobile the toast is full width inside spacing/16 side margins (358px on a 390px screen), so it needs no width token. No matching primitive; kept as a raw value."
+          },
+          {
+            "name": "size/dialog",
+            "token": "size-dialog",
+            "type": "float",
+            "value": 480,
+            "values": {
+              "tokens": 480
+            },
+            "description": "480px. Maximum width of a desktop dialog (modal). Mobile uses the full-width bottom sheet. No matching primitive; kept as a raw value."
+          },
+          {
+            "name": "size/content-max",
+            "token": "size-content-max",
+            "type": "float",
+            "value": 1040,
+            "values": {
+              "tokens": 1040
+            },
+            "description": "1040px. Maximum width of the main content area on desktop, beside the sidebar. No matching primitive; kept as a raw value."
+          },
+          {
+            "name": "size/sidebar-min",
+            "token": "size-sidebar-min",
+            "type": "float",
+            "value": 240,
+            "values": {
+              "tokens": 240
+            },
+            "description": "240px. Narrowest the desktop sidebar gets. No matching primitive; kept as a raw value."
+          },
+          {
+            "name": "size/sidebar-max",
+            "token": "size-sidebar-max",
+            "type": "float",
+            "value": 280,
+            "values": {
+              "tokens": 280
+            },
+            "description": "280px. Widest the desktop sidebar gets. The sidebar flexes between sidebar-min and sidebar-max. No matching primitive; kept as a raw value."
+          },
+          {
             "name": "focus/ring-width",
             "token": "focus-ring-width",
             "type": "float",

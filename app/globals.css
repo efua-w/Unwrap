@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/* WHY: Tailwind scans the whole repo by default; tests, docs and scripts hold class-like strings that must not become production CSS (R1-14). */
+@source not "../tests";
+@source not "../docs";
+@source not "../scripts";
+
+@layer base {
+  body {
+    @apply font-body text-body-base-regular text-text-default bg-surface-default;
+  }
+}
+
+html.scroll-lock {
+  overflow: hidden;
+}
+
+/* Sheet entrance: slide up on mobile, fade on desktop. Skipped entirely under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  dialog.sheet[open]:not([data-reopened]) {
+    animation: sheet-in 0.2s ease-out;
+  }
+  dialog.sheet[open]:not([data-reopened])::backdrop {
+    animation: sheet-fade 0.2s ease-out;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(16%);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}

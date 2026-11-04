@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# WHY: a newer push to the same ref makes the older run pointless (R1-13).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run tokens:check
+      - run: npm test
+      # WHY: next/font/google downloads the fonts at build time (`next build`) and on first request (`next dev`, used by e2e), so both need network access.
+      - run: npm run build
+      # WHY: headless Chromium against `next dev` (the /dev galleries only exist there); no secrets needed.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      # actions/upload-artifact v7 is the latest major as of 2026-11-03 (GitHub releases API).
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results
+          path: test-results/
+          if-no-files-found: ignore
