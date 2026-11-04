@@ -15,7 +15,14 @@ Read this file before writing code. Read the relevant story and board (a UI scre
 - Vercel
 - Playwright (end-to-end), Vitest (unit), pgTAP (database security tests)
 
-Commands are added here as slices 0a and 0b create them.
+Commands (npm, Node 26.13.0 (`.nvmrc`); slice 0a). Slice 0b adds the database commands.
+
+- `npm run dev` / `npm run build` / `npm start`
+- `npm run typecheck` (tsc), `npm run lint` (eslint), `npm test` (Vitest)
+- `npm run tokens:build` regenerates `styles/tokens.css` from `design/variables_tokens.json`; never edit that file by hand
+- `npm run tokens:check` fails on hex, `px`, arbitrary values and off-scale utilities in source, and when `styles/tokens.css` is stale
+- `npm run e2e` runs the Playwright browser tests (Chromium at 390, 768 and 1440) against `next dev`; first run `npx playwright install chromium`. Port from `E2E_PORT` (default 3100). Full-page screenshots of the galleries go to `test-results/screenshots` (gitignored)
+- Dev-only galleries at `/dev/components` and `/dev/shell` (not in production builds)
 
 ## Source of truth
 
