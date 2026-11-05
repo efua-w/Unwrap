@@ -86,6 +86,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-001 · Entry: Landing
 
+**Updated 2026-11-04 (Tobechukwu Olih):** the Landing copy follows the design board, and the Content lines below are changed to match (full stop after "spreadsheet"; "Only you see who you got. Not even the organiser."). Slice 1 built it as a static page.
+
 **As Participant, I want to** understand what Unwrap is before signing up, **so that** I can decide if it's worth an account.
 
 #### Context
@@ -108,8 +110,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### Content
 
-- "Secret Santa, without the spreadsheet"
-- "Only you see who you got, not even the organiser."
+- "Secret Santa, without the spreadsheet."
+- "Only you see who you got. Not even the organiser."
 
 ### GC-002 · Entry: Invite preview
 
@@ -156,6 +158,12 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 **Updated 2026-11-03 (Tobechukwu Olih):** no phone number can be added later; phone login is not in v1.
 
+**Updated 2026-11-04 (Tobechukwu Olih), slice 1:**
+- **Existing account.** Continue first asks the server whether the address has a confirmed account (a server-only check; owner decision 2026-11-04). Only a confirmed account gets "There's already an account with this email.": Sign up then asks for a log-in code with sign-ups off, so a real log-in code (E02) has already been sent, and "Log in with this email" goes straight to Verify for that code. Account enumeration is accepted. The server check itself can tell, silently and without a limit, whether an address has a confirmed account; accepted until launch and closed before launch by Turnstile and a per-IP rate limit (progress item 29; owner decision 2026-11-04).
+- **Abandoned sign-ups.** An address that started sign-up but never verified continues as a sign-up: it gets the sign-up code (E01) and Verify, then Profile setup. The name it first signed up with is kept (Supabase does not replace it), and Profile setup lets the person change it. If the server cannot check, Sign up falls back to the log-in-code check, which shows "Account exists" for an abandoned sign-up too. Either way the destination after Verify is decided from the verified user: a first confirmation always goes to Profile setup (GC-005), even from Log in, keeping the deep link.
+- **Verify.** There is no Verify button (the designs show none). The resend countdown is 60 seconds (also shown as the wrong-code state's resend, once the 60 seconds are up). The saved state is a 30-minute httpOnly cookie plus a localStorage backup that is removed when stale and on Log out.
+- **Name.** First name: at most 50 characters; longer or emoji-heavy names are cut safely (whole characters, counted in code points).
+
 **As Participant, I want to** create an account with just my first name and email, **so that** I can join or start an exchange in under a minute.
 
 #### Context
@@ -193,6 +201,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 **Updated 2026-11-03 (Tobechukwu Olih):** email code only; phone login and SMS are not in v1.
 
+**Updated 2026-11-04 (Tobechukwu Olih), slice 1:** Log in never creates an account (the code is requested with sign-ups off), so an unknown address shows "We couldn't find an account with this email." with "Create an account with this email" (it carries the address to Sign up, not in the URL) and "Try a different email". A code that is refused for too many requests shows the same alert as Sign up. After Verify: a returning person goes to `next` or Home; a first confirmation (an abandoned sign-up) goes to Profile setup. A signed-in person opening Log in goes to `next` or Home.
+
 **As Participant, I want to** log back in with a one-time code, **so that** I can get back to my exchanges and lists.
 
 #### Context
@@ -223,6 +233,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ### GC-005 · Onboarding: Profile setup
 
 **Updated in v1.1:** shown only to new users who didn't arrive from an invite. Invitees are prompted to add a photo later.
+
+**Updated 2026-11-04 (Tobechukwu Olih), slice 1:** Profile setup is name only for now: the photo control and its upload states move to slice 17, and everyone sees initials until then. The display name is limited to 50 characters, enforced in the database as well. Continue opens `next` if there is one (a deep link kept through sign-up), otherwise Home.
 
 **As Participant, I want to** set the name and photo people in my exchanges will see, **so that** my group recognises me.
 
@@ -258,6 +270,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ### GC-006 · Home
 
 **Updated in v1.1:** adds pending and closed join-request states, the photo prompt, reminder copy, the organiser-only case and the desktop banner.
+
+**Updated 2026-11-04 (Tobechukwu Olih), slice 1:** only the new-user (first-time) state is built: the date line in the viewer's own time zone, "Welcome, {name}.", the three steps with Start an exchange and Make a wishlist, and the invite line. Those two buttons link to routes later slices build. The other states arrive with the slices that create the data.
 
 **As Participant, I want to** see what needs me across all my exchanges and wishlists, **so that** I know my next action and next date at a glance.
 
@@ -904,6 +918,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-024 · Account: Profile
 
+**Updated 2026-11-04 (Tobechukwu Olih), slice 1:** a minimal Profile is built first: the name and Log out only. Log out ends this device's session only (other devices stay signed in), clears the saved verify state on this device, and lands on Landing. Photo, masked email and the links to Account, Notifications and Privacy arrive with slice 16.
+
 **As Participant, I want to** edit how I appear to others, **so that** my name and photo stay right.
 
 #### Context
@@ -1023,6 +1039,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ### GC-028 · Account: Delete
 
 **Updated in v1.1:** an organiser of an active exchange hands it over first; it's cancelled only if nobody can take it.
+
+**Note 2026-11-04 (Tobechukwu Olih), from slice 1:** `profiles.id` references the sign-in account with no cascade, on purpose: deleting the account has to anonymise the profile first (`anonymised_at`), so the database refuses to delete an account that still has a profile. The delete flow in slice 16 must anonymise, then delete. See the plan, section 5.
 
 **As Participant, I want to** delete my account and understand the consequences, **so that** I can leave cleanly.
 

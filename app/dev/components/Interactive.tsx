@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { OtpInput } from "@/components/ui/OtpInput";
 import { Sheet, type SheetVariant } from "@/components/ui/Sheet";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -160,6 +161,48 @@ export function SkeletonDemo() {
         <Skeleton shape="row" />
         <Skeleton shape="row" />
       </SkeletonRegion>
+    </div>
+  );
+}
+
+// OtpInput gallery: one live field that reports each completion, plus the fixed states.
+export function OtpDemo() {
+  const [value, setValue] = useState("");
+  const [completed, setCompleted] = useState<string[]>([]);
+  return (
+    <div className="flex max-w-dialog flex-col gap-24">
+      <div className="flex flex-col gap-8">
+        <OtpInput
+          label="6-digit code"
+          name="live"
+          value={value}
+          onChange={setValue}
+          onComplete={(code) => setCompleted((list) => [...list, code])}
+          helper="It checks automatically once all 6 digits are in."
+        />
+        <p className="text-body-sm-regular" data-testid="otp-completed">
+          Completed {completed.length}
+          {completed.length > 0 ? `: ${completed[completed.length - 1]}` : ""}
+        </p>
+      </div>
+      <OtpInput label="Checking" name="checking" value="482915" onChange={() => {}} onComplete={() => {}} checking />
+      <OtpInput
+        label="Wrong"
+        name="wrong"
+        value=""
+        onChange={() => {}}
+        onComplete={() => {}}
+        error="That code didn't work. Check the latest email, or send a new code."
+      />
+      <OtpInput
+        label="Disabled"
+        name="disabled"
+        value="48"
+        onChange={() => {}}
+        onComplete={() => {}}
+        disabled
+        helper="Too many tries. Send a new code to keep going."
+      />
     </div>
   );
 }

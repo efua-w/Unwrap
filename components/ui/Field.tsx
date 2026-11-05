@@ -66,7 +66,7 @@ export function Field(props: FieldProps) {
       {hasError || helper || maxLength ? (
         <div className="flex items-start gap-8">
           {hasError ? (
-            <p id={errorId} className="flex items-start gap-8 text-body-sm-regular text-text-error">
+            <p id={errorId} role="alert" className="flex items-start gap-8 text-body-sm-regular text-text-error">
               <Icon icon={WarningCircle} size="sm" weight="fill" className="mt-2" />
               <span>{error}</span>
             </p>

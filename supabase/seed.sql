@@ -30,22 +30,27 @@
 --   outsider     a0000000-0000-4000-8000-000000000005
 -- "giver" and "receiver" become a pair only when a later slice draws an exchange between them.
 
+-- Needs the profiles_user_settings migration (slice 1): every auth user must carry a first_name,
+-- and the sign-up trigger writes each persona's profile and settings rows. The GoTrue token
+-- columns are set to '' because GoTrue fails to scan a NULL there when it reads the user back,
+-- which would break email-code sign-in for a seeded persona.
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-  confirmation_token, recovery_token, email_change_token_new, email_change
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  email_change_token_current, phone_change, phone_change_token, reauthentication_token
 )
 select
   '00000000-0000-0000-0000-000000000000', p.id, 'authenticated', 'authenticated', p.email, '', now(),
-  '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, now(), now(),
-  '', '', '', ''
+  '{"provider":"email","providers":["email"]}'::jsonb, jsonb_build_object('first_name', p.first_name), now(), now(),
+  '', '', '', '', '', '', '', ''
 from (values
-  ('a0000000-0000-4000-8000-000000000001'::uuid, 'organiser@example.test'),
-  ('a0000000-0000-4000-8000-000000000002'::uuid, 'participant@example.test'),
-  ('a0000000-0000-4000-8000-000000000003'::uuid, 'giver@example.test'),
-  ('a0000000-0000-4000-8000-000000000004'::uuid, 'receiver@example.test'),
-  ('a0000000-0000-4000-8000-000000000005'::uuid, 'outsider@example.test')
-) as p(id, email)
+  ('a0000000-0000-4000-8000-000000000001'::uuid, 'organiser@example.test', 'Adaeze'),
+  ('a0000000-0000-4000-8000-000000000002'::uuid, 'participant@example.test', 'Bukola'),
+  ('a0000000-0000-4000-8000-000000000003'::uuid, 'giver@example.test', 'Chidi'),
+  ('a0000000-0000-4000-8000-000000000004'::uuid, 'receiver@example.test', 'Dayo'),
+  ('a0000000-0000-4000-8000-000000000005'::uuid, 'outsider@example.test', 'Emeka')
+) as p(id, email, first_name)
 on conflict (id) do nothing;
 
 -- WHY: an email identity row lets a persona sign in with an email code on a local stack.
@@ -59,3 +64,19 @@ select
 from auth.users u
 where u.email like '%@example.test'
   and not exists (select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');
+
+-- WHY: on a database where the personas already existed before the profiles migration, the
+-- sign-up trigger never ran for them. New inserts above get their rows from the trigger; this
+-- backfills the rest, and does nothing when the rows are there.
+insert into public.profiles (id, display_name)
+select u.id, u.raw_user_meta_data ->> 'first_name'
+from auth.users u
+where u.email like '%@example.test'
+  and u.raw_user_meta_data ->> 'first_name' is not null
+on conflict (id) do nothing;
+
+insert into public.user_settings (user_id)
+select u.id from auth.users u
+where u.email like '%@example.test'
+on conflict (user_id) do nothing;
+
