@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { Field } from "@/components/ui/Field";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { BusyDemo, FormBusyDemo, OfflineDemo, SheetDemo, SkeletonDemo, ToastDemo } from "./Interactive";
+import { BusyDemo, FormBusyDemo, OfflineDemo, OtpDemo, SheetDemo, SkeletonDemo, ToastDemo } from "./Interactive";
 
 // Dev-only gallery. `*.dev.tsx` is only a page outside production builds (next.config.ts).
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -69,6 +69,9 @@ export default function ComponentGallery() {
           <Field label="Name" name="c" disabled defaultValue="Disabled" />
           <Field label="Note" name="d" multiline maxLength={200} helper="Grows as you type." />
         </div>
+      </Section>
+      <Section title="OtpInput">
+        <OtpDemo />
       </Section>
       <Section title="Alert">
         <div className="flex max-w-dialog flex-col gap-12">

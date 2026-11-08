@@ -1,8 +1,15 @@
+import { existsSync } from "node:fs";
 import { defineConfig } from "@playwright/test";
+import { VIEWPORTS } from "./tests/e2e/viewports";
+
+// WHY: the signed-in specs need SUPABASE_SECRET_KEY, which lives only in .env.local (never committed).
+// CI passes it as an environment variable instead, so a missing file is fine.
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 // WHY: the port comes from the environment so a busy port on one machine is not committed config.
 const port = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${port}`;
+const SIGNED_IN = /auth-signed-in\.spec\.ts$/;
 
 // The galleries under /dev only exist in `next dev` (next.config.ts), so e2e runs against the dev server.
 export default defineConfig({
@@ -25,11 +32,16 @@ export default defineConfig({
     url: `${baseURL}/dev/components`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // The dev server needs SUPABASE_SECRET_KEY too: Sign up's server-only account check uses it
+    // (owner decision 2026-11-04, open item 36). Next reads it from .env.local, or from CI's env.
   },
-  // 390 and 1440 are the board widths; 768 is judged against the mobile design (CLAUDE.md DoD).
+  // One project per width (tests/e2e/viewports.ts), plus the signed-in spec in a project of its own.
   projects: [
-    { name: "mobile-390", use: { viewport: { width: 390, height: 844 } } },
-    { name: "tablet-768", use: { viewport: { width: 768, height: 1024 } } },
-    { name: "desktop-1440", use: { viewport: { width: 1440, height: 900 } } },
+    ...VIEWPORTS.map(({ name, viewport }) => ({ name, use: { viewport }, testIgnore: SIGNED_IN })),
+    // WHY one worker, in file order (T2-1, T2-2): every signed-in test signs in for real against the
+    // project and the one `next dev`. Run alongside each other, those sign-ins starved the server and
+    // tests ran out of time wherever they happened to be (often closing a context). The spec runs its
+    // three widths itself, so no two signed-in tests ever overlap; stubbed specs use the other worker.
+    { name: "signed-in", testMatch: SIGNED_IN, fullyParallel: false, workers: 1 },
   ],
 });

@@ -5,7 +5,35 @@ export type Database = {
   
   "public": {
           Tables: {
-            [_ in never]: never
+            "profiles": {
+                  Row: {
+                    "anonymised_at": string | null,"avatar_path": string | null,"created_at": string,"display_name": string,"id": string,"photo_prompt_dismissed_at": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "anonymised_at"?: string | null,"avatar_path"?: string | null,"created_at"?: string,"display_name": string,"id": string,"photo_prompt_dismissed_at"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "anonymised_at"?: string | null,"avatar_path"?: string | null,"created_at"?: string,"display_name"?: string,"id"?: string,"photo_prompt_dismissed_at"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"user_settings": {
+                  Row: {
+                    "created_at": string,"notify_event_reminder": boolean,"notify_join_by_reminder": boolean,"notify_names_drawn": boolean,"notify_someone_joins": boolean,"timezone": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"notify_event_reminder"?: boolean,"notify_join_by_reminder"?: boolean,"notify_names_drawn"?: boolean,"notify_someone_joins"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"notify_event_reminder"?: boolean,"notify_join_by_reminder"?: boolean,"notify_names_drawn"?: boolean,"notify_someone_joins"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Views: {
             [_ in never]: never

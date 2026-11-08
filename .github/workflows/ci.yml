@@ -17,6 +17,11 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # WHY: the app reads these two public values on every request (proxy.ts), so e2e needs them.
+    # They are repository variables, not secrets: the URL and the publishable key are public by design.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -29,10 +34,25 @@ jobs:
       - run: npm run tokens:check
       - run: npm test
       # WHY: next/font/google downloads the fonts at build time (`next build`) and on first request (`next dev`, used by e2e), so both need network access.
+      # WHY the secret on the build: server code reads SUPABASE_SECRET_KEY (Sign up's account check,
+      # owner decision 2026-11-04). Giving it to the build lets the next step prove that neither its
+      # name nor its value reaches the client output. Without it (a fork PR) Sign up falls back to
+      # its browser-only check.
       - run: npm run build
-      # WHY: headless Chromium against `next dev` (the /dev galleries only exist there); no secrets needed.
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      - run: npm run secrets:check
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      # WHY: installs headless Chromium for the e2e step below (which runs against `next dev`, where the /dev galleries exist).
       - run: npx playwright install --with-deps chromium
+      # WHY: the e2e specs use the secret key (throwaway users and minted codes) and so does the dev
+      # server they start (Sign up's server-only account check). It is given to these steps only, as
+      # a secret, never as a NEXT_PUBLIC_ value. When it is missing (a fork PR, or not set yet) the
+      # signed-in specs skip with a reason and the rest of the suite still runs.
       - run: npm run e2e
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       # actions/upload-artifact v7 is the latest major as of 2026-11-03 (GitHub releases API).
       - uses: actions/upload-artifact@v7
         if: failure()
