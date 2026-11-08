@@ -40,7 +40,11 @@ export function AuthFrame({ title, intro, backHref, children, footer, onSubmit }
         </header>
       )}
       <main id="main" tabIndex={-1} className="flex flex-1 flex-col focus:outline-none md:items-center md:px-40 md:py-64">
-        <form noValidate onSubmit={onSubmit} className="flex w-full flex-1 flex-col md:max-w-dialog md:flex-none md:gap-32">
+        {/* WHY method="post": if the form is submitted before the page's JavaScript runs (slow
+            mobile network, or a dev server blocking the phone's origin), a default GET would put
+            the email and first name in the URL, server logs and browser history. POST keeps them
+            out of the URL; the JavaScript handler still owns every real submission. */}
+        <form method="post" noValidate onSubmit={onSubmit} className="flex w-full flex-1 flex-col md:max-w-dialog md:flex-none md:gap-32">
           {backHref ? (
             <div className="max-md:hidden">
               <Button variant="icon" icon={ArrowLeft} label="Back" href={backHref} />
