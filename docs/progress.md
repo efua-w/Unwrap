@@ -11,7 +11,7 @@ Statuses: Not started · In progress · Built — waiting on security tests · I
 | 0a | App foundation | Merged with known risks | slice-0a-foundation | PR #1 merged 2026-11-04 (CI `check` green). Testing and review were stopped by the owner; see open items 16 and 20 |
 | 0b | Database and test harness | Done | slice-0b-database | PR #2 merged 2026-11-04. Hardening migration on dev project `ulziqspdjtjszvdcwdek`; security tests 38/38 on the dev project and in CI; tester PASS, reviewer APPROVED. No UI, so no signed-in click-through applies |
 | 1 | Sign up, log in, profile setup | Done | slice-1-auth | PR #4 merged 2026-11-08 (CI green: full e2e and security 97/97). Migration `profiles_user_settings` on dev; reviewer APPROVED; owner human checks done 2026-11-05. Launch blocker: open item 29 |
-| 2 | Wishlists core | In review | slice-2-wishlists | Migration `20261105024047_wishlists` applied to dev (owner approved 2026-11-08; file statements verified identical to the applied text). Security tests 010–100 pass 201/201 (090 48/48, 100 56/56; four 090/100 expressions fixed with `::text` casts, assertions unchanged). Reviewer round 2 APPROVED; tester round 2 pending. Branch now on `main` (after PR #4). Still needed: owner signed-in click-through; CI |
+| 2 | Wishlists core | Done | slice-2-wishlists | PR #5 merged 2026-11-08 (CI green: full e2e; security 201/201). Migration `wishlists` on dev; reviewer APPROVED. Owner signed-in click-through still pending |
 | 3 | Share and public view | Not started | | |
 | 4 | Start an exchange | Not started | | |
 | 5 | Invite and join | Not started | | |
