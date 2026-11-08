@@ -402,3 +402,30 @@ Settings that live in dashboards, not in the repo. Do them on the dev project `u
   - typecheck, lint, Vitest 115/115, tokens, build and secrets:check pass. No processes left running.
 - Outstanding issues: local `next dev` stalls under 2 workers (CI runs 1 worker). GitHub CI is the e2e judge (owner decision).
 - Next action: main session commits, pushes, opens the PR, reads CI.
+
+## Main session — commit and push — 2026-11-05
+- Task: slice-1 — commit and push for CI (owner approved)
+- Requirements: CLAUDE.md Git
+- Files/components: whole slice
+- Work completed (verified):
+  - G1/G2 closed in progress.md (owner checks, 2026-11-05); slice 1 row updated.
+  - Staged-file scan: no `.env`/key/`playwright/.auth`/test-results files; no secret-shaped values in the diff.
+  - Committed locally as `358c040` on `slice-1-auth`.
+  - **Push blocked by GitHub.** Every ref update on `efua-w/Unwrap` fails with `remote: fatal error in commit_refs`:
+    - this branch (≈9 retries over 7 minutes)
+    - a new branch name
+    - a new branch pointing at an existing commit (`b4f37a6`)
+    - creating a ref through the REST API (`422 Reference update failed`)
+  - Unaffected: the repo is not archived or disabled; push permission true; no rulesets (free private plan); githubstatus.com "All Systems Operational"; last successful push 2026-11-04T09:31Z.
+- Outstanding issues: GitHub cannot write refs in this repository; owner to check the account or contact GitHub Support. Nothing is lost: the commit is safe locally.
+- Next action: owner resolves the GitHub issue; then push, open the PR into main and read CI.
+
+## Main session — first CI run — 2026-11-08
+- Task: slice-1 — PR #4 CI
+- Requirements: AC-29; types drift
+- Files/components: `lib/supabase/database.types.ts`
+- Work completed (verified with `gh`):
+  - GitHub accepted the push on 2026-11-08 (the ref-update failure had cleared).
+  - PR #4 run 42469853850: `check` **passed** (full e2e on GitHub's runner, the e2e judge per the owner); `security`: Files=9, Tests=97, "All tests successful", Result: PASS, then failed only at the types-drift step (formatting).
+  - The CI-generated types file was applied from the job's `diff -u` output and committed as canonical.
+- Next action: CI re-run; owner decides the merge.
