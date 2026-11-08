@@ -10,7 +10,7 @@ Statuses: Not started · In progress · Built — waiting on security tests · I
 |---|---|---|---|---|
 | 0a | App foundation | Merged with known risks | slice-0a-foundation | PR #1 merged 2026-11-04 (CI `check` green). Testing and review were stopped by the owner; see open items 16 and 20 |
 | 0b | Database and test harness | Done | slice-0b-database | PR #2 merged 2026-11-04. Hardening migration on dev project `ulziqspdjtjszvdcwdek`; security tests 38/38 on the dev project and in CI; tester PASS, reviewer APPROVED. No UI, so no signed-in click-through applies |
-| 1 | Sign up, log in, profile setup | In review | slice-1-auth | Built (builder rounds 1–6). Migration applied to dev; security tests 97/97; reviewer round 2 APPROVED (R2-1 accepted until launch); owner human checks done 2026-11-05 (real inbox and escaping, WhatsApp, screen reader, iPhone keyboard). Local e2e stalls on this machine; GitHub CI is the e2e judge (owner decision) |
+| 1 | Sign up, log in, profile setup | Done | slice-1-auth | PR #4 merged 2026-11-08 (CI green: full e2e and security 97/97). Migration `profiles_user_settings` on dev; reviewer APPROVED; owner human checks done 2026-11-05. Launch blocker: open item 29 |
 | 2 | Wishlists core | Not started | | |
 | 3 | Share and public view | Not started | | |
 | 4 | Start an exchange | Not started | | |
