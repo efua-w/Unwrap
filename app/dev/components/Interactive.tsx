@@ -1,8 +1,12 @@
 "use client";
 
+import { Trash } from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { ListRow } from "@/components/ui/ListRow";
+import { MoneyField } from "@/components/ui/MoneyField";
+import { RadioGroup } from "@/components/ui/RadioGroup";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { Sheet, type SheetVariant } from "@/components/ui/Sheet";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
@@ -70,6 +74,38 @@ export function SheetDemo() {
           </Button>
         ) : null}
       </Sheet>
+    </div>
+  );
+}
+
+// Gallery fixture for T1-1: a sheet that is mounted already open, as the wishlist callers do with a
+// new key. Under `next dev` StrictMode runs the effects twice, which used to close it straight away.
+export function MountedOpenSheetDemo() {
+  const [session, setSession] = useState(0);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-wrap gap-12">
+      <Button
+        variant="secondary"
+        onClick={() => {
+          setSession((n) => n + 1);
+          setOpen(true);
+        }}
+      >
+        Mounted open sheet
+      </Button>
+      <Sheet
+        key={session}
+        open={open}
+        onClose={() => setOpen(false)}
+        variant="form"
+        title="Mounted open"
+        footer={
+          <Button variant="text" onClick={() => setOpen(false)}>
+            Close
+          </Button>
+        }
+      />
     </div>
   );
 }
@@ -203,6 +239,78 @@ export function OtpDemo() {
         disabled
         helper="Too many tries. Send a new code to keep going."
       />
+    </div>
+  );
+}
+
+// RadioGroup gallery: the list variant (with hints) and the segmented variant.
+export function RadioGroupDemo() {
+  const [who, setWho] = useState<"private" | "link">("private");
+  const [want, setWant] = useState<"most" | "nice">("nice");
+  return (
+    <div className="flex max-w-dialog flex-col gap-24">
+      <RadioGroup
+        legend="Who can see it"
+        name="demo-who"
+        value={who}
+        onChange={setWho}
+        options={[
+          { value: "private", label: "Private", hint: "Hint text for the first option." },
+          { value: "link", label: "Anyone with the link", hint: "Hint text for the second option." },
+        ]}
+      />
+      <RadioGroup
+        legend="How much do you want it?"
+        name="demo-want"
+        variant="segmented"
+        value={want}
+        onChange={setWant}
+        options={[
+          { value: "most", label: "Most wanted" },
+          { value: "nice", label: "Nice to have" },
+        ]}
+      />
+    </div>
+  );
+}
+
+// MoneyField gallery: a live field and the error state.
+export function MoneyFieldDemo() {
+  const [price, setPrice] = useState("");
+  return (
+    <div className="flex max-w-dialog flex-col gap-16">
+      <MoneyField label="Price" name="demo-price" placeholder="0" helper="Whole naira only, like 8500." value={price} onChange={(e) => setPrice(e.target.value)} />
+      <MoneyField label="Price" name="demo-price-error" value="85.50" onChange={() => {}} error="Use whole naira, with no kobo. For example, 8500." />
+    </div>
+  );
+}
+
+// ListRow gallery: a row that opens something, with a sibling bin.
+export function ListRowDemo() {
+  const [opened, setOpened] = useState(0);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="flex max-w-dialog flex-col gap-8">
+      <ul className="flex flex-col">
+        <ListRow
+          title="Ankara tote bag"
+          sub="₦8,500 · Most wanted. Any colour but brown."
+          onClick={() => setOpened((n) => n + 1)}
+          action={
+            <Button
+              variant="icon"
+              icon={Trash}
+              label="Remove Ankara tote bag"
+              busy={busy}
+              onClick={() => {
+                setBusy(true);
+                setTimeout(() => setBusy(false), 1500);
+              }}
+            />
+          }
+        />
+      </ul>
+      <p className="text-body-sm-regular">Row opened {opened}</p>
     </div>
   );
 }

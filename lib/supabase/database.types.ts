@@ -33,16 +33,70 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"wishlist_items": {
+                  Row: {
+                    "created_at": string,"deleted_at": string | null,"id": string,"link": string | null,"name": string,"note": string | null,"photo_path": string | null,"price_kobo": number | null,"priority": Database["public"]['Enums']["wishlist_item_priority"],"updated_at": string,"wishlist_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"link"?: string | null,"name": string,"note"?: string | null,"photo_path"?: string | null,"price_kobo"?: number | null,"priority": Database["public"]['Enums']["wishlist_item_priority"],"updated_at"?: string,"wishlist_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"link"?: string | null,"name"?: string,"note"?: string | null,"photo_path"?: string | null,"price_kobo"?: number | null,"priority"?: Database["public"]['Enums']["wishlist_item_priority"],"updated_at"?: string,"wishlist_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "wishlist_items_wishlist_id_fkey"
+      columns: ["wishlist_id"]
+isOneToOne: false
+      referencedRelation: "wishlists"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"wishlists": {
+                  Row: {
+                    "created_at": string,"deleted_at": string | null,"id": string,"kind": Database["public"]['Enums']["wishlist_kind"],"name": string,"owner_id": string,"share_token": string,"updated_at": string,"visibility": Database["public"]['Enums']["wishlist_visibility"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["wishlist_kind"],"name": string,"owner_id"?: string,"share_token"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["wishlist_visibility"]
+                  }
+                  Update: {
+                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["wishlist_kind"],"name"?: string,"owner_id"?: string,"share_token"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["wishlist_visibility"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "wishlists_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "delete_wishlist":
+{ Args: { "p_wishlist_id": string }; Returns: undefined
+                           },
+"has_deleted_wishlists":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"remove_wishlist_item":
+{ Args: { "p_item_id": string }; Returns: undefined
+                           },
+"restore_wishlist":
+{ Args: { "p_wishlist_id": string }; Returns: undefined
+                           },
+"restore_wishlist_item":
+{ Args: { "p_item_id": string }; Returns: undefined
+                           }
           }
           Enums: {
-            [_ in never]: never
+            "wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -158,7 +212,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            
+            "wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
           }
         }
 } as const
