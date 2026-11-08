@@ -69,6 +69,25 @@ test.describe("AC-14 Sheet", () => {
     await expect(opener).toBeFocused();
   });
 
+  test("a sheet mounted with open=true stays open under dev StrictMode, and closes on Esc (T1-1)", async ({ page }) => {
+    await openComponents(page);
+    const opener = page.getByRole("button", { name: "Mounted open sheet" });
+    await opener.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    // The stale close event arrives a tick later; the sheet must still be there.
+    await page.waitForTimeout(500);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Mounted open" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(opener).toBeFocused();
+    // And it opens again the same way a second time.
+    await opener.click();
+    await page.waitForTimeout(500);
+    await expect(dialog).toBeVisible();
+  });
+
   test("a backdrop click closes a confirm sheet but not a destructive one; Esc closes both", async ({ page }) => {
     await openComponents(page);
     await page.getByRole("button", { name: "Confirm sheet" }).click();

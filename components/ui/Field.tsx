@@ -23,7 +23,7 @@ type TextareaField = Common & { multiline: true } & Omit<ComponentPropsWithoutRe
 export type FieldProps = InputField | TextareaField;
 
 // WHY: 16px value text (text-body-base) stops iOS Safari zooming the page on focus.
-const CONTROL =
+export const FIELD_CONTROL =
   "w-full rounded-lg bg-surface-default px-16 text-body-base-regular text-text-default placeholder:text-text-placeholder focus-ring disabled:border-border-default disabled:bg-surface-muted disabled:text-text-disabled";
 
 export function Field(props: FieldProps) {
@@ -49,7 +49,7 @@ export function Field(props: FieldProps) {
             maxLength={maxLength}
             aria-invalid={hasError || undefined}
             aria-describedby={describedBy}
-            className={cx(CONTROL, border, "min-h-textarea-min field-sizing-content py-12")}
+            className={cx(FIELD_CONTROL, border, "min-h-textarea-min field-sizing-content py-12")}
           />
           <TextareaAutoGrow targetId={id} value={rest.value === undefined ? undefined : String(rest.value)} />
         </>
@@ -60,7 +60,7 @@ export function Field(props: FieldProps) {
           maxLength={maxLength}
           aria-invalid={hasError || undefined}
           aria-describedby={describedBy}
-          className={cx(CONTROL, border, "h-48")}
+          className={cx(FIELD_CONTROL, border, "h-48")}
         />
       )}
       {hasError || helper || maxLength ? (

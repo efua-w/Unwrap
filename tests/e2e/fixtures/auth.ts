@@ -60,15 +60,38 @@ export async function createTestUser(email: string, firstName: string, confirmed
   return data.user.id;
 }
 
-// profiles.id has no ON DELETE CASCADE (account deletion anonymises, GC-028), so the profile goes
-// first; user_settings cascades with the user.
+// Nothing cascades (account deletion anonymises, GC-028; wishlists are never hard-deleted by the
+// app, never-do 8), so a throwaway user's rows go first, children before parents: items, lists,
+// profile. user_settings cascades with the user. Before the wishlists migration is applied the
+// first two deletes just fail, which is fine.
 export async function deleteTestUser(email: string): Promise<void> {
   const db = adminClient();
   const { data } = await db.auth.admin.listUsers({ perPage: 1000 });
   const user = data?.users.find((u) => u.email === email);
   if (!user) return;
+  const { data: lists } = await db.from("wishlists").select("id").eq("owner_id", user.id);
+  const listIds = (lists ?? []).map((l: { id: string }) => l.id);
+  if (listIds.length > 0) await db.from("wishlist_items").delete().in("wishlist_id", listIds);
+  await db.from("wishlists").delete().eq("owner_id", user.id);
   await db.from("profiles").delete().eq("id", user.id);
   await db.auth.admin.deleteUser(user.id);
+}
+
+let wishlistsCached: Promise<DbStatus> | null = null;
+
+// Slice 2: the wishlist specs also need the wishlists migration. Until the main session applies it
+// they skip with this reason instead of failing on a missing table.
+export function wishlistsDbStatus(): Promise<DbStatus> {
+  wishlistsCached ??= (async (): Promise<DbStatus> => {
+    const base = await dbStatus();
+    if (!base.ready) return base;
+    const { error } = await adminClient().from("wishlist_items").select("id").limit(1);
+    if (error) {
+      return { ready: false, reason: "The wishlists migration is not applied to the Supabase project the app points at." };
+    }
+    return { ready: true };
+  })();
+  return wishlistsCached;
 }
 
 // The code an email would carry. generateLink sends nothing; it returns the one-time code.

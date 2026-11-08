@@ -9,7 +9,9 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 // WHY: the port comes from the environment so a busy port on one machine is not committed config.
 const port = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${port}`;
-const SIGNED_IN = /auth-signed-in\.spec\.ts$/;
+// WHY every *-signed-in spec (slice 2 adds wishlists-signed-in): they all sign in for real, so
+// they share the single-worker project below.
+const SIGNED_IN = /-signed-in\.spec\.ts$/;
 
 // The galleries under /dev only exist in `next dev` (next.config.ts), so e2e runs against the dev server.
 export default defineConfig({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode, type SyntheticEvent } from "react";
-import { announceModalClosed } from "./top-layer";
+import { announceModalClosed, isModalOpen } from "./top-layer";
 
 export type SheetVariant = "confirm" | "destructive" | "form";
 
@@ -45,12 +45,12 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
   useEffect(() => {
     const dialog = dialogRef.current;
     return () => {
-      document.documentElement.classList.remove("scroll-lock");
-      if (dialog?.open) {
-        dialog.close();
-        // WHY: the unmounted dialog's React close handler never runs, so tell held toasts (item 12).
-        announceModalClosed();
-      }
+      const wasOpen = dialog?.open ?? false;
+      if (wasOpen) dialog?.close();
+      // WHY: another sheet may have opened in the same commit (Edit list handing over to Delete, R1-10).
+      if (!isModalOpen()) document.documentElement.classList.remove("scroll-lock");
+      // WHY: the unmounted dialog's React close handler never runs, so tell held toasts (item 12).
+      if (wasOpen) announceModalClosed();
     };
   }, []);
 
@@ -66,8 +66,13 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
       headingRef.current?.focus();
       return;
     }
+    // WHY: `close` fires asynchronously. A sheet mounted with open=true is closed and re-opened by
+    // StrictMode's double effect (T1-1), so the event can land after the dialog is open again. A real
+    // close leaves the dialog closed, so an open dialog here means the event is stale: ignore it.
+    if (dialog?.open) return;
     // Fires after any close, including the browser closing it. Restore page state, then tell the parent.
-    document.documentElement.classList.remove("scroll-lock");
+    // WHY: when one sheet hands over to another, the second is already open and keeps the lock (R1-10).
+    if (!isModalOpen()) document.documentElement.classList.remove("scroll-lock");
     const target = returnFocusTo.current;
     returnFocusTo.current = null;
     if (target instanceof HTMLElement) target.focus();

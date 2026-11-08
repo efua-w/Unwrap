@@ -16,6 +16,8 @@ export default async function globalSetup(): Promise<void> {
     "/home",
     "/welcome",
     "/profile",
+    "/wishlists",
+    "/wishlists/00000000-0000-4000-8000-000000000000",
     "/exchanges/1",
   ]) {
     const response = await fetch(`http://localhost:${port}${path}`);

@@ -721,6 +721,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-018 · Wishlists: List
 
+**Updated 2026-11-05 (Tobechukwu Olih, slice 2):** toasts use straight single quotes, not curly double quotes ("Deleted 'Birthday list'."); a Private row's label reads "Only you"; the date after "updated" reads "today", "yesterday", "N days ago" (up to 6), then "Wed 9 Sep" (with the year when it isn't this year), in the viewer's zone. The "Your givers in X and Y" label arrives with exchanges (slice 5). Home's "Your wishlists" section is a later slice.
+
 **As Participant, I want to** see all my wishlists and who can see each one, **so that** I can find or start a list.
 
 #### Context
@@ -748,9 +750,11 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### Content
 
-- "Deleted “Birthday — 14 March”. Undo" (toasts use curly double quotes)
+- "Deleted 'Birthday — 14 March'. Undo" (toasts use straight single quotes; owner 2026-11-05)
 
 ### GC-019 · Wishlists: Create / edit list
+
+**Updated 2026-11-05 (Tobechukwu Olih, slice 2):** the delete confirmation title uses straight single quotes ("Delete 'Birthday list'?"). A Private list's delete body is only "It isn't in any exchange, so nothing else changes."; a list visible by link adds "Anyone with the link will see that it's gone." Delete and Undo do not change the list's place in My wishlists (builder decision, accepted by Tobechukwu Olih). Default visibility from Privacy settings (GC-027) arrives in slice 3; until then new lists start Private.
 
 **As Participant, I want to** create or edit a wishlist and choose who can see it, **so that** my list is ready for exchanges or birthdays.
 
@@ -785,6 +789,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-020 · Wishlists: Detail
 
+**Updated 2026-11-05 (Tobechukwu Olih, slice 2):** the Share button is hidden until slice 3. The empty-list prompt drops "Add a link and we'll fill in the name and price." until link import (slice 17). Removing an item shows a spinner on the bin, then "Removed '{name}'." with Undo; Undo puts the row back at once (builder decision, accepted by Tobechukwu Olih) and, if the server refuses, takes it away again with "Couldn't save your change, so we put it back." + Retry. If the bin's remove itself fails, or Undo of a deleted list fails, nothing is put back, so the toast reads "Couldn't save your change." + Retry (Tobechukwu Olih, 2026-11-08). After a removal, focus moves to the next row, else the previous one, else "Add an item" (builder decision, accepted by Tobechukwu Olih). The bin's accessible name is "Remove {item}".
+
 **As Participant, I want to** view and maintain one list, **so that** my list stays current.
 
 #### Context
@@ -794,7 +800,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 #### In scope — Dev tasks
 
 - Items most recently changed first ("Recently changed first"), each marked Most wanted or Nice to have; name, note, price (₦).
-- Add an item; tap an item to edit it; a bin at the end of each row removes it, with a spinner while it works, then "Removed “{name}”." with Undo.
+- Add an item; tap an item to edit it; a bin at the end of each row removes it, with a spinner while it works, then "Removed '{name}'." with Undo.
 - Delete list, a text button beside Add an item, opens the delete confirmation (GC-019, GC-030).
 - Back returns to the page I came from, or Wishlists.
 - Share (outline button with the share icon) → GC-022; Edit list (GC-019).
@@ -816,6 +822,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "Couldn't save your change, so we put it back. Retry"
 
 ### GC-021 · Wishlists: Add / edit item
+
+**Updated 2026-11-05 (Tobechukwu Olih, slice 2):** slice 2 is manual entry only: the link is stored (with https:// added when missing) and never fetched, and the Link field has no helper text until link import (slice 17); Photo arrives in slice 17. Price is optional; when given it is whole naira from ₦1 to ₦1,000,000,000 (over the limit: "That's over ₦1,000,000,000. Enter a smaller amount."). Priority is required with "Nice to have" preselected (overrides the board). A bad link shows "Check the link. It should start with https://". Toasts use straight single quotes.
 
 **As Participant, I want to** add an item with a link, price and a note for my giver, **so that** my giver gets exactly the right thing.
 
