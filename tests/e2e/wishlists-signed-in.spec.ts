@@ -19,6 +19,10 @@ const created: string[] = [];
 const UUID_PATH = /\/wishlists\/[0-9a-f-]{36}$/;
 
 async function expectNoAxeViolations(page: Page) {
+  // WHY: the sheet fades in (sheet-in, opacity 0 to 1). Axe blends colours with the live opacity, so
+  // checking mid-animation reports false color-contrast failures (GC-019). Wait until every
+  // animation, including ::backdrop ones, has finished; rules stay on.
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .exclude("nextjs-portal")
