@@ -1,7 +1,7 @@
 import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { PROFILE_HREF } from "./nav-items";
 import type { ShellProfile } from "./Sidebar";
 
@@ -9,14 +9,19 @@ export type BackLink = { label: string; href: string };
 
 type Props = { variant?: "top"; profile: ShellProfile } | { variant: "back"; back: BackLink };
 
-/** The labelled Back control (UwButton "back"). */
+/** The labelled Back link (UwButton "back"). WHY a plain link with no background or hover fill:
+ * it only navigates, so it must not look like a button (owner, 2026-11-09). */
 export function BackButton({ back }: { back: BackLink }) {
   // WHY: owner decision 2026-11-03: the in-app Back always goes to the parent page, so it never
   // leaves the app. Browser Back is unchanged. A plain link needs no client code.
   return (
-    <Button variant="back" icon={CaretLeft} href={back.href}>
+    <Link
+      href={back.href}
+      className="inline-flex min-h-touch-target items-center gap-4 rounded-lg pr-4 text-body-sm-semibold text-text-default hover:underline focus-ring"
+    >
+      <Icon icon={CaretLeft} />
       {back.label}
-    </Button>
+    </Link>
   );
 }
 

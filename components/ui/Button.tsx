@@ -12,7 +12,6 @@ export type ButtonVariant =
   | "text"
   | "destructive-text"
   | "link"
-  | "back"
   | "icon";
 
 type Base = {
@@ -54,7 +53,6 @@ const SHAPE: Record<ButtonVariant, string> = {
   text: PILL,
   "destructive-text": PILL,
   link: "min-h-touch-target rounded-lg gap-8 text-body-base-semibold",
-  back: "min-h-touch-target pl-4 pr-12 rounded-full gap-4 text-body-sm-semibold",
   icon: "size-touch-target rounded-full",
 };
 
@@ -67,7 +65,6 @@ const ENABLED: Record<ButtonVariant, string> = {
   text: "text-text-default hover:bg-surface-secondary-hover active:bg-surface-secondary-pressed",
   "destructive-text": "text-text-error hover:bg-surface-error-subtle active:bg-surface-error-subtle",
   link: "text-text-default underline decoration-dotted",
-  back: "text-text-default hover:bg-surface-secondary-hover active:bg-surface-secondary-pressed",
   icon: "text-text-default hover:bg-surface-secondary-hover active:bg-surface-secondary-pressed",
 };
 
@@ -79,7 +76,6 @@ const DISABLED: Record<ButtonVariant, string> = {
   text: "text-text-disabled cursor-not-allowed",
   "destructive-text": "text-text-disabled cursor-not-allowed",
   link: "text-text-disabled underline decoration-dotted cursor-not-allowed",
-  back: "text-text-disabled cursor-not-allowed",
   icon: "text-text-disabled cursor-not-allowed",
 };
 
