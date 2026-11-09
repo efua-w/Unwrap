@@ -863,6 +863,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-022 · Wishlists: Share
 
+**Updated 2026-11-09 (Tobechukwu Olih, S25 boards):** the intro is one sentence ("Four things Amaka would love." / "One thing Amaka would love."); the "Recently changed first" line is removed from the public view (the order is unchanged); rows show the price and the note on their own lines, with priority as a badge ("Most wanted" on the surface/brand-subtle wash, "Nice to have" on grey; owner, 2026-11-09); the desktop column is centred, up to 640px.
+
 **Updated 2026-11-08 (Tobechukwu Olih, slice 3):** links are built from a server-only `SITE_URL` per environment (the production domain is not decided). Both the "Anyone with the link" option and "Get a shareable link" make the list shareable, and choosing Private in the sheet turns sharing off. A failed save shows "Couldn't save your change." with Retry; a failed copy selects the link; WhatsApp opens through `wa.me`. The "Link copied" toast appears when the sheet closes (a toast waits while a sheet is open).
 
 **As Participant, I want to** share a wishlist outside an exchange, **so that** friends know what to get me for birthdays.
@@ -896,7 +898,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-023 · Wishlists: Shared view
 
-**Updated 2026-11-08 (Tobechukwu Olih, slice 3):** the intro uses number words for 2 to 10 and digits above, and reads "One thing {first name} would love. Tap it to see where to get it." for one item. Rows without a shop link are not tappable. The intro and empty state use the first word of the owner's name; the full name sits beside the avatar. The page title and link preview are generic ("A wishlist on Unwrap"). Every unavailable case answers 404. No extra rate limit in v1. The skeleton board is not used: a loading boundary would turn the 404 into a 200 (builder note, open item 49).
+**Updated 2026-11-08 (Tobechukwu Olih, slice 3):** the intro uses number words for 2 to 10 and digits above, and reads "One thing {first name} would love." for one item (second sentence dropped 2026-11-09). Rows without a shop link are not tappable. The intro and empty state use the first word of the owner's name; the full name sits beside the avatar. The page title and link preview are generic ("A wishlist on Unwrap"). Every unavailable case answers 404. No extra rate limit in v1. The skeleton board is not used: a loading boundary would turn the 404 into a 200 (builder note, open item 49).
 
 **As Participant, I want to** open a friend's shared wishlist without an account, **so that** I can see what they want.
 
@@ -907,7 +909,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 #### In scope — Dev tasks
 
 - No account needed.
-- Owner photo + name, list name, intro line ("Six things Amaka would love. Tap one to see where to get it."), then one list — "{N} items" / "Recently changed first" — with a Most wanted / Nice to have badge on each row, as on Wishlist detail; tap → shop link.
+- Owner photo + name, list name, intro line ("Six things Amaka would love."), then one list under the "{N} items" count — each row shows the name, the price on its own line, the owner's note on a third line, and a Most wanted / Nice to have badge on the right (Most wanted on the brand wash); tap → shop link. On desktop the page is one centred column.
 - Acquisition: Make a wishlist of your own → sign up.
 - Hidden from search engines.
 
@@ -922,7 +924,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### Content
 
-- "Six things Amaka would love. Tap one to see where to get it."
+- "Six things Amaka would love." / "One thing Amaka would love."
 - "Make a wishlist of your own"
 - "This wishlist isn't available" / "Its owner may have made it private. Ask them to send you the link again."
 

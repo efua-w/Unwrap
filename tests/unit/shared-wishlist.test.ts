@@ -42,17 +42,17 @@ describe("parsePublicWishlist (GC-023: only the fields the function returns)", (
   });
 });
 
-describe("sharedIntro (owner answers 2026-11-08)", () => {
+describe("sharedIntro (owner answers 2026-11-08, S25 update 2026-11-09)", () => {
   it("uses number words for 2 to 10 and the first name only", () => {
-    expect(sharedIntro(4, "Amaka Obi")).toBe("Four things Amaka would love. Tap one to see where to get it.");
-    expect(sharedIntro(2, "Amaka")).toBe("Two things Amaka would love. Tap one to see where to get it.");
-    expect(sharedIntro(10, "Amaka")).toBe("Ten things Amaka would love. Tap one to see where to get it.");
+    expect(sharedIntro(4, "Amaka Obi")).toBe("Four things Amaka would love.");
+    expect(sharedIntro(2, "Amaka")).toBe("Two things Amaka would love.");
+    expect(sharedIntro(10, "Amaka")).toBe("Ten things Amaka would love.");
   });
   it("uses digits above ten", () => {
-    expect(sharedIntro(11, "Amaka")).toBe("11 things Amaka would love. Tap one to see where to get it.");
+    expect(sharedIntro(11, "Amaka")).toBe("11 things Amaka would love.");
   });
   it("has a singular line for one", () => {
-    expect(sharedIntro(1, "Amaka Obi")).toBe("One thing Amaka would love. Tap it to see where to get it.");
+    expect(sharedIntro(1, "Amaka Obi")).toBe("One thing Amaka would love.");
   });
   it("has no line for none (the empty state replaces it)", () => {
     expect(sharedIntro(0, "Amaka")).toBeNull();

@@ -1,8 +1,9 @@
+import { formatNaira } from "@/lib/money/naira";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { ListRow } from "@/components/ui/ListRow";
-import { itemCountLabel, itemSub, PRIORITY_LABEL } from "@/features/wishlists/copy";
+import { itemCountLabel, PRIORITY_LABEL } from "@/features/wishlists/copy";
 import { SHARED_COPY, sharedIntro } from "../copy";
 import type { PublicWishlist } from "../types";
 import { SharedFrame } from "./SharedFrame";
@@ -29,16 +30,20 @@ export function SharedWishlistView({ wishlist }: { wishlist: PublicWishlist }) {
         </div>
       ) : (
         <div className="flex flex-col gap-8">
-          <div className="flex justify-between gap-16 text-body-sm-regular text-text-muted">
-            <span>{itemCountLabel(items.length)}</span>
-            <span>{SHARED_COPY.order}</span>
-          </div>
+          <p className="text-body-sm-regular text-text-muted">{itemCountLabel(items.length)}</p>
           <ul className="flex flex-col">
             {items.map((item, index) => {
-              const meta = (
-                <Chip variant={item.priority === "most_wanted" ? "label" : "meta"}>{PRIORITY_LABEL[item.priority]}</Chip>
-              );
-              const common = { title: item.name, sub: itemSub(item), meta, divider: index > 0 };
+              // WHY (S25 update 2026-11-09): price and note are separate lines; priority is a badge, with
+              // "Most wanted" on the brand wash (owner, 2026-11-09).
+              const common = {
+                title: item.name,
+                sub: item.priceKobo === null ? undefined : formatNaira(item.priceKobo),
+                note: item.note ?? undefined,
+                meta: (
+                  <Chip variant={item.priority === "most_wanted" ? "wash" : "date"}>{PRIORITY_LABEL[item.priority]}</Chip>
+                ),
+                divider: index > 0,
+              };
               return item.link ? (
                 <ListRow key={index} {...common} href={item.link} external />
               ) : (

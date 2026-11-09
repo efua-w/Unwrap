@@ -2468,6 +2468,16 @@
             "description": "480px. Maximum width of a desktop dialog (modal). Mobile uses the full-width bottom sheet. No matching primitive; kept as a raw value."
           },
           {
+            "name": "size/reading-max",
+            "token": "size-reading-max",
+            "type": "float",
+            "value": 640,
+            "values": {
+              "tokens": 640
+            },
+            "description": "640px. Maximum width of a single centred reading column on pages without the app shell, such as the public shared wishlist (S25). No matching primitive; kept as a raw value."
+          },
+          {
             "name": "size/content-max",
             "token": "size-content-max",
             "type": "float",

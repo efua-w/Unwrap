@@ -69,10 +69,14 @@ test.describe("Shared wishlist, signed out (needs the share migration)", () => {
     await expect(page.getByText("Amaka Obi", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { level: 1, name: "Birthday list" })).toBeVisible();
     // Number words, and the first name only.
-    await expect(page.getByText("Four things Amaka would love. Tap one to see where to get it.")).toBeVisible();
+    await expect(page.getByText("Four things Amaka would love.")).toBeVisible();
     await expect(page.getByText("4 items", { exact: true })).toBeVisible();
-    await expect(page.getByText("Recently changed first")).toBeVisible();
-    await expect(page.getByText("₦25,000 · Most wanted. Small hoops.")).toBeVisible();
+    await expect(page.getByText("Recently changed first")).toHaveCount(0);
+    // Price, note and priority are separate lines; priority is a badge (S25 update 2026-11-09).
+    const hoopsRow = page.getByRole("listitem").filter({ hasText: "Gold hoop earrings" });
+    await expect(hoopsRow.getByText("₦25,000", { exact: true })).toBeVisible();
+    await expect(hoopsRow.getByText("Small hoops.", { exact: true })).toBeVisible();
+    await expect(hoopsRow.getByText("Most wanted", { exact: true })).toBeVisible();
 
     // A row with a link opens it in a new tab, safely; a row without one is not a link.
     const hoops = page.getByRole("link", { name: /Gold hoop earrings/ });
@@ -102,7 +106,7 @@ test.describe("Shared wishlist, signed out (needs the share migration)", () => {
   test("intro for one item, digits above ten, and the empty state", async ({ page }, testInfo) => {
     const one = await seedList({ name: "Just one", items: [{ name: "Kettle" }] });
     await page.goto(`/w/${one.token}`);
-    await expect(page.getByText("One thing Amaka would love. Tap it to see where to get it.")).toBeVisible();
+    await expect(page.getByText("One thing Amaka would love.")).toBeVisible();
     await expect(page.getByText("1 item", { exact: true })).toBeVisible();
 
     const many = await seedList({
@@ -110,7 +114,7 @@ test.describe("Shared wishlist, signed out (needs the share migration)", () => {
       items: Array.from({ length: 11 }, (_, i) => ({ name: `Thing ${i + 1}` })),
     });
     await page.goto(`/w/${many.token}`);
-    await expect(page.getByText("11 things Amaka would love. Tap one to see where to get it.")).toBeVisible();
+    await expect(page.getByText("11 things Amaka would love.")).toBeVisible();
 
     const empty = await seedList({ name: "Nothing yet" });
     await page.goto(`/w/${empty.token}`);

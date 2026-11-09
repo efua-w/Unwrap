@@ -6,13 +6,15 @@ import { Icon, type PhosphorIcon } from "./Icon";
 // WHY: always a <span>, never focusable or clickable. A Chip is a label, not a control.
 // Height comes from the text line height plus padding, so no fixed size token is needed.
 type Props =
-  | { variant: "date" | "urgent" | "label" | "meta"; icon?: PhosphorIcon; children: ReactNode; className?: string }
+  | { variant: "date" | "urgent" | "label" | "wash" | "meta"; icon?: PhosphorIcon; children: ReactNode; className?: string }
   | { variant: "count"; count: number; className?: string };
 
 const STYLE = {
   date: "bg-surface-muted text-text-default",
   urgent: "bg-surface-error-subtle text-text-error",
   label: "bg-surface-brand-muted text-text-default",
+  // WHY text-default: the brand-subtle wash only fails contrast with text/brand (CLAUDE.md UI rules).
+  wash: "bg-surface-brand-subtle text-text-default",
   meta: "bg-surface-subtle text-text-muted",
 } as const;
 

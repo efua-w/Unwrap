@@ -12,6 +12,8 @@ type Props = Target & {
   title: string;
   /** One supporting line under the title, such as "4 items · updated today". */
   sub?: string;
+  /** A third line under `sub`, such as the owner's note on a shared wishlist item. */
+  note?: string;
   /** Non-interactive label at the end of the target, such as a who-can-see chip. */
   meta?: ReactNode;
   /** A trailing control (such as the bin). Rendered as a sibling of the target, never inside it. */
@@ -26,12 +28,13 @@ type Props = Target & {
 // trailing action is a separate sibling target (CLAUDE.md: a button can't contain a button).
 // `external` opens a shop link in a new tab. WHY nofollow ugc: the link is whatever a stranger typed
 // (GC-023), so it must not pass on trust or leak the shared page's address.
-export function ListRow({ title, sub, meta, action, divider = false, rowId, ...target }: Props) {
+export function ListRow({ title, sub, note, meta, action, divider = false, rowId, ...target }: Props) {
   const body = (
     <>
       <span className="flex min-w-0 flex-1 flex-col gap-2">
         <span className="break-words text-body-base-semibold text-text-default">{title}</span>
         {sub ? <span className="line-clamp-2 text-body-sm-regular text-text-muted">{sub}</span> : null}
+        {note ? <span className="line-clamp-2 break-words text-body-sm-regular text-text-secondary">{note}</span> : null}
       </span>
       {meta ? <span className="shrink-0">{meta}</span> : null}
     </>

@@ -9,20 +9,19 @@ export function firstName(displayName: string): string {
   return displayName.trim().split(/\s+/)[0] ?? displayName;
 }
 
-// "Four things Amaka would love. Tap one to see where to get it." Number words for 2 to 10, digits
+// "Four things Amaka would love." Number words for 2 to 10, digits
 // above, and a singular line for one. No line for none (the empty state replaces it).
 export function sharedIntro(count: number, displayName: string): string | null {
   const name = firstName(displayName);
   if (count <= 0) return null;
-  if (count === 1) return `One thing ${name} would love. Tap it to see where to get it.`;
+  if (count === 1) return `One thing ${name} would love.`;
   const amount = count <= 10 ? NUMBER_WORDS[count] : String(count);
-  return `${amount} things ${name} would love. Tap one to see where to get it.`;
+  return `${amount} things ${name} would love.`;
 }
 
 export const SHARED_COPY = {
   whatIsUnwrap: "What is Unwrap?",
   makeYourOwn: "Make a wishlist of your own",
-  order: "Recently changed first",
   emptyTitle: (displayName: string) => `${firstName(displayName)} hasn't added anything yet.`,
   emptyBody: (displayName: string) =>
     `Check back closer to the date. We'll show items here as soon as ${firstName(displayName)} adds them.`,
