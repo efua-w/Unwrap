@@ -863,8 +863,6 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-022 · Wishlists: Share
 
-**Updated 2026-11-09 (Tobechukwu Olih, S25 boards):** the intro is one sentence ("Four things Amaka would love." / "One thing Amaka would love."); the "Recently changed first" line is removed from the public view (the order is unchanged); rows show the price and the note on their own lines, with priority as a badge ("Most wanted" on the surface/brand-subtle wash, "Nice to have" on grey; owner, 2026-11-09); the desktop column is centred, up to 640px.
-
 **Updated 2026-11-08 (Tobechukwu Olih, slice 3):** links are built from a server-only `SITE_URL` per environment (the production domain is not decided). Both the "Anyone with the link" option and "Get a shareable link" make the list shareable, and choosing Private in the sheet turns sharing off. A failed save shows "Couldn't save your change." with Retry; a failed copy selects the link; WhatsApp opens through `wa.me`. The "Link copied" toast appears when the sheet closes (a toast waits while a sheet is open).
 
 **As Participant, I want to** share a wishlist outside an exchange, **so that** friends know what to get me for birthdays.
@@ -897,6 +895,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "Here's my wishlist, "{list name}", on Unwrap. Take a look: {link}"
 
 ### GC-023 · Wishlists: Shared view
+
+**Updated 2026-11-09 (Tobechukwu Olih, S25 boards):** the intro is one sentence ("Four things Amaka would love." / "One thing Amaka would love."); the "Recently changed first" line is removed from the public view (the order is unchanged); rows show the price and the note on their own lines, with priority as a badge ("Most wanted" on the surface/brand-subtle wash, "Nice to have" on grey; owner, 2026-11-09); the desktop column is centred, up to 640px.
 
 **Updated 2026-11-08 (Tobechukwu Olih, slice 3):** the intro uses number words for 2 to 10 and digits above, and reads "One thing {first name} would love." for one item (second sentence dropped 2026-11-09). Rows without a shop link are not tappable. The intro and empty state use the first word of the owner's name; the full name sits beside the avatar. The page title and link preview are generic ("A wishlist on Unwrap"). Every unavailable case answers 404. No extra rate limit in v1. The skeleton board is not used: a loading boundary would turn the 404 into a 200 (builder note, open item 49).
 

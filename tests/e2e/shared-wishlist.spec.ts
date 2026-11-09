@@ -69,7 +69,7 @@ test.describe("Shared wishlist, signed out (needs the share migration)", () => {
     await expect(page.getByText("Amaka Obi", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { level: 1, name: "Birthday list" })).toBeVisible();
     // Number words, and the first name only.
-    await expect(page.getByText("Four things Amaka would love.")).toBeVisible();
+    await expect(page.getByText("Four things Amaka would love.", { exact: true })).toBeVisible();
     await expect(page.getByText("4 items", { exact: true })).toBeVisible();
     await expect(page.getByText("Recently changed first")).toHaveCount(0);
     // Price, note and priority are separate lines; priority is a badge (S25 update 2026-11-09).
@@ -106,7 +106,7 @@ test.describe("Shared wishlist, signed out (needs the share migration)", () => {
   test("intro for one item, digits above ten, and the empty state", async ({ page }, testInfo) => {
     const one = await seedList({ name: "Just one", items: [{ name: "Kettle" }] });
     await page.goto(`/w/${one.token}`);
-    await expect(page.getByText("One thing Amaka would love.")).toBeVisible();
+    await expect(page.getByText("One thing Amaka would love.", { exact: true })).toBeVisible();
     await expect(page.getByText("1 item", { exact: true })).toBeVisible();
 
     const many = await seedList({
@@ -114,7 +114,7 @@ test.describe("Shared wishlist, signed out (needs the share migration)", () => {
       items: Array.from({ length: 11 }, (_, i) => ({ name: `Thing ${i + 1}` })),
     });
     await page.goto(`/w/${many.token}`);
-    await expect(page.getByText("11 things Amaka would love.")).toBeVisible();
+    await expect(page.getByText("11 things Amaka would love.", { exact: true })).toBeVisible();
 
     const empty = await seedList({ name: "Nothing yet" });
     await page.goto(`/w/${empty.token}`);

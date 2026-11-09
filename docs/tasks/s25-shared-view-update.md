@@ -9,3 +9,9 @@
 ## Main session — 2026-11-09
 - Owner: priority is a badge, not plain text; "Most wanted" uses surface/brand-subtle (new Chip `wash` variant), "Nice to have" the grey `date` chip. ListRow `trailingLabel` removed (no callers). Owner added size/reading-max (640px); SharedFrame uses it.
 - Checks: typecheck, lint, tokens, unit 158/158, shared-wishlist e2e 12/12.
+
+## Tester — round 1 — 2026-11-09
+- PASS. Back: <a>, no background rest/hover/active, underline on hover, focus ring, 44px at 390/768/1440 on /login and /signup. S25: copy, badges (contrast 14.77:1 and 15.69:1), 640 centred column, CTA widths. e2e 29 passed, 1 flaky (Back click desktop, passed 3/3 alone; progress item logged).
+
+## Reviewer — round 1 — 2026-11-09
+- APPROVED. Low: R1-1 GC-023 note placement, R1-2 item 54 wording, R1-3 exact intro matches. All three fixed by main session; shared spec 12/12.
