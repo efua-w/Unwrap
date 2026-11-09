@@ -131,7 +131,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         // Edit the item from its row.
         await page.getByRole("button", { name: /^Ankara tote bag/ }).click();
         const editSheet = page.getByRole("dialog", { name: "Edit item" });
-        await expect(editSheet.getByLabel("Price")).toHaveValue("8500");
+        await expect(editSheet.getByLabel("Price")).toHaveValue("8,500");
         await editSheet.getByLabel("Price").fill("9000");
         await editSheet.getByRole("button", { name: "Save" }).click();
         await expect(editSheet).toBeHidden();
