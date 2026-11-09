@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatUpdated } from "../../lib/dates/format-updated.ts";
-import { formatNaira, nairaInputFromKobo, NAIRA_MAX, parseNairaInput } from "../../lib/money/naira.ts";
+import { formatNaira, groupNairaInput, nairaInputFromKobo, NAIRA_MAX, parseNairaInput } from "../../lib/money/naira.ts";
 import { clampCodePoints, normaliseSingleLine } from "../../lib/validation/text.ts";
 import {
   isUuid,
@@ -48,9 +48,27 @@ describe("formatNaira and nairaInputFromKobo", () => {
     expect(formatNaira(100_000_000_000)).toBe("₦1,000,000,000");
     expect(formatNaira(1_400_000)).toBe("₦14,000");
   });
-  it("gives plain digits back for editing", () => {
-    expect(nairaInputFromKobo(850_000)).toBe("8500");
+  it("gives grouped digits back for editing", () => {
+    expect(nairaInputFromKobo(850_000)).toBe("8,500");
     expect(nairaInputFromKobo(null)).toBe("");
+  });
+});
+
+describe("groupNairaInput", () => {
+  it("adds a comma every three digits from the right as you type", () => {
+    expect(groupNairaInput("300000")).toBe("300,000");
+    expect(groupNairaInput("1000000000")).toBe("1,000,000,000");
+    expect(groupNairaInput("3000,00")).toBe("300,000");
+    expect(groupNairaInput("850")).toBe("850");
+    expect(groupNairaInput("")).toBe("");
+  });
+  it("leaves anything that is not whole naira as typed", () => {
+    expect(groupNairaInput("8500.50")).toBe("8500.50");
+    expect(groupNairaInput("-500")).toBe("-500");
+  });
+  it("round-trips through the parser", () => {
+    const parsed = parseNairaInput(groupNairaInput("300000"));
+    expect(parsed).toEqual({ ok: true, kobo: 30_000_000 });
   });
 });
 
