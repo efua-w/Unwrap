@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/Field";
 import { ListRow } from "@/components/ui/ListRow";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { RadioGroup } from "@/components/ui/RadioGroup";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { Sheet, type SheetVariant } from "@/components/ui/Sheet";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
@@ -311,6 +312,33 @@ export function ListRowDemo() {
         />
       </ul>
       <p className="text-body-sm-regular">Row opened {opened}</p>
+    </div>
+  );
+}
+
+export function SegmentedTabsDemo() {
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  return (
+    <div className="flex max-w-dialog flex-col gap-16">
+      <SegmentedTabs
+        kind="choice"
+        legend="When are names drawn?"
+        name="demo-draw"
+        value={mode}
+        onChange={setMode}
+        options={[
+          { value: "auto", label: "When joining closes" },
+          { value: "manual", label: "When I choose" },
+        ]}
+      />
+      <SegmentedTabs
+        kind="links"
+        label="Show exchanges"
+        items={[
+          { label: "Active", href: "/dev/components", current: true },
+          { label: "Past", href: "/dev/components?view=past", current: false },
+        ]}
+      />
     </div>
   );
 }

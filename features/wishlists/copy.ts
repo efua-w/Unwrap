@@ -52,10 +52,7 @@ export const SHARE_COPY = {
   saving: "Saving…",
   getLink: "Get a shareable link",
   yourLink: "Your link",
-  whatsapp: "Share to WhatsApp",
-  copy: "Copy link",
   done: "Done",
-  copied: "Link copied. Paste it anywhere to share.",
 } as const;
 
 // GC-022: the WhatsApp message, as written in the story (straight quotes).

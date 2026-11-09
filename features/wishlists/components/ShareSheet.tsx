@@ -1,16 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { RadioGroup, type RadioOption } from "@/components/ui/RadioGroup";
 import { Sheet } from "@/components/ui/Sheet";
-import { useToast } from "@/components/ui/Toast";
+import { ShareActions } from "@/components/ui/ShareActions";
 import { setWishlistVisibility } from "../actions";
 import { SHARE_COPY, VISIBILITY_OPTIONS, WISHLIST_COPY, whatsAppHref } from "../copy";
 import type { OwnerWishlist, WishlistVisibility } from "../types";
+
+const LINK_ID = "share-sheet-link";
 
 type Props = {
   open: boolean;
@@ -26,9 +28,7 @@ type Props = {
 // WHY the parent remounts this (a new `key`) for each opening: it starts from the saved value.
 export function ShareSheet({ open, onClose, list, shareUrl }: Props) {
   const router = useRouter();
-  const toast = useToast();
   const { online, reportNetworkError } = useNetworkStatus();
-  const linkRef = useRef<HTMLSpanElement>(null);
   // `saved` is what the server last confirmed; `target` is what is being saved right now.
   const [saved, setSaved] = useState<WishlistVisibility>(list.visibility);
   const [target, setTarget] = useState<WishlistVisibility | null>(null);
@@ -59,30 +59,6 @@ export function ShareSheet({ open, onClose, list, shareUrl }: Props) {
     }
   }
 
-  function selectLink() {
-    const node = linkRef.current;
-    const selection = window.getSelection();
-    if (!node || !selection) return;
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
-
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.show({ message: SHARE_COPY.copied });
-    } catch {
-      // WHY: a refused copy selects the link, so the person can copy it by hand (owner answer 2026-11-08).
-      selectLink();
-    }
-  }
-
-  function shareToWhatsApp() {
-    window.open(whatsAppHref(list.name, shareUrl), "_blank", "noopener,noreferrer");
-  }
-
   // WHY the hint changes while saving: the board shows "Saving…" in place of the link option's hint.
   const options: readonly RadioOption<WishlistVisibility>[] = VISIBILITY_OPTIONS.map((option) =>
     option.value === "link" && target === "link" ? { ...option, hint: SHARE_COPY.saving } : option,
@@ -99,12 +75,7 @@ export function ShareSheet({ open, onClose, list, shareUrl }: Props) {
         <>
           {isShared && !busy ? (
             <>
-              <Button fullWidth onClick={shareToWhatsApp}>
-                {SHARE_COPY.whatsapp}
-              </Button>
-              <Button variant="secondary" fullWidth onClick={copyLink}>
-                {SHARE_COPY.copy}
-              </Button>
+              <ShareActions url={shareUrl} whatsAppHref={whatsAppHref(list.name, shareUrl)} linkElementId={LINK_ID} />
             </>
           ) : (
             <Button fullWidth busy={target === "link"} disabled={!online || target === "private"} onClick={() => save("link")}>
@@ -130,7 +101,7 @@ export function ShareSheet({ open, onClose, list, shareUrl }: Props) {
         {isShared && !busy ? (
           <div className="flex flex-col gap-4 rounded-xl bg-surface-subtle px-16 py-12">
             <span className="text-body-sm-regular text-text-muted">{SHARE_COPY.yourLink}</span>
-            <span ref={linkRef} className="break-all text-body-base-semibold">
+            <span id={LINK_ID} className="break-all text-body-base-semibold">
               {shareUrl}
             </span>
           </div>

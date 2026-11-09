@@ -5,6 +5,10 @@ import { OfflineBanner } from "@/components/layout/OfflineBanner";
 type Props = {
   title: string;
   intro?: ReactNode;
+  /** A small line above the title, such as "Start an exchange · Step 1 of 3". */
+  eyebrow?: string;
+  /** A control at the end of the wordmark row, such as Close on Start exchange. Outside the form. */
+  headerAction?: ReactNode;
   /** Parent page for Back. Omit on Profile setup, which has no Back (S06). */
   backHref?: string;
   /** The fields, between the title and the actions. */
@@ -18,7 +22,7 @@ type Props = {
 // Below 768: a Back bar (or the wordmark), the content, and the actions pinned at the bottom.
 // From 768: the wordmark top left and one centred column with the actions under the fields.
 // Boards: Entry-Signup / Login / Verify / Profile, default-m and default-d.
-export function AuthFrame({ title, intro, backHref, children, footer, onSubmit }: Props) {
+export function AuthFrame({ title, intro, eyebrow, headerAction, backHref, children, footer, onSubmit }: Props) {
   return (
     <div className="flex min-h-dvh flex-col">
       <OfflineBanner />
@@ -30,8 +34,9 @@ export function AuthFrame({ title, intro, backHref, children, footer, onSubmit }
           </header>
         </>
       ) : (
-        <header className="flex min-h-48 items-center px-20 pt-16 md:px-40 md:pt-32">
+        <header className="flex min-h-48 items-center justify-between gap-16 pl-20 pr-12 pt-16 md:px-40 md:pt-32">
           <p className="font-heading text-heading-4">Unwrap</p>
+          {headerAction}
         </header>
       )}
       <main id="main" tabIndex={-1} className="flex flex-1 flex-col focus:outline-none md:items-center md:px-40 md:py-64">
@@ -47,6 +52,7 @@ export function AuthFrame({ title, intro, backHref, children, footer, onSubmit }
           ) : null}
           <div className="flex flex-1 flex-col gap-32 px-20 pb-24 pt-16 md:flex-none md:p-0">
             <div className="flex flex-col gap-8">
+              {eyebrow ? <span className="text-body-sm-semibold text-text-muted">{eyebrow}</span> : null}
               <h1 className="text-heading-1">{title}</h1>
               {intro ? <p className="text-body-base-regular text-text-secondary">{intro}</p> : null}
             </div>

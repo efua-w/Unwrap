@@ -35,3 +35,9 @@ export async function getSiteUrl(): Promise<string> {
 export async function buildShareUrl(token: string): Promise<string> {
   return `${await getSiteUrl()}/w/${token}`;
 }
+
+// The invite link an organiser shares (GCO-004): the exchange's token, on the same origin. The token is
+// read only by the organiser (get_exchange_invite_token); joining by it is slice 5.
+export async function buildInviteUrl(token: string): Promise<string> {
+  return `${await getSiteUrl()}/i/${token}`;
+}

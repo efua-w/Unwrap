@@ -10,6 +10,8 @@ type Target =
 
 type Props = Target & {
   title: string;
+  /** A decorative mark before the title, such as an ExchangeTag. */
+  leading?: ReactNode;
   /** One supporting line under the title, such as "4 items · updated today". */
   sub?: string;
   /** A third line under `sub`, such as the owner's note on a shared wishlist item. */
@@ -28,9 +30,10 @@ type Props = Target & {
 // trailing action is a separate sibling target (CLAUDE.md: a button can't contain a button).
 // `external` opens a shop link in a new tab. WHY nofollow ugc: the link is whatever a stranger typed
 // (GC-023), so it must not pass on trust or leak the shared page's address.
-export function ListRow({ title, sub, note, meta, action, divider = false, rowId, ...target }: Props) {
+export function ListRow({ title, leading, sub, note, meta, action, divider = false, rowId, ...target }: Props) {
   const body = (
     <>
+      {leading}
       <span className="flex min-w-0 flex-1 flex-col gap-2">
         <span className="break-words text-body-base-semibold text-text-default">{title}</span>
         {sub ? <span className="line-clamp-2 text-body-sm-regular text-text-muted">{sub}</span> : null}
