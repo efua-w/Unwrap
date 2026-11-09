@@ -18,7 +18,7 @@ import {
   type ItemPriority,
 } from "@/lib/validation/wishlist";
 import { addWishlistItem, updateWishlistItem } from "../actions";
-import { WISHLIST_COPY } from "../copy";
+import { PRIORITY_LABEL, WISHLIST_COPY } from "../copy";
 import type { OwnerWishlistItem } from "../types";
 
 // GC-021 / S22 Add an item and Edit item, manual entry (never-do 9). Boards: Wishlist-Detail-
@@ -44,11 +44,6 @@ const COPY = {
   add: "Add to list",
   save: "Save",
   cancel: "Cancel",
-};
-
-export const PRIORITY_LABEL: Record<ItemPriority, string> = {
-  most_wanted: "Most wanted",
-  nice_to_have: "Nice to have",
 };
 
 const PRIORITY_OPTIONS: readonly RadioOption<ItemPriority>[] = [

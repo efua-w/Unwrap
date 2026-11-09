@@ -5,7 +5,7 @@ import type { OwnerWishlist, OwnerWishlistItem, OwnerWishlistSummary } from "./t
 
 // Reads for the owner's wishlist pages (GC-018, GC-020). Every query runs under the signed-in
 // person's Row Level Security, which already limits rows to their own live lists and items; the
-// queries name their columns, so nothing else (share token, photo path, deleted rows) reaches a page.
+// queries name their columns, so nothing else (photo path, deleted rows) reaches a page; the share token is read only for one list, on the owner's detail page.
 
 // My wishlists, most recently changed first. The item count comes through RLS, so removed items are
 // not counted. Ideas lists belong to exchanges and never show here.
@@ -34,7 +34,9 @@ export async function hasDeletedWishlists(): Promise<boolean> {
   return data === true;
 }
 
-export type MyWishlistDetail = { list: OwnerWishlist; items: OwnerWishlistItem[] };
+// WHY shareToken sits beside `list`, not inside OwnerWishlist: only the owner's detail page receives
+// it, to build the Share link (GC-022). The summary and list types never carry it.
+export type MyWishlistDetail = { list: OwnerWishlist; items: OwnerWishlistItem[]; shareToken: string };
 
 // One list with its items, or null when it is missing, deleted or someone else's. The three cases
 // are deliberately the same answer (GC-018 edge case: never say which).
@@ -43,7 +45,7 @@ export async function getMyWishlist(id: string): Promise<MyWishlistDetail | null
   const supabase = await createClient();
   const { data: list, error } = await supabase
     .from("wishlists")
-    .select("id, name, visibility")
+    .select("id, name, visibility, share_token")
     .eq("id", id)
     .eq("kind", "personal")
     .maybeSingle();
@@ -59,6 +61,7 @@ export async function getMyWishlist(id: string): Promise<MyWishlistDetail | null
 
   return {
     list: { id: list.id, name: list.name, visibility: list.visibility },
+    shareToken: list.share_token,
     items: items.map((item) => ({
       id: item.id,
       name: item.name,

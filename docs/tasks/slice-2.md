@@ -267,3 +267,12 @@
 - Files/components: all slice 2 files. Excluded: the separate fix-auth-mobile-submit change (AuthFrame, next.config.ts, .env.example, its task log; awaiting the owner's phone check) and the stray `cls`.
 - Work completed: `method="post"` added to `WishlistSheet` and `ItemSheet` forms (same privacy reason as fix-auth-mobile-submit); typecheck, lint and Vitest pass.
 - Next action: commit, push, open PR into main, read CI (types-drift fix expected).
+
+## Main session — CI results — 2026-11-08
+- Task: slice-2 — PR #5 CI
+- Requirements: AC-25, AC-27, AC-28
+- Files/components: `lib/supabase/database.types.ts`; wishlist e2e
+- Work completed (verified with `gh`):
+  - Run 1 (b00067b): `check` passed; `security` Files=11, Tests=201, PASS, then failed only at types drift. The CI types file was applied and committed (7c574c8).
+  - Run 2 (7c574c8): `security` **passed** (incl. types). `check`: 273 passed, 9 skipped, **3 failed**. The wishlist flow at 390, 768 and 1440 failed on axe `color-contrast` for `#_r_q_` (the delete dialog heading id) and `.bg-surface-error` (the destructive "Delete list" button). The same spec passed in run 1, so it may depend on timing (axe running mid-animation) or be a real contrast defect.
+- Next action: builder investigates and fixes the root cause (no axe rule disabled).

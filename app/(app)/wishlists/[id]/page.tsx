@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { Header } from "@/components/layout/Header";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -9,6 +8,7 @@ import { LoadError } from "@/features/wishlists/components/LoadError";
 import { WishlistDetail } from "@/features/wishlists/components/WishlistDetail";
 import { getMyWishlist } from "@/features/wishlists/queries";
 import { requireProfile } from "@/lib/auth/session";
+import { buildShareUrl } from "@/lib/site-url";
 
 // GC-020 / S21 Wishlist detail (owner). Boards: Wishlist-Detail-* (m and d). Back goes to My
 // wishlists (owner decision 2026-11-03: in-app Back always goes to the parent page).
@@ -16,7 +16,7 @@ export default async function WishlistDetailPage({ params }: { params: Promise<{
   const { id } = await params;
   const profile = await requireProfile(`/wishlists/${encodeURIComponent(id)}`);
   return (
-    <AppShell profile={{ name: profile.displayName }} header={<Header variant="back" title="" parentHref="/wishlists" />}>
+    <AppShell profile={{ name: profile.displayName }} back={{ label: "Back to Wishlists", href: "/wishlists" }}>
       <Suspense fallback={<DetailLoading />}>
         <DetailContent id={id} />
       </Suspense>
@@ -38,8 +38,11 @@ function DetailLoading() {
 
 async function DetailContent({ id }: { id: string }) {
   let detail;
+  let shareUrl = "";
   try {
     detail = await getMyWishlist(id);
+    // WHY here: the link is built on the server from SITE_URL; the browser never sees the token on its own.
+    if (detail) shareUrl = await buildShareUrl(detail.shareToken);
   } catch {
     return <LoadError title="We couldn't load this list." />;
   }
@@ -57,5 +60,5 @@ async function DetailContent({ id }: { id: string }) {
     );
   }
 
-  return <WishlistDetail list={detail.list} items={detail.items} />;
+  return <WishlistDetail list={detail.list} items={detail.items} shareUrl={shareUrl} />;
 }

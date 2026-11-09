@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   isUuid,
+  isVisibility,
   validateItemInput,
   validateWishlistInput,
   type ItemErrors,
@@ -61,6 +62,22 @@ export async function updateWishlist(id: unknown, input: unknown): Promise<Updat
   if (!supabase) return { ok: false, reason: "signed-out" };
 
   const { data, error } = await supabase.from("wishlists").update(parsed.value).eq("id", id).select("id");
+  if (error) return { ok: false, reason: "failed" };
+  if (!data || data.length !== 1) return { ok: false, reason: "not-found" };
+  revalidatePath(detailPath(id));
+  revalidatePath("/wishlists");
+  return { ok: true };
+}
+
+// GC-022: the Share sheet saves who can see the list straight away, and choosing Private there turns
+// sharing off. WHY a narrow action beside updateWishlist: it takes only an id and the value, never a
+// name or a user id; the owner and the live list are checked by Row Level Security.
+export async function setWishlistVisibility(id: unknown, visibility: unknown): Promise<SimpleResult> {
+  if (!isUuid(id) || !isVisibility(visibility)) return { ok: false, reason: "not-found" };
+  const supabase = await signedInClient();
+  if (!supabase) return { ok: false, reason: "signed-out" };
+
+  const { data, error } = await supabase.from("wishlists").update({ visibility }).eq("id", id).select("id");
   if (error) return { ok: false, reason: "failed" };
   if (!data || data.length !== 1) return { ok: false, reason: "not-found" };
   revalidatePath(detailPath(id));

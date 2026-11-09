@@ -1,4 +1,3 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import {
   adminClient,
@@ -8,6 +7,7 @@ import {
   uniqueEmail,
   wishlistsDbStatus,
 } from "./fixtures/auth";
+import { expectNoAxeViolations } from "./fixtures/axe";
 import { VIEWPORTS } from "./viewports";
 
 // Slice 2, signed in (GC-018 to GC-021). Needs the wishlists migration applied to the project the
@@ -17,18 +17,6 @@ import { VIEWPORTS } from "./viewports";
 
 const created: string[] = [];
 const UUID_PATH = /\/wishlists\/[0-9a-f-]{36}$/;
-
-async function expectNoAxeViolations(page: Page) {
-  // WHY: the sheet fades in (sheet-in, opacity 0 to 1). Axe blends colours with the live opacity, so
-  // checking mid-animation reports false color-contrast failures (GC-019). Wait until every
-  // animation, including ::backdrop ones, has finished; rules stay on.
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-    .exclude("nextjs-portal")
-    .analyze();
-  expect(results.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target.join(" ")) }))).toEqual([]);
-}
 
 const toast = (page: Page) => page.locator("[popover]");
 
@@ -93,7 +81,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByText("Only you can see this")).toBeVisible();
         await expect(page.getByRole("heading", { name: "Add your first item" })).toBeVisible();
         await expect(page.getByText("Add a link and we'll fill in the name and price.")).toHaveCount(0);
-        await expect(page.getByRole("button", { name: "Share" })).toHaveCount(0);
+        // Slice 3: Share is on every list (S21, S23).
+        await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
 
         // GC-021 Add an item: errors, then a valid item. Nice to have is preselected (owner Q7).
         await page.getByRole("button", { name: "Add an item" }).click();

@@ -1,10 +1,12 @@
 import { ListHeart } from "@phosphor-icons/react/dist/ssr";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeading } from "@/components/layout/PageHeading";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListRow } from "@/components/ui/ListRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
+import { getDefaultVisibilityOrPrivate } from "@/features/account/queries";
 import { itemCountLabel } from "@/features/wishlists/copy";
 import { LoadError } from "@/features/wishlists/components/LoadError";
 import { NewWishlistButton } from "@/features/wishlists/components/NewWishlistButton";
@@ -19,9 +21,9 @@ import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 export default async function WishlistsPage() {
   const profile = await requireProfile("/wishlists");
   return (
-    <AppShell profile={{ name: profile.displayName }}>
+    <AppShell profile={{ name: profile.displayName }} top="heading">
       <div className="flex flex-col gap-24">
-        <h1 className="text-heading-1">Wishlists</h1>
+        <PageHeading profile={{ name: profile.displayName }}>Wishlists</PageHeading>
         <Suspense fallback={<WishlistsLoading />}>
           <WishlistsContent />
         </Suspense>
@@ -42,6 +44,8 @@ function WishlistsLoading() {
 async function WishlistsContent() {
   let lists;
   let gone = false;
+  // GC-027: a new list starts from the person's default (Private when it cannot be read).
+  const defaultVisibility = await getDefaultVisibilityOrPrivate();
   try {
     lists = await listMyWishlists();
     if (lists.length === 0) gone = await hasDeletedWishlists();
@@ -55,7 +59,7 @@ async function WishlistsContent() {
         icon={ListHeart}
         title="You don't have any wishlists right now."
         body="Make one for your next exchange or birthday."
-        action={<NewWishlistButton />}
+        action={<NewWishlistButton defaultVisibility={defaultVisibility} />}
       />
     ) : (
       // Board Wishlist-List-first, copy as written; owner approved 2026-11-08 (R1-2), including
@@ -64,7 +68,7 @@ async function WishlistsContent() {
         icon={ListHeart}
         title="Make your first wishlist."
         body="Your giver will know exactly what you'd like, so you get something you'll use. Only you can see it until you share it or add it to an exchange."
-        action={<NewWishlistButton />}
+        action={<NewWishlistButton defaultVisibility={defaultVisibility} />}
       />
     );
   }
@@ -87,7 +91,7 @@ async function WishlistsContent() {
         ))}
       </ul>
       <div>
-        <NewWishlistButton />
+        <NewWishlistButton defaultVisibility={defaultVisibility} />
       </div>
     </>
   );
