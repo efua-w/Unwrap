@@ -1,4 +1,3 @@
-import { Header } from "@/components/layout/Header";
 import { AppShell } from "@/components/layout/AppShell";
 import { Avatar } from "@/components/ui/Avatar";
 import { LogOutButton } from "@/features/account/LogOutButton";
@@ -12,7 +11,8 @@ export default async function ProfilePage() {
     <AppShell
       profile={{ name: profile.displayName }}
       hideTabs
-      header={<Header variant="back" title="Profile" parentHref="/home" />}
+      // WHY: board says "Back to Exchanges"; that page doesn't exist yet (progress open item 53).
+      back={{ label: "Go back", href: "/home" }}
     >
       <div className="flex flex-col items-start gap-24 md:max-w-dialog">
         <div className="flex items-center gap-20">

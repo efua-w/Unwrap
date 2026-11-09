@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { Header } from "@/components/layout/Header";
 
 type SearchParams = Promise<{ back?: string; tabs?: string; unread?: string }>;
 
@@ -11,15 +10,7 @@ export default async function ShellGallery({ searchParams }: { searchParams: Sea
       profile={{ name: "Ada Okafor" }}
       unreadActivity={Number(unread ?? "3")}
       hideTabs={tabs === "0"}
-      header={
-        back ? (
-          <Header
-            variant="back"
-            title="A long page title that should truncate on narrow screens"
-            parentHref="/dev/shell"
-          />
-        ) : undefined
-      }
+      back={back ? { label: "Go back", href: "/dev/shell" } : undefined}
     >
       <h1 className="text-heading-2">App shell</h1>
       <p className="text-body-base-regular text-text-secondary">

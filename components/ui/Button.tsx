@@ -12,6 +12,7 @@ export type ButtonVariant =
   | "text"
   | "destructive-text"
   | "link"
+  | "back"
   | "icon";
 
 type Base = {
@@ -43,14 +44,17 @@ type AsButton = { href?: undefined } & Pick<
 
 export type ButtonProps = (WithLabel | IconOnly) & (AsLink | AsButton);
 
+const PILL = "h-48 px-24 rounded-full gap-8 text-body-base-semibold";
+
 const SHAPE: Record<ButtonVariant, string> = {
-  primary: "h-48 px-24 rounded-full",
-  brand: "h-48 px-24 rounded-full",
-  secondary: "h-48 px-24 rounded-full",
-  destructive: "h-48 px-24 rounded-full",
-  text: "h-48 px-24 rounded-full",
-  "destructive-text": "h-48 px-24 rounded-full",
-  link: "min-h-touch-target rounded-lg",
+  primary: PILL,
+  brand: PILL,
+  secondary: PILL,
+  destructive: PILL,
+  text: PILL,
+  "destructive-text": PILL,
+  link: "min-h-touch-target rounded-lg gap-8 text-body-base-semibold",
+  back: "min-h-touch-target pl-4 pr-12 rounded-full gap-4 text-body-sm-semibold",
   icon: "size-touch-target rounded-full",
 };
 
@@ -63,6 +67,7 @@ const ENABLED: Record<ButtonVariant, string> = {
   text: "text-text-default hover:bg-surface-secondary-hover active:bg-surface-secondary-pressed",
   "destructive-text": "text-text-error hover:bg-surface-error-subtle active:bg-surface-error-subtle",
   link: "text-text-default underline decoration-dotted",
+  back: "text-text-default hover:bg-surface-secondary-hover active:bg-surface-secondary-pressed",
   icon: "text-text-default hover:bg-surface-secondary-hover active:bg-surface-secondary-pressed",
 };
 
@@ -74,10 +79,11 @@ const DISABLED: Record<ButtonVariant, string> = {
   text: "text-text-disabled cursor-not-allowed",
   "destructive-text": "text-text-disabled cursor-not-allowed",
   link: "text-text-disabled underline decoration-dotted cursor-not-allowed",
+  back: "text-text-disabled cursor-not-allowed",
   icon: "text-text-disabled cursor-not-allowed",
 };
 
-const BASE = "inline-flex items-center justify-center gap-8 text-body-base-semibold focus-ring";
+const BASE = "inline-flex items-center justify-center focus-ring";
 
 // WHY: Button stays a Server Component so icons can be passed from other Server Components; the
 // interactive element lives in ButtonControl, which swallows activation while busy (AC-12, R1-1).

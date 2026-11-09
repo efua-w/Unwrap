@@ -1,6 +1,7 @@
 import { ListHeart } from "@phosphor-icons/react/dist/ssr";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeading } from "@/components/layout/PageHeading";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListRow } from "@/components/ui/ListRow";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -19,9 +20,9 @@ import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 export default async function WishlistsPage() {
   const profile = await requireProfile("/wishlists");
   return (
-    <AppShell profile={{ name: profile.displayName }}>
+    <AppShell profile={{ name: profile.displayName }} top="heading">
       <div className="flex flex-col gap-24">
-        <h1 className="text-heading-1">Wishlists</h1>
+        <PageHeading profile={{ name: profile.displayName }}>Wishlists</PageHeading>
         <Suspense fallback={<WishlistsLoading />}>
           <WishlistsContent />
         </Suspense>

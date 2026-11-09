@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { Header } from "@/components/layout/Header";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,7 +15,7 @@ export default async function WishlistDetailPage({ params }: { params: Promise<{
   const { id } = await params;
   const profile = await requireProfile(`/wishlists/${encodeURIComponent(id)}`);
   return (
-    <AppShell profile={{ name: profile.displayName }} header={<Header variant="back" title="" parentHref="/wishlists" />}>
+    <AppShell profile={{ name: profile.displayName }} back={{ label: "Back to Wishlists", href: "/wishlists" }}>
       <Suspense fallback={<DetailLoading />}>
         <DetailContent id={id} />
       </Suspense>
