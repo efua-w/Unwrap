@@ -83,6 +83,7 @@ Statuses: Not started · In progress · Built — waiting on security tests · I
 | 2026-11-05 | Slice 2: toasts and the delete title use straight single quotes; Private rows "Only you"; updated-date rule; no Share button until slice 3; no link-import copy until slice 17; minimum price ₦1; "Nice to have" preselected; link stored only; `share_token` and `photo_path` created now | Tobechukwu Olih | slice-2 log, stories GC-018–021 |
 | 2026-11-04 | R2-1 accepted until launch: Sign up's account check can silently tell whether an email has a confirmed account (no email sent, no rate limit). No real users yet; closed before launch by open item 29 (Turnstile + WAF rate limit) | Tobechukwu Olih | slice-1 log |
 | 2026-11-09 | Slice 3 (reviewer R1-6, accepted): the wishlist detail page builds the share URL for every list, including Private ones, so the Share sheet can open the moment the owner switches visibility. Only the signed-in owner receives it (their own token, read through their own RLS); the public view still returns nothing for a Private list | builder | slice-3 log |
+| 2026-11-09 | Price error copy is now "Use whole naira, with no kobo. For example, 8,500." to match the grouped price field (was "8500", slice 2 board copy) | Tobechukwu Olih | PR #8 |
 
 ## Open items
 

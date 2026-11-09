@@ -1,5 +1,8 @@
+"use client";
+
 import { WarningCircle } from "@phosphor-icons/react/dist/ssr";
-import { useId, type ChangeEvent } from "react";
+import { useId, useLayoutEffect, useRef, type ChangeEvent } from "react";
+import { groupNairaInput } from "@/lib/money/naira";
 import { cx } from "./cx";
 import { FIELD_CONTROL } from "./Field";
 import { Icon } from "./Icon";
@@ -7,7 +10,8 @@ import { Icon } from "./Icon";
 type Props = {
   label: string;
   name: string;
-  /** What was typed. The caller parses it (lib/money/naira.ts); the field never converts money. */
+  /** What was typed, with thousands commas added by the field. The caller parses it
+   *  (lib/money/naira.ts); the field never converts money. */
   value: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   helper?: string;
@@ -25,6 +29,33 @@ export function MoneyField({ label, name, value, onChange, helper, error, placeh
   const errorId = `${id}-error`;
   const hasError = Boolean(error);
   const describedBy = hasError ? errorId : helper ? helperId : undefined;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const caretDigits = useRef<number | null>(null);
+
+  // WHY: adding commas moves the text under the cursor, so put the cursor back after the same
+  // number of digits it followed before.
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const digitsBefore = caretDigits.current;
+    if (!input || digitsBefore === null) return;
+    caretDigits.current = null;
+    let position = 0;
+    for (let seen = 0; position < input.value.length && seen < digitsBefore; position++) {
+      if (/\d/.test(input.value.charAt(position))) seen++;
+    }
+    input.setSelectionRange(position, position);
+  }, [value]);
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const raw = event.target.value;
+    const grouped = groupNairaInput(raw);
+    if (grouped !== raw) {
+      const caret = event.target.selectionStart ?? raw.length;
+      caretDigits.current = raw.slice(0, caret).replace(/\D/g, "").length;
+      event.target.value = grouped;
+    }
+    onChange(event);
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -44,8 +75,9 @@ export function MoneyField({ label, name, value, onChange, helper, error, placeh
         <input
           id={id}
           name={name}
+          ref={inputRef}
           value={value}
-          onChange={onChange}
+          onChange={handleChange}
           placeholder={placeholder}
           disabled={disabled}
           // WHY numeric, not decimal: whole naira only, so phones show digits without a decimal point.

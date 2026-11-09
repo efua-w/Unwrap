@@ -32,13 +32,23 @@ function wholeNaira(kobo: number): number {
   return (kobo - (kobo % KOBO_PER_NAIRA)) / KOBO_PER_NAIRA;
 }
 
-// "₦8,500". Exact amounts only, never rounded or approximate (GC-020).
-export function formatNaira(kobo: number): string {
-  const grouped = String(wholeNaira(kobo)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `₦${grouped}`;
+function groupThousands(digits: string): string {
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-// What the field shows when editing a saved price: plain digits, like the helper's "8500".
+// "₦8,500". Exact amounts only, never rounded or approximate (GC-020).
+export function formatNaira(kobo: number): string {
+  return `₦${groupThousands(String(wholeNaira(kobo)))}`;
+}
+
+// What the ₦ field shows while typing: "300000" becomes "300,000". Anything that is not digits and
+// commas is left as typed, so the "whole naira" error can still point at it.
+export function groupNairaInput(input: string): string {
+  if (!/^[\d,]*$/.test(input)) return input;
+  return groupThousands(input.replace(/,/g, ""));
+}
+
+// What the field shows when editing a saved price, grouped like the typed value.
 export function nairaInputFromKobo(kobo: number | null): string {
-  return kobo === null ? "" : String(wholeNaira(kobo));
+  return kobo === null ? "" : groupThousands(String(wholeNaira(kobo)));
 }
