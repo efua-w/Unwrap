@@ -453,10 +453,10 @@ select lives_ok(
 
 -- 79-82. Tint (owner decision 7): the colour used least among the organiser's LIVE exchanges (not
 -- cancelled or completed), ties random. Eze starts four exchanges: all four colours, none repeated.
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T1'));
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T2'));
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T3'));
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T4'));
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T1')); end $fx$;
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T2')); end $fx$;
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T3')); end $fx$;
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T4')); end $fx$;
 select is(
   (select count(distinct tint)::int || '/' || count(*) from public.exchanges
    where organiser_id = 'b0000000-0000-4000-8000-000000001305'),
@@ -464,18 +464,18 @@ select is(
 -- Cancel T1: its colour is now the only one with no live exchange, so T5 must take it.
 select set_config('test.t1_tint', (select tint::text from public.exchanges where name = 'T1'), true);
 update public.exchanges set cancelled_at = now() where name = 'T1';
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T5'));
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T5')); end $fx$;
 select is((select tint::text from public.exchanges where name = 'T5'), current_setting('test.t1_tint'),
   'a cancelled exchange no longer counts: the next exchange takes the colour it freed');
 -- Complete T2: same rule for a completed exchange.
 select set_config('test.t2_tint', (select tint::text from public.exchanges where name = 'T2'), true);
 update public.exchanges set completed_at = now() where name = 'T2';
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T6'));
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001305', pg_temp.mk('T6')); end $fx$;
 select is((select tint::text from public.exchanges where name = 'T6'), current_setting('test.t2_tint'),
   'a completed exchange no longer counts: the next exchange takes the colour it freed');
 -- Whoever creates an exchange, the tint is always one of the four approved colours (Bola has one
 -- as a member of A, never as organiser, before this).
-select pg_temp.try_as('b0000000-0000-4000-8000-000000001302', pg_temp.mk('Bola first'));
+do $fx$ begin perform pg_temp.try_as('b0000000-0000-4000-8000-000000001302', pg_temp.mk('Bola first')); end $fx$;
 select ok((select tint::text in ('clay', 'peach', 'sand', 'mint') from public.exchanges where name = 'Bola first'),
   'the tint is one of the four approved colours');
 
