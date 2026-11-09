@@ -75,3 +75,4 @@ Local board copies (data only): scratchpad `artifact-files/47637980-…/project/
 - R1-2: keep "You can change any of this later." (logged as an open item, check at release). R1-3: all nine new lines approved (copy-pending updated). Commit, push and open the PR approved.
 - Builder fix round 1: R1-1 and R1-7 fixed; unit 194/194, exchanges e2e 18/18.
 - 2026-11-09 main session: CI pgTAP showed "All 80 subtests passed" but pg_prove failed the file: the tint fixture calls (`select pg_temp.try_as(...)`) printed "ok:1", read as extra TAP lines. Fixtures wrapped in `do ... perform`; assertions unchanged.
+- 2026-11-09 main session: CI check job was cancelled at its 20-minute limit with every test passing so far (security 311/311 PASS). Raised the check job timeout to 30 minutes (own commit); progress note added.
