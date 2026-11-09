@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 import { cx } from "./cx";
 
 type Target =
-  | { href: string; onClick?: never; disabled?: never }
-  | { href?: never; onClick: () => void; disabled?: boolean };
+  | { href: string; external?: boolean; onClick?: never; disabled?: never }
+  | { href?: never; external?: never; onClick: () => void; disabled?: boolean }
+  // A row that only displays (a public wishlist item with no link): not a control at all.
+  | { href?: never; external?: never; onClick?: never; disabled?: never };
 
 type Props = Target & {
   title: string;
@@ -22,6 +24,8 @@ type Props = Target & {
 
 // Plan §4 "ListRow": the whole row is one target (a link, or a button that opens a sheet), and a
 // trailing action is a separate sibling target (CLAUDE.md: a button can't contain a button).
+// `external` opens a shop link in a new tab. WHY nofollow ugc: the link is whatever a stranger typed
+// (GC-023), so it must not pass on trust or leak the shared page's address.
 export function ListRow({ title, sub, meta, action, divider = false, rowId, ...target }: Props) {
   const body = (
     <>
@@ -37,10 +41,16 @@ export function ListRow({ title, sub, meta, action, divider = false, rowId, ...t
 
   return (
     <li data-row-id={rowId} className={cx("flex items-center gap-8", divider && "border-t-1 border-border-default")}>
-      {target.href !== undefined ? (
+      {target.href !== undefined && target.external ? (
+        <a href={target.href} target="_blank" rel="noopener noreferrer nofollow ugc" className={targetClass}>
+          {body}
+        </a>
+      ) : target.href !== undefined ? (
         <Link href={target.href} className={targetClass}>
           {body}
         </Link>
+      ) : target.onClick === undefined ? (
+        <div className="flex min-h-row min-w-0 flex-1 items-center gap-12 py-12">{body}</div>
       ) : (
         <button type="button" onClick={target.onClick} disabled={target.disabled} className={targetClass}>
           {body}

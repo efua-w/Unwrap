@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
   // Pins the workspace root so a stray lockfile higher up the disk is not picked up.
   turbopack: { root: import.meta.dirname },
   allowedDevOrigins,
+  // WHY (GC-023, slice 3): a shared wishlist is for people holding the link, not for search engines,
+  // and opening a shop link from it must not send the secret share address along as the Referer.
+  async headers() {
+    return [
+      {
+        source: "/w/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

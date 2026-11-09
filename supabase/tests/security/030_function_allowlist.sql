@@ -1,17 +1,18 @@
 -- 030_function_allowlist — plan §6 invariant 2 and §7 "Functions callable by anyone by default".
 -- Self-contained: runs as plain SQL and under `supabase test db`.
--- Pass: "ok 1".."ok 6", "1..6", no "not ok".
+-- Pass: "ok 1".."ok 7", "1..7", no "not ok".
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(6);
+select plan(7);
 
 -- WHY (plan §6): anon is the whole public attack surface, so the only functions in `public` it
 -- may execute are the two token-gated ones. The check uses effective privilege
 -- (has_function_privilege, which includes PUBLIC and role inheritance), not ACL text. Functions
 -- owned by an extension are excluded visibly, via pg_depend deptype 'e'.
--- R1-5: the allowlist matches on NAME only. When slices 3 and 5 add the real functions, tighten
--- it to full signatures (e.g. get_invite_preview(text)) so an overload can't ride on the name.
+-- R1-5 (done in slice 3, open item 23): the allowlist matches the EXACT signature, name plus
+-- argument types, so an overload of an allowed name cannot ride on it. get_invite_preview(text)
+-- arrives in slice 5; until then its entry simply matches nothing.
 -- Scope is public only: widen it if the API schemas in supabase/config.toml ever change.
 create function pg_temp.anon_open_functions() returns text
 language sql stable as $$
@@ -26,7 +27,8 @@ language sql stable as $$
         and d.objid = p.oid
         and d.deptype = 'e'              -- extension-owned: excluded on purpose
     )
-    and p.proname <> all (array['get_invite_preview', 'get_shared_wishlist'])
+    and format('%s(%s)', p.proname, pg_catalog.oidvectortypes(p.proargtypes))
+        <> all (array['get_invite_preview(text)', 'get_shared_wishlist(text)'])
     and has_function_privilege('anon', p.oid, 'execute')
 $$;
 
@@ -59,12 +61,18 @@ grant execute on function public.zz_selfcheck_default() to public;
 select ok(pg_temp.anon_open_functions() like '%zz_selfcheck_default%',
   'self-check: detector flags a function executable by PUBLIC');
 
--- 6. Self-check: an allowlisted name is not flagged. Distinct signature, so it cannot clash with
--- the real function when slices 3 and 5 add it.
+-- 6. The real allowlisted function is open to anon (the public view needs it) and is not flagged.
 revoke execute on function public.zz_selfcheck_default() from public;
-create function public.get_invite_preview(zz_selfcheck int) returns int language sql as $$ select 1 $$;
-grant execute on function public.get_invite_preview(int) to anon;
-select is(pg_temp.anon_open_functions(), '', 'self-check: allowlisted function names are not flagged');
+select ok(
+  has_function_privilege('anon', 'public.get_shared_wishlist(text)', 'execute')
+    and pg_temp.anon_open_functions() = '',
+  'anon can execute public.get_shared_wishlist(text), and the detector does not flag it');
+
+-- 7. Self-check: an overload of an allowed name is flagged, because only the exact signature is allowed.
+create function public.get_shared_wishlist(zz_selfcheck int) returns int language sql as $$ select 1 $$;
+grant execute on function public.get_shared_wishlist(int) to anon;
+select ok(pg_temp.anon_open_functions() like '%get_shared_wishlist(integer)%',
+  'self-check: an overload get_shared_wishlist(int) granted to anon is flagged');
 
 select * from finish();
 rollback;

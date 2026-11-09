@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ListRow } from "@/components/ui/ListRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
+import { getDefaultVisibilityOrPrivate } from "@/features/account/queries";
 import { itemCountLabel } from "@/features/wishlists/copy";
 import { LoadError } from "@/features/wishlists/components/LoadError";
 import { NewWishlistButton } from "@/features/wishlists/components/NewWishlistButton";
@@ -43,6 +44,8 @@ function WishlistsLoading() {
 async function WishlistsContent() {
   let lists;
   let gone = false;
+  // GC-027: a new list starts from the person's default (Private when it cannot be read).
+  const defaultVisibility = await getDefaultVisibilityOrPrivate();
   try {
     lists = await listMyWishlists();
     if (lists.length === 0) gone = await hasDeletedWishlists();
@@ -56,7 +59,7 @@ async function WishlistsContent() {
         icon={ListHeart}
         title="You don't have any wishlists right now."
         body="Make one for your next exchange or birthday."
-        action={<NewWishlistButton />}
+        action={<NewWishlistButton defaultVisibility={defaultVisibility} />}
       />
     ) : (
       // Board Wishlist-List-first, copy as written; owner approved 2026-11-08 (R1-2), including
@@ -65,7 +68,7 @@ async function WishlistsContent() {
         icon={ListHeart}
         title="Make your first wishlist."
         body="Your giver will know exactly what you'd like, so you get something you'll use. Only you can see it until you share it or add it to an exchange."
-        action={<NewWishlistButton />}
+        action={<NewWishlistButton defaultVisibility={defaultVisibility} />}
       />
     );
   }
@@ -88,7 +91,7 @@ async function WishlistsContent() {
         ))}
       </ul>
       <div>
-        <NewWishlistButton />
+        <NewWishlistButton defaultVisibility={defaultVisibility} />
       </div>
     </>
   );

@@ -21,14 +21,14 @@ export type Database = {
                   ]
                 },"user_settings": {
                   Row: {
-                    "created_at": string,"notify_event_reminder": boolean,"notify_join_by_reminder": boolean,"notify_names_drawn": boolean,"notify_someone_joins": boolean,"timezone": string,"updated_at": string,"user_id": string
+                    "created_at": string,"default_wishlist_visibility": "private"|"link","notify_event_reminder": boolean,"notify_join_by_reminder": boolean,"notify_names_drawn": boolean,"notify_someone_joins": boolean,"timezone": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"notify_event_reminder"?: boolean,"notify_join_by_reminder"?: boolean,"notify_names_drawn"?: boolean,"notify_someone_joins"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"default_wishlist_visibility"?: "private"|"link","notify_event_reminder"?: boolean,"notify_join_by_reminder"?: boolean,"notify_names_drawn"?: boolean,"notify_someone_joins"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"notify_event_reminder"?: boolean,"notify_join_by_reminder"?: boolean,"notify_names_drawn"?: boolean,"notify_someone_joins"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"default_wishlist_visibility"?: "private"|"link","notify_event_reminder"?: boolean,"notify_join_by_reminder"?: boolean,"notify_names_drawn"?: boolean,"notify_someone_joins"?: boolean,"timezone"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -79,7 +79,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "delete_wishlist":
+            "get_shared_wishlist":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"delete_wishlist":
 { Args: { "p_wishlist_id": string }; Returns: undefined
                            },
 "has_deleted_wishlists":

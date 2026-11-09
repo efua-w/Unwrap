@@ -6,11 +6,11 @@ import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { RadioGroup, type RadioOption } from "@/components/ui/RadioGroup";
+import { RadioGroup } from "@/components/ui/RadioGroup";
 import { Sheet } from "@/components/ui/Sheet";
 import { validateWishlistInput, WISHLIST_NAME_MAX } from "@/lib/validation/wishlist";
 import { createWishlist, updateWishlist } from "../actions";
-import { WISHLIST_COPY } from "../copy";
+import { VISIBILITY_OPTIONS, WISHLIST_COPY } from "../copy";
 import type { OwnerWishlist, WishlistVisibility } from "../types";
 
 // GC-019 / S20 New wishlist and Edit list. Boards: Wishlist-List-new, -newerror, -newsaving and
@@ -29,20 +29,13 @@ const COPY = {
   deleteList: "Delete this list…",
 };
 
-const VISIBILITY_OPTIONS: readonly RadioOption<WishlistVisibility>[] = [
-  { value: "private", label: "Private", hint: "Only you, and your giver in any exchange you add it to." },
-  {
-    value: "link",
-    label: "Anyone with the link",
-    hint: "Anyone you send the link to can see it. They don't need an account.",
-  },
-];
-
 type Props = {
   open: boolean;
   onClose: () => void;
   /** Absent for a new list. */
   list?: OwnerWishlist;
+  /** New list only: what the person chose as their default in Privacy (GC-027). */
+  defaultVisibility?: WishlistVisibility;
   /** Edit only: "Delete this list…" (GC-019, GC-030). */
   onDelete?: () => void;
   /** Edit only: after a successful save. */
@@ -51,13 +44,14 @@ type Props = {
 
 // WHY the parent remounts this (a new `key`) for each opening: every opening starts from the saved
 // values, never from a half-typed earlier attempt.
-export function WishlistSheet({ open, onClose, list, onDelete, onSaved }: Props) {
+export function WishlistSheet({ open, onClose, list, defaultVisibility = "private", onDelete, onSaved }: Props) {
   const router = useRouter();
   const formId = useId();
   const { online, reportNetworkError } = useNetworkStatus();
   const [name, setName] = useState(list?.name ?? "");
-  // WHY Private: new lists start Private (GC-019). Default visibility from settings is slice 3.
-  const [visibility, setVisibility] = useState<WishlistVisibility>(list?.visibility ?? "private");
+  // WHY: a new list starts from the person's default (GC-027, Private until they change it); an
+  // existing list always shows its own value.
+  const [visibility, setVisibility] = useState<WishlistVisibility>(list?.visibility ?? defaultVisibility);
   const [nameError, setNameError] = useState(false);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);

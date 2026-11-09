@@ -94,6 +94,27 @@ export function wishlistsDbStatus(): Promise<DbStatus> {
   return wishlistsCached;
 }
 
+let sharedCached: Promise<DbStatus> | null = null;
+
+// Slice 3: the share specs also need the share_and_default_visibility migration (the public
+// function and the default-visibility column). Until it is applied they skip with this reason.
+export function sharedDbStatus(): Promise<DbStatus> {
+  sharedCached ??= (async (): Promise<DbStatus> => {
+    const base = await wishlistsDbStatus();
+    if (!base.ready) return base;
+    const { error } = await adminClient().rpc("get_shared_wishlist", { p_token: "0".repeat(32) });
+    const column = await adminClient().from("user_settings").select("default_wishlist_visibility").limit(1);
+    if (error || column.error) {
+      return {
+        ready: false,
+        reason: "The share_and_default_visibility migration is not applied to the Supabase project the app points at.",
+      };
+    }
+    return { ready: true };
+  })();
+  return sharedCached;
+}
+
 // The code an email would carry. generateLink sends nothing; it returns the one-time code.
 export async function mintCode(email: string): Promise<string> {
   const { data, error } = await adminClient().auth.admin.generateLink({ type: "magiclink", email });

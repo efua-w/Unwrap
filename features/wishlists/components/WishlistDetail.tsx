@@ -8,20 +8,21 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListRow } from "@/components/ui/ListRow";
 import { useToast } from "@/components/ui/Toast";
-import { formatNaira } from "@/lib/money/naira";
 import { removeWishlistItem, restoreWishlist, restoreWishlistItem } from "../actions";
-import { itemCountLabel, quoted, WISHLIST_COPY } from "../copy";
+import { itemCountLabel, itemSub, quoted, WISHLIST_COPY } from "../copy";
 import type { OwnerWishlist, OwnerWishlistItem } from "../types";
 import { DeleteWishlistSheet } from "./DeleteWishlistSheet";
-import { ItemSheet, PRIORITY_LABEL } from "./ItemSheet";
+import { ItemSheet } from "./ItemSheet";
+import { ShareSheet } from "./ShareSheet";
 import { VisibilityChip } from "./VisibilityChip";
 import { WishlistSheet } from "./WishlistSheet";
 
 // GC-020 / S21 Wishlist detail (owner). Boards: Wishlist-Detail-default, -bday, -newempty, -newadded,
-// -added, -saved, -removed, -savefail, -offline. Not in slice 2: Share (slice 3, owner Q3) and the
+// -added, -saved, -removed, -savefail, -offline, and Wishlist-Detail-share* (Share, GC-022). Not built: the
 // "Your givers in …" line (exchanges, slice 5). The owner never sees purchase marks: the item type has
 // no field for them (GC-020).
 const COPY = {
+  share: "Share",
   editList: "Edit list",
   order: "Recently changed first",
   addItem: "Add an item",
@@ -37,31 +38,24 @@ const COPY = {
   removed: (name: string) => `Removed ${quoted(name)}.`,
 };
 
-// "₦8,500 · Most wanted. Any colour but brown." (board row sub line). Exact prices only (GC-020).
-function itemSub(item: OwnerWishlistItem): string {
-  const head = [item.priceKobo === null ? null : formatNaira(item.priceKobo), PRIORITY_LABEL[item.priority]]
-    .filter((part): part is string => part !== null)
-    .join(" · ");
-  return item.note ? `${head}. ${item.note}` : head;
-}
-
 type Sheet =
   | { kind: "none" }
   | { kind: "edit-list" }
+  | { kind: "share" }
   | { kind: "delete" }
   | { kind: "add-item" }
   | { kind: "edit-item"; item: OwnerWishlistItem };
 
-type Props = { list: OwnerWishlist; items: OwnerWishlistItem[] };
+type Props = { list: OwnerWishlist; items: OwnerWishlistItem[]; shareUrl: string };
 
-export function WishlistDetail({ list, items }: Props) {
+export function WishlistDetail({ list, items, shareUrl }: Props) {
   const router = useRouter();
   const toast = useToast();
   const { online, reportNetworkError } = useNetworkStatus();
   const [sheet, setSheet] = useState<Sheet>({ kind: "none" });
   // WHY a counter per sheet: each opening remounts that sheet, so it starts from the saved values,
   // while a sheet that is closing (Edit list handing over to Delete) is left to close normally.
-  const [sessions, setSessions] = useState({ list: 0, delete: 0, item: 0 });
+  const [sessions, setSessions] = useState({ list: 0, delete: 0, item: 0, share: 0 });
 
   // WHY: removing a row destroys the focused bin, so focus moves to the next row's target, else the
   // previous one, else "Add an item" (R1-1). Set before the row leaves, applied once it has.
@@ -87,7 +81,8 @@ export function WishlistDetail({ list, items }: Props) {
   const signedOut = () => router.replace(`/login?next=${encodeURIComponent(`/wishlists/${list.id}`)}`);
 
   function open(next: Sheet) {
-    const which = next.kind === "edit-list" ? "list" : next.kind === "delete" ? "delete" : "item";
+    const which =
+      next.kind === "edit-list" ? "list" : next.kind === "delete" ? "delete" : next.kind === "share" ? "share" : "item";
     setSessions((s) => ({ ...s, [which]: s[which] + 1 }));
     setSheet(next);
   }
@@ -186,6 +181,9 @@ export function WishlistDetail({ list, items }: Props) {
       </header>
 
       <div className="flex flex-wrap items-center gap-x-16 gap-y-8">
+        <Button variant="secondary" disabled={!online} aria-haspopup="dialog" onClick={() => open({ kind: "share" })}>
+          {COPY.share}
+        </Button>
         <Button variant="link" disabled={!online} aria-haspopup="dialog" onClick={() => open({ kind: "edit-list" })}>
           {COPY.editList}
         </Button>
@@ -241,6 +239,13 @@ export function WishlistDetail({ list, items }: Props) {
         onDelete={() => open({ kind: "delete" })}
         // WHY no toast: GC-019 has no copy for saving a list; the new name and label show on the page.
         onSaved={close}
+      />
+      <ShareSheet
+        key={`share-${sessions.share}`}
+        open={sheet.kind === "share"}
+        onClose={close}
+        list={list}
+        shareUrl={shareUrl}
       />
       <DeleteWishlistSheet
         key={`delete-${sessions.delete}`}

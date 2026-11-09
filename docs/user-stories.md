@@ -863,6 +863,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-022 · Wishlists: Share
 
+**Updated 2026-11-08 (Tobechukwu Olih, slice 3):** links are built from a server-only `SITE_URL` per environment (the production domain is not decided). Both the "Anyone with the link" option and "Get a shareable link" make the list shareable, and choosing Private in the sheet turns sharing off. A failed save shows "Couldn't save your change." with Retry; a failed copy selects the link; WhatsApp opens through `wa.me`. The "Link copied" toast appears when the sheet closes (a toast waits while a sheet is open).
+
 **As Participant, I want to** share a wishlist outside an exchange, **so that** friends know what to get me for birthdays.
 
 #### Context
@@ -893,6 +895,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "Here's my wishlist, "{list name}", on Unwrap. Take a look: {link}"
 
 ### GC-023 · Wishlists: Shared view
+
+**Updated 2026-11-08 (Tobechukwu Olih, slice 3):** the intro uses number words for 2 to 10 and digits above, and reads "One thing {first name} would love. Tap it to see where to get it." for one item. Rows without a shop link are not tappable. The intro and empty state use the first word of the owner's name; the full name sits beside the avatar. The page title and link preview are generic ("A wishlist on Unwrap"). Every unavailable case answers 404. No extra rate limit in v1. The skeleton board is not used: a loading boundary would turn the 404 into a 200 (builder note, open item 49).
 
 **As Participant, I want to** open a friend's shared wishlist without an account, **so that** I can see what they want.
 
@@ -1018,6 +1022,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "We'll remind you the day before gifts are exchanged."
 
 ### GC-027 · Account: Privacy
+
+**Updated 2026-11-08 (Tobechukwu Olih, slice 3):** only "Default for new wishlists" ships now, reached from a "Privacy" row on the minimal Profile; it saves on change. Saved lines: "Saved. New wishlists start as Anyone with the link." / "Saved. New wishlists start as Private."; failure: "We couldn't save your default, so it's still {the previous choice}. Try again." The data export and "Who sees what" arrive with slice 16. New wishlists start from this default (Private if it cannot be read); Edit list shows the list's own value.
 
 **As Participant, I want to** see and control who sees my stuff, **so that** I trust the app with my lists.
 
