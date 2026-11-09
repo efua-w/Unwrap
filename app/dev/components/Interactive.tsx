@@ -280,7 +280,7 @@ export function MoneyFieldDemo() {
   return (
     <div className="flex max-w-dialog flex-col gap-16">
       <MoneyField label="Price" name="demo-price" placeholder="0" helper="Whole naira only, like 8500." value={price} onChange={(e) => setPrice(e.target.value)} />
-      <MoneyField label="Price" name="demo-price-error" value="85.50" onChange={() => {}} error="Use whole naira, with no kobo. For example, 8500." />
+      <MoneyField label="Price" name="demo-price-error" value="85.50" onChange={() => {}} error="Use whole naira, with no kobo. For example, 8,500." />
     </div>
   );
 }

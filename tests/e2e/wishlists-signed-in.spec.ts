@@ -94,7 +94,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await itemSheet.getByRole("button", { name: "Add to list" }).click();
         await expect(itemSheet.getByText("Check the link. It should start with https://")).toBeVisible();
         await expect(itemSheet.getByText("Add a name so your giver knows what it is.")).toBeVisible();
-        await expect(itemSheet.getByText("Use whole naira, with no kobo. For example, 8500.")).toBeVisible();
+        await expect(itemSheet.getByText("Use whole naira, with no kobo. For example, 8,500.")).toBeVisible();
         await expect(itemSheet.getByLabel("Link (optional)")).toBeFocused();
         await expectNoAxeViolations(page);
         await shot(page, "item-errors");

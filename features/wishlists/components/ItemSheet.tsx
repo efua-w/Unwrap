@@ -36,7 +36,7 @@ const COPY = {
   nameMissing: "Add a name so your giver knows what it is.",
   priceLabel: "Price",
   priceHelper: "Whole naira only, like 8500.",
-  priceNotWhole: "Use whole naira, with no kobo. For example, 8500.",
+  priceNotWhole: "Use whole naira, with no kobo. For example, 8,500.",
   priceTooLarge: "That's over ₦1,000,000,000. Enter a smaller amount.",
   priorityLegend: "How much do you want it?",
   noteLabel: "Note for your giver",
