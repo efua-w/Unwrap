@@ -5,6 +5,8 @@ import {
   daysInMonth,
   endOfWeek,
   formatMonthYear,
+  isBeforeMin,
+  isMonthBeforeMin,
   formatYmdLongFull,
   localTodayYmd,
   monthGrid,
@@ -28,20 +30,20 @@ describe("calendar date maths (GCO-002 date picker)", () => {
     expect(daysInMonth(2026, 2)).toBe(28);
   });
 
-  it("builds a Monday-first grid for a month starting on a Sunday", () => {
-    // 1 November 2026 is a Sunday: six empty cells' worth of lead, so it ends the first week.
+  it("builds a Sunday-first grid for a month starting on a Sunday", () => {
+    // 1 November 2026 is a Sunday: no empty cells before it.
     const weeks = monthGrid(2026, 11);
-    expect(weeks[0]).toEqual([null, null, null, null, null, null, "2026-11-01"]);
-    expect(weeks[1]?.[0]).toBe("2026-11-02");
+    expect(weeks[0]).toEqual(["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07"]);
     expect(weeks.every((w) => w.length === 7)).toBe(true);
     expect(weeks.flat().filter(Boolean)).toHaveLength(30);
   });
 
-  it("builds a Monday-first grid for a month starting on a Monday", () => {
-    // 1 June 2026 is a Monday: no empty cells before it.
-    const weeks = monthGrid(2026, 6);
-    expect(weeks[0]?.[0]).toBe("2026-06-01");
-    expect(weeks.flat().filter(Boolean)).toHaveLength(30);
+  it("builds a Sunday-first grid for a month starting on a Saturday", () => {
+    // 1 August 2026 is a Saturday: six empty cells, then the 1st ends the first week.
+    const weeks = monthGrid(2026, 8);
+    expect(weeks[0]).toEqual([null, null, null, null, null, null, "2026-08-01"]);
+    expect(weeks[1]?.[0]).toBe("2026-08-02");
+    expect(weeks.flat().filter(Boolean)).toHaveLength(31);
   });
 
   it("builds a leap February", () => {
@@ -66,20 +68,31 @@ describe("calendar date maths (GCO-002 date picker)", () => {
     expect(addMonths("2026-03-31", -1)).toBe("2026-02-28");
   });
 
-  it("finds the week start and end (Monday to Sunday)", () => {
-    expect(startOfWeek("2026-12-04")).toBe("2026-11-30"); // Friday -> Monday
-    expect(endOfWeek("2026-12-04")).toBe("2026-12-06");
-    expect(startOfWeek("2026-11-30")).toBe("2026-11-30");
-    expect(endOfWeek("2026-12-06")).toBe("2026-12-06");
+  it("finds the week start and end (Sunday to Saturday)", () => {
+    expect(startOfWeek("2026-12-04")).toBe("2026-11-29"); // Friday -> Sunday
+    expect(endOfWeek("2026-12-04")).toBe("2026-12-05"); // Saturday
+    expect(startOfWeek("2026-11-29")).toBe("2026-11-29");
+    expect(endOfWeek("2026-12-05")).toBe("2026-12-05");
   });
 
   it("names weekdays and days", () => {
-    expect(weekdayHeaders().map((h) => h.short)).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
-    expect(weekdayHeaders()[0]?.long).toBe("Monday");
+    expect(weekdayHeaders().map((h) => h.short)).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+    expect(weekdayHeaders()[0]?.long).toBe("Sunday");
     expect(formatMonthYear(2026, 12)).toBe("December 2026");
     expect(formatYmdLongFull("2026-12-04")).toBe("Friday 4 December 2026");
     expect(formatYmdDayYear("2026-12-04")).toBe("Fri 4 Dec 2026");
     expect(formatYmdDayYear("nope")).toBeNull();
+  });
+
+  it("compares days and months with the earliest allowed day", () => {
+    expect(isBeforeMin("2026-11-10", "2026-11-11")).toBe(true);
+    expect(isBeforeMin("2026-11-11", "2026-11-11")).toBe(false); // today stays pickable
+    expect(isBeforeMin("2026-11-12", "2026-11-11")).toBe(false);
+    expect(isBeforeMin("2020-01-01", undefined)).toBe(false);
+    expect(isMonthBeforeMin(2026, 10, "2026-11-11")).toBe(true);
+    expect(isMonthBeforeMin(2026, 11, "2026-11-11")).toBe(false);
+    expect(isMonthBeforeMin(2026, 10, "2026-10-31")).toBe(false); // the 31st is still pickable
+    expect(isMonthBeforeMin(2026, 1, undefined)).toBe(false);
   });
 
   it("takes today from the local fields", () => {

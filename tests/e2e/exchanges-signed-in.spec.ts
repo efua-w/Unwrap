@@ -187,6 +187,16 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(todayButton).toHaveAttribute("aria-current", "date");
         await page.keyboard.press("ArrowDown");
         await expect(page.getByRole("button", { name: formatYmdLongFull(ymdIn(7)) ?? "" })).toBeFocused();
+        // Past days cannot be picked (owner decision 2026-11-12): Previous month is off in the current
+        // month, and a past day is aria-disabled and ignores a click. (On the 1st, no past day is shown.)
+        await expect(page.getByRole("button", { name: "Previous month" })).toBeDisabled();
+        if (!pickerToday.endsWith("-01")) {
+          const past = page.getByRole("button", { name: formatYmdLongFull(ymdIn(-1)) ?? "" });
+          await expect(past).toHaveAttribute("aria-disabled", "true");
+          await past.click({ force: true }); // WHY force: Playwright treats aria-disabled as not clickable
+          await expect(page.getByRole("dialog", { name: "Join by" })).toBeVisible();
+        }
+        await expect(page.getByRole("button", { name: formatYmdLongFull(pickerToday) ?? "" })).not.toHaveAttribute("aria-disabled", "true");
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog", { name: "Join by" })).toBeHidden();
         await expect(joinTrigger).toBeFocused();
@@ -198,16 +208,6 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await pickDate(page, "Gift day", GIFT);
         await page.getByRole("button", { name: "Next", exact: true }).click();
         await expect(page.getByText("Join by has to be before the gift day.")).toBeVisible();
-        // A gift day in the past.
-        await pickDate(page, "Gift day", ymdIn(-2));
-        await page.getByRole("button", { name: "Next", exact: true }).click();
-        await expect(page.getByText("The gift day has to be in the future.")).toBeVisible();
-        await pickDate(page, "Gift day", GIFT);
-        // Join by in the past.
-        await pickDate(page, "Join by", ymdIn(-1));
-        await page.getByRole("button", { name: "Next", exact: true }).click();
-        await expect(page.getByText("Join by has to be in the future.")).toBeVisible();
-
         // Fixed: defaults are "When joining closes" at 6:00 pm, and the summary names the zone.
         await pickDate(page, "Join by", JOIN);
         await expect(page.getByRole("radio", { name: "When joining closes" })).toBeChecked();

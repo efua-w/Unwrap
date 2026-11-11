@@ -13,6 +13,7 @@ import { RadioGroup, type RadioOption } from "@/components/ui/RadioGroup";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Sheet } from "@/components/ui/Sheet";
 import { TimeField12 } from "@/components/ui/TimeField12";
+import { localTodayYmd } from "@/lib/dates/calendar";
 import { formatHm, formatYmdDay, wallClockIn, zoneShortName } from "@/lib/dates/format";
 import { BUDGET_PRESETS, budgetLabel, isBudgetPreset, type BudgetPreset } from "@/lib/money/budget";
 import {
@@ -323,6 +324,8 @@ function DatesStep({
 }: StepProps & { timeZone: string; showSummary: boolean }) {
   const copy = EXCHANGE_COPY.flow.dates;
   const summary = showSummary ? runSummary(form) : null;
+  // WHY: past days cannot be picked (owner decision 2026-11-12); today stays pickable. The validation still guards the server.
+  const [minDay] = useState(() => localTodayYmd());
   return (
     <div className="flex flex-col gap-32">
       <RadioGroup
@@ -339,6 +342,7 @@ function DatesStep({
           <DateField
             label={copy.joinBy}
             name="joinByDate"
+            min={minDay}
             error={err("joinBy")}
             value={form.joinByDate}
             onChange={(ymd) => set("joinByDate", ymd, DATE_FIELDS)}
@@ -346,6 +350,7 @@ function DatesStep({
           <DateField
             label={copy.giftDay}
             name="giftDay"
+            min={minDay}
             error={err("giftDay")}
             value={form.giftDay}
             onChange={(ymd) => set("giftDay", ymd, DATE_FIELDS)}

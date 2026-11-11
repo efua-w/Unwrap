@@ -8,6 +8,8 @@ import {
   endOfWeek,
   formatMonthYear,
   formatYmdLongFull,
+  isBeforeMin,
+  isMonthBeforeMin,
   localTodayYmd,
   monthGrid,
   parseYmdParts,
@@ -31,6 +33,8 @@ type Props = {
   onChange: (ymd: string) => void;
   helper?: string;
   error?: string;
+  /** "YYYY-MM-DD": earlier days cannot be picked. The form's own validation still guards the server. */
+  min?: string;
 };
 
 const WEEKDAYS = weekdayHeaders();
@@ -42,10 +46,12 @@ const DAY_BASE =
 // fresh each time: the month of the value, else the current month.
 function Calendar({
   value,
+  min,
   onPick,
   deferFocus,
 }: {
   value: string;
+  min?: string;
   onPick: (ymd: string) => void;
   /** In the sheet, the dialog opens (and focuses its heading) after this mounts, so focus waits a tick. */
   deferFocus: boolean;
@@ -55,10 +61,12 @@ function Calendar({
   // WHY today is read here, not at render of the closed field: the viewer's own date, never the server's.
   const [today] = useState(() => localTodayYmd());
   const selected = parseYmdParts(value) ? value : null;
-  const [focusYmd, setFocusYmd] = useState(selected ?? today);
+  // WHY min when the value is empty or too early: the first pickable day is where a person starts (APG).
+  const [focusYmd, setFocusYmd] = useState(selected && !isBeforeMin(selected, min) ? selected : (min ?? today));
   const moveFocus = useRef(true);
   const focus = parseYmdParts(focusYmd) ?? { year: 2000, month: 1, day: 1 };
   const weeks = monthGrid(focus.year, focus.month);
+  const previous = parseYmdParts(addMonths(focusYmd, -1)) ?? focus;
 
   useEffect(() => {
     if (!moveFocus.current) return;
@@ -98,7 +106,19 @@ function Calendar({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-8">
-        <Button variant="icon" icon={CaretLeft} label="Previous month" onClick={() => setFocusYmd(addMonths(focusYmd, -1))} />
+        <Button
+          variant="icon"
+          icon={CaretLeft}
+          label="Previous month"
+          disabled={isMonthBeforeMin(previous.year, previous.month, min)}
+          onClick={() => {
+            const target = addMonths(focusYmd, -1);
+            const p = parseYmdParts(addMonths(target, -1));
+            // WHY: the button disables itself here, which would drop focus to the page; move it to the grid.
+            if (p && isMonthBeforeMin(p.year, p.month, min)) go(target);
+            else setFocusYmd(target);
+          }}
+        />
         <div id={monthId} aria-live="polite" className="text-body-base-semibold text-text-default">
           {formatMonthYear(focus.year, focus.month)}
         </div>
@@ -123,6 +143,8 @@ function Calendar({
               if (!ymd) return <div key={i} role="gridcell" />;
               const isSelected = ymd === selected;
               const isToday = ymd === today;
+              // WHY aria-disabled, not disabled: keyboard focus may still move across past days (APG).
+              const isPast = isBeforeMin(ymd, min);
               return (
                 <div key={ymd} role="gridcell" aria-selected={isSelected}>
                   <button
@@ -131,12 +153,17 @@ function Calendar({
                     tabIndex={ymd === focusYmd ? 0 : -1}
                     aria-label={formatYmdLongFull(ymd) ?? ymd}
                     aria-current={isToday ? "date" : undefined}
-                    onClick={() => onPick(ymd)}
+                    aria-disabled={isPast || undefined}
+                    onClick={() => {
+                      if (!isPast) onPick(ymd);
+                    }}
                     className={cx(
                       DAY_BASE,
                       isSelected
                         ? "bg-surface-inverse text-text-inverse hover:bg-surface-inverse-hover"
-                        : "text-text-default hover:bg-surface-secondary-hover",
+                        : isPast
+                          ? "cursor-not-allowed text-text-disabled"
+                          : "text-text-default hover:bg-surface-secondary-hover",
                       isToday && "border-1-5 border-border-emphasis",
                     )}
                   >
@@ -155,7 +182,7 @@ function Calendar({
 // Date picker for Join by and Gift day (GCO-002, GCO-004). A button styled as the field opens a month
 // grid: a dropdown from 768, the Sheet below it. The value stays "YYYY-MM-DD" so validation, the
 // server action and the review do not change.
-export function DateField({ label, name, value, onChange, helper, error }: Props) {
+export function DateField({ label, name, value, onChange, helper, error, min }: Props) {
   const id = useId();
   const labelId = `${id}-label`;
   const helperId = `${id}-helper`;
@@ -220,7 +247,7 @@ export function DateField({ label, name, value, onChange, helper, error }: Props
             aria-label={label}
             className="absolute inset-x-0 top-full z-10 mt-4 rounded-lg border-1 border-border-default bg-surface-default p-12 shadow-overlay"
           >
-            <Calendar value={value} onPick={pick} deferFocus={false} />
+            <Calendar value={value} min={min} onPick={pick} deferFocus={false} />
           </div>
         ) : null}
       </div>
@@ -235,7 +262,7 @@ export function DateField({ label, name, value, onChange, helper, error }: Props
         </p>
       ) : null}
       <Sheet open={mode === "sheet"} onClose={close} variant="form" title={label} footer={null}>
-        {mode === "sheet" ? <Calendar value={value} onPick={pick} deferFocus /> : null}
+        {mode === "sheet" ? <Calendar value={value} min={min} onPick={pick} deferFocus /> : null}
       </Sheet>
     </div>
   );

@@ -23,9 +23,9 @@ export function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
-/** Monday is 0 and Sunday is 6: weeks start on Monday (owner assumption, date-picker task). */
+/** Sunday is 0 and Saturday is 6: weeks start on Sunday (owner decision 2026-11-12). */
 export function weekdayIndex(year: number, month: number, day: number): number {
-  return (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7;
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 }
 
 export function addDays(ymd: string, days: number): string {
@@ -54,7 +54,7 @@ export function endOfWeek(ymd: string): string {
   return addDays(startOfWeek(ymd), 6);
 }
 
-/** Weeks of a month, Monday first. Days of the neighbouring months are null (shown as empty cells). */
+/** Weeks of a month, Sunday first. Days of the neighbouring months are null (shown as empty cells). */
 export function monthGrid(year: number, month: number): (string | null)[][] {
   const lead = weekdayIndex(year, month, 1);
   const cells: (string | null)[] = Array.from({ length: lead }, () => null);
@@ -63,6 +63,16 @@ export function monthGrid(year: number, month: number): (string | null)[][] {
   const weeks: (string | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return weeks;
+}
+
+/** True when `ymd` is a day before `min` ("YYYY-MM-DD" strings compare in date order). */
+export function isBeforeMin(ymd: string, min: string | undefined): boolean {
+  return min !== undefined && ymd < min;
+}
+
+/** True when every day of the month is before `min`, so there is nothing to pick in it. */
+export function isMonthBeforeMin(year: number, month: number, min: string | undefined): boolean {
+  return isBeforeMin(toYmd({ year, month, day: daysInMonth(year, month) }), min);
 }
 
 // The viewer's own calendar day (local fields, not UTC).
@@ -74,11 +84,11 @@ function utcNames(options: Intl.DateTimeFormatOptions, date: Date): string {
   return new Intl.DateTimeFormat("en-US", { ...options, timeZone: "UTC" }).format(date);
 }
 
-/** "Mon" ... "Sun", Monday first, with the full name for the accessible label. */
+/** "Sun" ... "Sat", Sunday first, with the full name for the accessible label. */
 export function weekdayHeaders(): { short: string; long: string }[] {
-  // 2024-01-01 was a Monday.
+  // 2024-01-07 was a Sunday.
   return Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(Date.UTC(2024, 0, 1 + i));
+    const date = new Date(Date.UTC(2024, 0, 7 + i));
     return { short: utcNames({ weekday: "short" }, date), long: utcNames({ weekday: "long" }, date) };
   });
 }

@@ -31,3 +31,18 @@ Own change after slice 4 (branch `slice-4-date-picker`). Closes open item 69 whe
 ## Reviewer — round 2 — 2026-11-12
 - APPROVED. R1-1, R1-2, R1-5, R1-6 and contrast fixed; R1-3 accepted (describedby + role="alert"; aria-invalid not allowed on a button by lint). Stale TimeField12 comment fixed by the main session.
 - Open: owner to confirm Monday-first weeks and selectable past days; "Previous month"/"Next month" in copy-pending; open item 67 (Sheet focus).
+
+## Owner decision — 2026-11-12 (Tobechukwu Olih)
+- Weeks start on Sunday.
+- Past days cannot be picked.
+
+## Builder — round 3 — 2026-11-12
+- Task: date-picker — Sunday-first weeks and no past days (owner decision 2026-11-12)
+- Requirements: GCO-002, GCO-004
+- Files/components: lib/dates/calendar.ts, components/ui/DateField.tsx, features/exchanges/components/StartExchangeFlow.tsx, tests/unit/calendar.test.ts, tests/e2e/exchanges-signed-in.spec.ts
+- Work completed: weekdayIndex, monthGrid, weekday headers and week start/end are Sunday-first. DateField has an optional `min` ("YYYY-MM-DD"); days before it are aria-disabled, text-text-disabled, no hover, ignore click/Enter/Space, but stay keyboard-focusable. Open focus goes to min when the value is empty or before it. Previous month is disabled when the whole previous month is before min. StartExchangeFlow passes localTodayYmd() for both fields (today stays pickable); validation unchanged. New helpers isBeforeMin / isMonthBeforeMin. Unit tests: Sunday-start month (Nov 2026), Saturday-start month (Aug 2026), week start/end, min helpers. E2E: Previous month disabled in the current month, a past day is aria-disabled and a click leaves the dialog open and the value empty (skipped on the 1st, when no past day shows); the two "past day" picker steps were removed (the server and unit tests still cover those errors).
+- Outstanding issues: None. Checks: typecheck, lint (0 warnings), tokens:check, npm test 212 pass, build no errors, playwright exchanges-signed-in + gallery 72 passed. Not visually compared to boards.
+- Next action: tester, then reviewer
+
+## Reviewer — round 3 — 2026-11-12
+- APPROVED. Sunday-first and `min` correct; no hydration mismatch (min only reaches the calendar, which mounts on open). R3-1 (Low): Previous month dropped focus when it disabled itself — fixed by the main session (focus moves to the grid day).
