@@ -11,6 +11,7 @@ import { Field } from "@/components/ui/Field";
 import { RadioGroup, type RadioOption } from "@/components/ui/RadioGroup";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Sheet } from "@/components/ui/Sheet";
+import { TimeField12 } from "@/components/ui/TimeField12";
 import { formatHm, formatYmdDay, wallClockIn, zoneShortName } from "@/lib/dates/format";
 import { BUDGET_PRESETS, budgetLabel, isBudgetPreset, type BudgetPreset } from "@/lib/money/budget";
 import {
@@ -33,8 +34,7 @@ type FormState = {
   note: string;
   budget: BudgetPreset | "";
   joinByDate: string;
-  eventDate: string;
-  eventTime: string;
+  giftDay: string;
   drawMode: DrawMode;
   drawTime: string;
   takingPart: "yes" | "no";
@@ -48,8 +48,7 @@ const INITIAL: FormState = {
   note: "",
   budget: "",
   joinByDate: "",
-  eventDate: "",
-  eventTime: "",
+  giftDay: "",
   drawMode: "at_join_by",
   drawTime: "18:00",
   takingPart: "yes",
@@ -62,17 +61,16 @@ const BUDGET_OPTIONS: readonly RadioOption<BudgetPreset>[] = BUDGET_PRESETS.map(
 }));
 
 // WHY the date rules clear together: moving any one date can fix or break the others.
-const DATE_FIELDS: readonly FieldKey[] = ["joinBy", "eventDate", "eventTime", "drawTime"];
+const DATE_FIELDS: readonly FieldKey[] = ["joinBy", "giftDay", "drawTime"];
 
 // Fields in the order they appear, so the first error is the one that takes focus.
-const FOCUS_ORDER: readonly FieldKey[] = ["name", "note", "budget", "joinBy", "eventDate", "eventTime", "drawTime"];
+const FOCUS_ORDER: readonly FieldKey[] = ["name", "note", "budget", "joinBy", "giftDay", "drawTime"];
 const INPUT_NAME: Record<FieldKey, string> = {
   name: "name",
   note: "note",
   budget: "budget",
   joinBy: "joinByDate",
-  eventDate: "eventDate",
-  eventTime: "eventTime",
+  giftDay: "giftDay",
   drawTime: "drawTime",
 };
 
@@ -122,7 +120,7 @@ export function StartExchangeFlow() {
   }
 
   function touched(): boolean {
-    return [form.name, form.note, form.budget, form.joinByDate, form.eventDate, form.eventTime].some((v) => v.trim() !== "");
+    return [form.name, form.note, form.budget, form.joinByDate, form.giftDay].some((v) => v.trim() !== "");
   }
 
   function close() {
@@ -145,8 +143,7 @@ export function StartExchangeFlow() {
         joinByDate: form.joinByDate,
         drawMode: form.drawMode,
         drawTime: form.drawTime,
-        eventDate: form.eventDate,
-        eventTime: form.eventTime,
+        giftDay: form.giftDay,
         timeZone,
         takingPart: form.takingPart === "yes",
         approvalRequired: form.joinRule === "approve",
@@ -197,8 +194,7 @@ export function StartExchangeFlow() {
           joinByDate: form.joinByDate,
           drawMode: form.drawMode,
           drawTime: form.drawTime,
-          eventDate: form.eventDate,
-          eventTime: form.eventTime,
+          giftDay: form.giftDay,
         },
         wallClockIn(new Date(), timeZone),
       );
@@ -338,35 +334,23 @@ function DatesStep({
         error={err("budget")}
       />
       <div className="flex flex-col gap-20">
-        <Field
-          label={copy.joinBy}
-          name="joinByDate"
-          type="date"
-          error={err("joinBy")}
-          value={form.joinByDate}
-          onChange={(e) => set("joinByDate", e.target.value, DATE_FIELDS)}
-        />
-        <div className="flex gap-12">
-          <div className="min-w-0 flex-1">
-            <Field
-              label={copy.giftDay}
-              name="eventDate"
-              type="date"
-              error={err("eventDate")}
-              value={form.eventDate}
-              onChange={(e) => set("eventDate", e.target.value, DATE_FIELDS)}
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <Field
-              label={copy.giftTime}
-              name="eventTime"
-              type="time"
-              error={err("eventTime")}
-              value={form.eventTime}
-              onChange={(e) => set("eventTime", e.target.value, DATE_FIELDS)}
-            />
-          </div>
+        <div className="grid grid-cols-1 gap-20 md:grid-cols-2 md:items-start md:gap-16">
+          <Field
+            label={copy.joinBy}
+            name="joinByDate"
+            type="date"
+            error={err("joinBy")}
+            value={form.joinByDate}
+            onChange={(e) => set("joinByDate", e.target.value, DATE_FIELDS)}
+          />
+          <Field
+            label={copy.giftDay}
+            name="giftDay"
+            type="date"
+            error={err("giftDay")}
+            value={form.giftDay}
+            onChange={(e) => set("giftDay", e.target.value, DATE_FIELDS)}
+          />
         </div>
         <SegmentedTabs
           kind="choice"
@@ -377,14 +361,13 @@ function DatesStep({
           onChange={(value) => set("drawMode", value, DATE_FIELDS)}
         />
         {form.drawMode === "at_join_by" ? (
-          <Field
+          <TimeField12
             label={copy.drawTime}
             name="drawTime"
-            type="time"
             helper={copy.drawTimeHelper}
             error={err("drawTime")}
             value={form.drawTime}
-            onChange={(e) => set("drawTime", e.target.value, DATE_FIELDS)}
+            onChange={(hm) => set("drawTime", hm, DATE_FIELDS)}
           />
         ) : null}
       </div>
@@ -419,7 +402,7 @@ function Review({
     [copy.budget, isBudgetPreset(form.budget) ? budgetLabel(form.budget) : ""],
     [copy.joinBy, auto ? autoMoment : copy.endOfDay(joinDay)],
     [copy.namesDrawn, auto ? autoMoment : copy.whenReady],
-    [copy.gifts, `${formatYmdDay(form.eventDate) ?? ""}, ${formatHm(form.eventTime) ?? ""}`],
+    [copy.gifts, formatYmdDay(form.giftDay) ?? ""],
   ];
   return (
     <section aria-labelledby="review-heading" className="flex flex-col gap-16 rounded-2xl bg-surface-subtle p-20">

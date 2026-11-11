@@ -1,5 +1,5 @@
 import type { TimelineStep } from "@/components/ui/Timeline";
-import { formatDay, formatTime } from "@/lib/dates/format";
+import { formatDay, formatTime, formatYmdDay } from "@/lib/dates/format";
 import { EXCHANGE_COPY } from "./copy";
 import type { Schedule } from "./types";
 
@@ -24,7 +24,6 @@ export function drawWhen(schedule: Schedule, timeZone: string): string {
 }
 
 export function timelineSteps(schedule: Schedule, timeZone: string): TimelineStep[] {
-  const event = new Date(schedule.eventAt);
   const copy = EXCHANGE_COPY.detail;
   return [
     {
@@ -34,7 +33,9 @@ export function timelineSteps(schedule: Schedule, timeZone: string): TimelineSte
         : copy.stepJoinAnyone(lastJoinDay(schedule, timeZone)),
     },
     { title: copy.stepDraw, detail: drawWhen(schedule, timeZone) },
-    { title: copy.stepGifts, detail: `${formatDay(event, timeZone)} at ${formatTime(event, timeZone)}.` },
+    // WHY the stored date as is, no zone: the gift day is a date only and every viewer sees the same
+    // day (owner decision 2026-11-09, Q2).
+    { title: copy.stepGifts, detail: `${formatYmdDay(schedule.giftDay) ?? ""}.` },
   ];
 }
 

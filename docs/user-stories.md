@@ -6,7 +6,7 @@ This is the living copy. The approved v1.1 original is kept unchanged in [user-s
 
 ## Decisions since v1.1
 
-Each decision below is rewritten into the stories it affects, which carry an **Updated 2026-11-03** note. Decided by Tobechukwu Olih on 2026-11-03.
+Each decision below is rewritten into the stories it affects, which carry an **Updated** note with its date. Decided by Tobechukwu Olih on 2026-11-03, except the rows dated 2026-11-09.
 
 | Area | Decision | Stories |
 | --- | --- | --- |
@@ -17,6 +17,8 @@ Each decision below is rewritten into the stories it affects, which carry an **U
 | Exchange size | At most 100 people in an exchange. This is the invite limit and what "full" means. | GC-009, GCO-005 |
 | Rejoining | Someone who left an exchange can rejoin through the invite link, under the normal join rules. Someone the organiser removed can also rejoin, but always as a join request the organiser must approve, even when approval is off. | GC-017, GC-009, GCO-007 |
 | Open design questions | Where the designs and stories left a question open (Names drawn as its own page, the Verify button, Reopen joining as its own page), build what the designs show. | GC-003, GCO-012, GCO-007 |
+| Gift day (2026-11-09) | The gift day is a date only, with no gift time. This replaces the v1.1 "Event time" row. The organiser sets it in their own time zone. It counts as passed at the end of that day in the organiser's time zone. The gift day is shown as stored, the same date for every viewer; only the end-of-day cutoff uses the organiser's time zone (owner, Q2, 2026-11-09). The join-by day must be before the gift day, in both draw modes (owner, Q1, 2026-11-09). The event reminder (E24) goes at 9:00 am the day before the gift day, in each person's time zone. Join-by and the draw time keep their times. | GC-002, GC-009, GC-013, GC-014, GC-015, GC-026, GCO-002, GCO-004, GCO-010, GCO-015 |
+| Organiser's own list (2026-11-09) | S49 "Your list for this exchange" is its own page. An organiser taking part reaches it from S14 › Your part. They attach a whole wishlist or add ideas just for this exchange. Boards Org-List-* and Exchange-Detail-oattached / -oideas. | GC-010, GCO-004 |
 
 ## What changed in v1.1
 
@@ -24,7 +26,7 @@ Version 1.1 folds in the UX architecture decisions: 28 stories are updated (18 p
 
 | Area | Decision | Stories |
 | --- | --- | --- |
-| Reminders | Automatic emails 24 hours before join-by (to people taking part with no wishlist) and 24 hours before the event (to everyone taking part). Shown in Activity too. | GC-006, GC-007, GC-010, GC-011, GC-026 |
+| Reminders | Automatic emails 24 hours before join-by (to people taking part with no wishlist) and, from 2026-11-09, at 9:00 am the day before the gift day in each person's time zone (to everyone taking part). Shown in Activity too. | GC-006, GC-007, GC-010, GC-011, GC-026 |
 | Pair secrecy | Fix the pairs is a blind system re-match; the organiser only confirms and never sees a name | GC-017, GCO-007 |
 | Re-match impossible | When the leaver and their giver had drawn each other, the organiser confirms a full re-draw (before the event only) | GC-017, GCO-011 |
 | After the event | A giver who loses their person is given someone at random by the system; the organiser confirms, warned that one person will have two givers | GC-017, GCO-011 |
@@ -38,7 +40,7 @@ Version 1.1 folds in the UX architecture decisions: 28 stories are updated (18 p
 | Only 2 left after the draw | Organiser chooses: invite more (joining reopens with a new join-by, event must be ahead, then a full re-draw) or cancel | GC-012, GC-017, GCO-007 |
 | One list per exchange | Wishlist, ideas and kept items all show as "Your list for this exchange", with a source subline | GC-010, GC-011, GC-013, GC-015, GC-030 |
 | Time zones | Every date and time shows in the viewer's own time zone | GC-013, GCO-002 |
-| Event time | The organiser sets an event time as well as a date | GCO-002, GCO-004, GCO-010 |
+| Event time | ~~The organiser sets an event time as well as a date~~ Replaced 2026-11-09: the gift day is a date only (see Decisions since v1.1) | GCO-002, GCO-004, GCO-010 |
 | Never drawn, event passed | To draw, the organiser sets a new event date first; or cancels | GCO-015 |
 | Completion | Organiser marks it complete after the event; otherwise it completes 7 days after the event | GCO-015 |
 | Organiser not taking part | Same layout; Your part says "You're just organising" | GC-006, GC-013 |
@@ -117,6 +119,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 **Updated in v1.1:** the public preview shows a count of who has joined, not faces or names. Shows the event time.
 
+**Updated 2026-11-09 (Tobechukwu Olih):** the gift day is a date only, with no gift time (board Entry-Invite: "Gift day Thu 24 Dec").
+
 **As Participant, I want to** preview an exchange I've been invited to without logging in, **so that** I can trust the link and decide to join.
 
 #### Context
@@ -127,7 +131,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### In scope — Dev tasks
 
-- Show inviter name + photo, exchange name, budget range (₦), join-by, event date and time, how many people have joined (count only), 3-line explainer.
+- Show inviter name + photo, exchange name, budget range (₦), join-by, gift day (date only), how many people have joined (count only), 3-line explainer.
 - All dates and times show in the viewer's own time zone.
 - Join this exchange: not signed in → GC-003 (every participant needs an account; join resumes after); signed in → GC-009; already a member → exchange detail (GC-013).
 - Skeleton of inviter, title and dates while the link resolves.
@@ -330,7 +334,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
   - Someone joined / asked to join (organiser, links to Participants).
   - Dates changed (everyone but the organiser).
   - Join-by reminder (people taking part with no wishlist, 24 hours before join-by).
-  - Event reminder (everyone taking part, 24 hours before the event).
+  - Event reminder (everyone taking part, at 9:00 am the day before the gift day in each person's time zone; updated 2026-11-09, Tobechukwu Olih).
   - Joining reopened (everyone taking part, GCO-007).
   - You're now the organiser (new organiser, GCO-014); {name} is now the organiser (everyone else).
   - Exchange complete (GCO-015).
@@ -405,7 +409,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### In scope — Dev tasks
 
-- Show exchange, organiser, participant faces and names (first shown here, not on the public preview), budget (₦), join-by, draw date and time, event date and time, organiser's note, signed-in account. All in the viewer's own time zone.
+- Show exchange, organiser, participant faces and names (first shown here, not on the public preview), budget (₦), join-by, draw date and time, gift day (date only; updated 2026-11-09, Tobechukwu Olih), organiser's note, signed-in account. All in the viewer's own time zone.
 - Join exchange → GC-010; Not now. (Switch account: not in v1.)
 - If the organiser approves joins → request sent, user lands on Home with the pending row (GC-006).
 
@@ -428,6 +432,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ### GC-010 · Joining: Attach wishlist
 
 **Updated in v1.1:** whatever is attached shows as one "Your list for this exchange" with a source subline. Skip for now is backed by the join-by reminder email.
+
+**Updated 2026-11-09 (Tobechukwu Olih):** the organiser's own list is its own page, S49, entered from S14 › Your part. Boards Org-List-* and Exchange-Detail-oattached / -oideas. It works as below, with no Skip: Back leaves without a list. See GCO-004.
 
 **As Participant, I want to** pick one of my wishlists or add ideas now, **so that** my giver knows what I'd like.
 
@@ -544,12 +550,14 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 **Updated in v1.1:** adds the organiser-only part, "Hide again" on the recipient row, viewer time zones, and the new lifecycle states (reopened joining, re-draw, awaiting completion, never drawn after the event).
 
+**Updated 2026-11-09 (Tobechukwu Olih):** the gift day is a date only. Dates blocks read "Gifts exchanged {Thu 24 Dec}" with no time. The event has passed at the end of the gift day in the organiser's time zone. For an organiser taking part, Your part › "Your list for this exchange" opens S49 (GC-010, GCO-004).
+
 **As Participant, I want to** see where an exchange stands and what I need to do, **so that** I always know my next date and action.
 
 #### Context
 
 - A. Exchange detail. Content changes by role (participant / organiser taking part / organiser just organising) and status (open → joining closed → drawn → event passed → complete, plus cancelled).
-- B. All dates and times show in the viewer's own time zone, with the event time beside the event date.
+- B. All dates and times show in the viewer's own time zone. The gift day is a date only (2026-11-09).
 
 #### In scope — Dev tasks
 
@@ -558,11 +566,11 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - Organiser layer: see GCO-006.
 - Organiser not taking part: same layout. Your part says "You're just organising." with no list, no recipient row and no Reveal.
 - Participant before the draw: "Organised by {name}." in the header; "You're all set / Names are drawn on {date}. / We'll tell you who you're buying for. Only you will see it."; your list "Attached. You can change it until the draw."; dates with the draw time; faces without anyone's wishlist status; "From the organiser" with their note.
-- Participant after the draw: "Needs you now / Names are drawn. / See who you're buying for. Only you will see it. The event is on {date} at {time}." + Reveal who you got; "Who you're buying for: Hidden until you reveal it."
+- Participant after the draw: "Needs you now / Names are drawn. / See who you're buying for. Only you will see it. The event is on {date}." + Reveal who you got; "Who you're buying for: Hidden until you reveal it."
 - After you've revealed, the "Who you're buying for" row shows your person's name. After "Hide again" on this device (GC-014) it shows "Hidden on this device" with Show; tapping Show reveals the name again on this device.
 - Your person has changed (re-draw or blind re-match): the row returns to "Hidden until you reveal it." with the note "Your person has changed." and Reveal becomes the main action again.
 - Organiser after the draw: "Names drawn / Everyone has someone to buy for."; Edit details, Hand over organising… and Cancel exchange only.
-- After the event time, before completion: "Gifts were exchanged on {date}."; the organiser sees Mark as complete (GCO-015); everyone else sees "This exchange closes on {date}." (7 days after the event).
+- After the gift day has ended (organiser's time zone), before completion: "Gifts were exchanged on {date}."; the organiser sees Mark as complete (GCO-015); everyone else sees "This exchange closes on {date}." (7 days after the event).
 - Leave exchange… (GC-017).
 - States to cover: participant / organiser taking part / organiser just organising, before and after the draw; participant without a list; after you've revealed; hidden on this device; your person has changed; joining reopened (GCO-007); only 2 left (organiser); a scheduled draw that couldn't run; event passed, awaiting completion; never drawn, event passed (GCO-015); complete (GCO-015).
 
@@ -602,7 +610,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 #### In scope — Dev tasks
 
 - Before: privacy check ("Make sure no one's looking"); Reveal who you got / Not now.
-- After: recipient name + photo, budget (₦), event date and time, top "Most wanted" items; View their wishlist (GC-015); Hide again.
+- After: recipient name + photo, budget (₦), gift day (date only; updated 2026-11-09, Tobechukwu Olih), top "Most wanted" items; View their wishlist (GC-015); Hide again.
 - Data loaded before the tap (fetched by the browser after the page loads, never in the page's HTML); short anticipation beat.
 - Home's tray (banner on desktop) shows an unrevealed draw first until you've revealed it.
 - Your person has changed (full re-draw, blind re-match or blind assignment, GC-017): Reveal resets to the before state with the note "Your person has changed." and the privacy check, on every device. It never names the previous person.
@@ -634,7 +642,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### In scope — Dev tasks
 
-- Recipient's wishlist: "{N} items" / "Recently changed first"; each item with name, Most wanted / Nice to have badge, owner note and ₦ price; budget + event date reminder ("You're buying for {name}. Spend … Gifts are exchanged on … at …").
+- Recipient's wishlist: "{N} items" / "Recently changed first"; each item with name, Most wanted / Nice to have badge, owner note and ₦ price; budget + event date reminder ("You're buying for {name}. Spend … Gifts are exchanged on …"; no time since 2026-11-09, Tobechukwu Olih).
 - Badges on a row: "Updated" (changed since you last opened the list), "You got this" (your own mark only), "Over budget" under the price.
 - Item detail (sheet on mobile, dialog on desktop): price with "Within / Over / Under the {budget} budget."; note; Open the shop (new tab); Copy link; "I got this" → "Marked “{name}” as got. Only you can see this." with Undo; "I haven't got it after all".
 - A giver may mark several items. Marks are visible to that giver only — never to the owner, the organiser or anyone else.
@@ -1005,7 +1013,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
   - Names are drawn ("Find out who you're buying for."). Covers re-draws and "Your person has changed".
   - Someone joins ("Only for exchanges you organise."). Organisers get "{name} joined {exchange}" / "{name} wants to join {exchange}" emails.
   - Join-by reminder ("If you haven't added a wishlist, we'll remind you the day before joining closes."). Sent 24 hours before join-by, only to people taking part with no list.
-  - Event reminder ("We'll remind you the day before gifts are exchanged."). Sent 24 hours before the event time to everyone taking part.
+  - Event reminder ("We'll remind you the day before gifts are exchanged."). Sent at 9:00 am the day before the gift day, in each person's own time zone, to everyone taking part (updated 2026-11-09, Tobechukwu Olih; was 24 hours before the event time).
 - Always sent, can't be turned off: exchange cancelled (GCO-013), you were removed (GCO-007), you're now the organiser (GCO-014), sign-in codes.
 - Reminders also appear in Activity (GC-007).
 - Not in v1: hint requests (GC-016); push permission status + Send a test (no web push); WhatsApp share reminders.
@@ -1214,7 +1222,9 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 **Updated 2026-11-09 (Tobechukwu Olih):** budget labels use "to" everywhere ("₦10,000 to ₦20,000"; the top preset is "Above ₦50,000"). Dates: the join-by moment must be before the gift moment and both in the future, with no minimum or maximum gap; "When joining closes" draws at the join-by time, and "When I choose" closes joining at the end of the join-by day, which must be before the gift day. Errors: "Join by has to be in the future.", "Join by has to be before the gift day.", "The gift day has to be in the future.". The summary ends with "Times are in your time zone ({zone})." using the organiser's browser zone.
 
-**Updated in v1.1:** adds an event time. Everyone sees dates and times in their own time zone.
+**Updated 2026-11-09 (Tobechukwu Olih), later the same day:** the gift time is removed. The gift day is one date field ("Gift day", for example "Sat 12 Dec 2026"; boards Org-Budget-default / -filled / -error). It is set in the organiser's time zone and has passed at the end of that day there. The join-by day must be before the gift day, in both draw modes. Everyone sees the same gift day date. The Draw time (6:00 pm, "Joining closes at this time on the join-by day.") is unchanged.
+
+**Updated in v1.1:** adds an event time (replaced 2026-11-09: date only). Everyone sees dates and times in their own time zone.
 
 **Updated 2026-11-03 (Tobechukwu Olih):** the four budget presets are fixed (see In scope).
 
@@ -1223,19 +1233,19 @@ Organiser is a participant with all participant abilities, unless they chose "No
 #### Context
 
 - A. Start exchange, step 2 of 3.
-- B. The organiser sets dates and times in their own time zone. Each moment (join-by, draw time, event time) is fixed once set, and every viewer sees it converted to their own time zone.
+- B. The organiser sets dates and times in their own time zone. Each moment (join-by, draw time) is fixed once set, and every viewer sees it converted to their own time zone. The gift day is a date in the organiser's time zone; it ends at the end of that day there.
 
 #### In scope — Dev tasks
 
 - Budget per gift: one of four preset ranges — ₦5,000 to ₦10,000; ₦10,000 to ₦20,000; ₦20,000 to ₦50,000; Above ₦50,000 (decided 2026-11-03 by Tobechukwu Olih; overrides the ranges in the designs).
-- Join by; event date and event time (both required).
+- Join by; gift day (a date, required; no time).
 - When are names drawn: when joining closes (default, automatic) or when I choose.
 - Draw time (when names are drawn automatically): defaults to 6:00 pm in the organiser's time zone. Joining closes at that time on the join-by day; when the organiser chooses, joining closes at the end of the join-by day.
 - Plain-language timeline summary, in the organiser's time zone.
 
 #### Edge cases — Non-standard scenarios
 
-- Dates out of order; event date and time in the past; join-by after the event.
+- Dates out of order; gift day in the past; join-by on or after the gift day.
 - Participants in other time zones → they see every date and time converted to their own zone, so a date can fall on a different day for them. Countdowns use the same fixed moments.
 
 #### RAIDS — Risks, Assumptions, Issues, Dependencies
@@ -1245,7 +1255,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 #### Content
 
-- "Here's how it runs: people can join until Fri 27 Nov. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 19 Dec at 4:00 pm."
+- "Here's how it runs: people can join until Fri 27 Nov. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 19 Dec. Times are in your time zone (WAT)." (board Org-Budget-filled, 2026-11-09)
 
 ### GCO-003 · Start exchange: Rules & review
 
@@ -1279,7 +1289,19 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 **Updated 2026-11-09 (Tobechukwu Olih):** the header follows the board: the title, "Only you so far.", then "Created by you on {Mon 2 Nov} · Everyone spends {budget}" (budget labels as in GCO-002). The page has no separate Dates section and no note; "What happens next" ends with "Times are in your time zone ({zone})." in the viewer's zone. The invite link is `{site}/i/<token>`, readable by the organiser only. Controls whose feature is not built yet are hidden: Invite by email (slice 7), Add your wishlist (slice 5), Organiser tools (slices 5, 10, 13, 15). "Share invite link" on Exchanges goes to the invite section of the exchange page.
 
-**Updated in v1.1:** the timeline shows the event time.
+**Updated 2026-11-09 (Tobechukwu Olih), later the same day:** the gift day is a date only. "What happens next" step 3 reads "{Sat 12 Dec}." with no time. "Add your wishlist" for an organiser taking part becomes Your part › "Your list for this exchange", which opens S49, its own page. S49 is built with the attach work in slice 5; boards Org-List-* and Exchange-Detail-oattached / -oideas. S49 copy:
+- Entry row: "Your list for this exchange" / "Nothing yet. Add one so your giver has ideas."
+- Page: H1 "Your list for this exchange", sub "{Family Christmas 2026}". In-app page with Back and the tab bar; Back leaves without a list (no Skip).
+- "Pick one of your wishlists, or add a few ideas just for this exchange. Everyone spends ₦10,000 to ₦20,000, so ideas in that range help most."
+- "Only your giver will see it, and only after names are drawn."
+- Buttons "Choose a wishlist" (primary) and "Add items instead". No wishlists: "You don't have any wishlists yet, so add a few items instead." and Choose is unavailable.
+- Item sheet helper: "Your budget here is ₦10,000 to ₦20,000." Ideas: "Your list for this exchange (2)" / "Only for this exchange", Done / Add another item, toast "Added "Ankara tote bag"." with Undo.
+- Attach failed: "We couldn't attach "My Christmas wishlist". Nothing has changed, so you can try again."
+- Current: "Your giver will see it after the draw. You can change it until then." with "Choose a different wishlist". Choosing another wishlist before the draw replaces the current one.
+- Back on the exchange page: toasts "Wishlist attached. Your giver will see it after the draw." / "Your list is ready. Your giver will see it after the draw."; sublines "From "My Christmas wishlist". 6 items. You can change it until the draw." / "Only for this exchange. 2 items. You can change them until the draw."
+- A whole wishlist or ideas only; single items from a wishlist are not picked. The organiser sees only their own list, never reservations or pairs.
+
+**Updated in v1.1:** the timeline shows the event time (replaced 2026-11-09: date only).
 
 **As Organiser, I want to** get the invite link out straight away, **so that** my group can start joining.
 
@@ -1291,7 +1313,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 #### In scope — Dev tasks
 
 - Header: "Created by you on {day}. Only you so far. Everyone spends {budget}."
-- Invite link; what happens next (people join → names drawn at {draw time} → event day at {event time}); Dates with the draw time and event time; People "Only you so far"; Organiser tools.
+- Invite link; what happens next (people join → names drawn at {draw time} → gift day {date}); Dates with the draw time and the gift day (date only); People "Only you so far"; Organiser tools.
 - Share to WhatsApp (main); Copy link; Invite by email (GCO-005; SMS invites not in v1); Add your wishlist (GC-010), not shown when just organising.
 
 #### Edge cases — Non-standard scenarios
@@ -1360,7 +1382,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 #### Edge cases — Non-standard scenarios
 
 - Only the organiser so far → invite prompt + minimum-3 reminder.
-- Event step shows the date and time; people taking part get an event reminder email the day before (GC-026).
+- Event step shows the gift day (date only since 2026-11-09); people taking part get an event reminder email the day before (GC-026).
 
 #### RAIDS — Risks, Assumptions, Issues, Dependencies
 
@@ -1470,6 +1492,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 **Updated in v1.1:** the event time is editable, including after the draw; join-by is editable again while joining is reopened.
 
+**Updated 2026-11-09 (Tobechukwu Olih):** the gift day is a date only. There's no gift time to edit (boards Org-Edit-default / -afterdraw). After the draw, the budget and the gift day can change.
+
 **As Organiser, I want to** change details or dates after creating, **so that** I can fix a date without confusing everyone.
 
 #### Context
@@ -1478,8 +1502,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 #### In scope — Dev tasks
 
-- Same fields as the Basics and Budget & dates steps, including the event date and time, the draw choice and the draw time (all editable before the draw).
-- After the draw only budget, event date and event time can change.
+- Same fields as the Basics and Budget & dates steps, including the gift day (date only), the draw choice and the draw time (all editable before the draw).
+- After the draw only budget and gift day can change.
 - While joining is reopened (GCO-007), the join-by date can change too.
 - "Tell everyone what changed" — an email to every other member listing what changed (ticked by default). Reminder emails move with the new dates (GC-026).
 
@@ -1494,7 +1518,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 #### Content
 
-- "After names are drawn, only the budget and event date and time can change."
+- "After names are drawn, only the budget and gift day can change." (wording to confirm against board Org-Edit-afterdraw, which reads "gift day can change")
 
 ## Draw, cancel, hand over, complete
 
@@ -1641,7 +1665,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 #### In scope — Dev tasks
 
-- After the event time, the organiser sees Mark as complete… (confirms first). If not marked, the exchange completes automatically 7 days after the event time.
+- After the gift day has ended (end of that day in the organiser's time zone; updated 2026-11-09, Tobechukwu Olih), the organiser sees Mark as complete… (confirms first). If not marked, the exchange completes automatically 7 days after the gift day ends.
 - Between the event and completion, the exchange stays Active: leaving, pair repairs (GC-017), hand-over and got-it marks still work.
 - On completion it moves to Past and is read-only: nothing can be edited, cancelled, left or fixed, and got-it marks can't change.
 - Everyone in it gets Activity "{exchange} is complete."

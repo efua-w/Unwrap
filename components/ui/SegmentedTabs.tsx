@@ -22,6 +22,9 @@ type Props<T extends string> =
       value: T;
       onChange: (value: T) => void;
       disabled?: boolean;
+      // Inline switch beside a field (Draw time AM/PM): shrinks to its options and keeps the legend
+      // as the group's accessible name only, not on screen.
+      compact?: boolean;
     }
   | {
       // Two views of one page (Active / Past): each is a link, the current one is marked.
@@ -52,13 +55,14 @@ export function SegmentedTabs<T extends string>(props: Props<T>) {
   }
   return (
     <fieldset className="min-w-0" disabled={props.disabled}>
-      <legend className="mb-8 text-body-sm-semibold text-text-default">{props.legend}</legend>
-      <div className={TRACK}>
+      <legend className={props.compact ? "sr-only" : "mb-8 text-body-sm-semibold text-text-default"}>{props.legend}</legend>
+      <div className={cx(TRACK, props.compact && "w-fit")}>
         {props.options.map((option, i) => (
           <label
             key={option.value}
             className={cx(
               PILL,
+              props.compact && "min-w-64 flex-none",
               "cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-border-focus",
               props.value === option.value ? ON : OFF,
               "has-disabled:cursor-not-allowed has-disabled:text-text-disabled",

@@ -2,7 +2,7 @@ import { formatHm, formatYmdDay, hourOfHm } from "@/lib/dates/format";
 import type { ExchangeInput } from "@/lib/validation/exchange";
 import { EXCHANGE_COPY } from "./copy";
 
-type SummaryInput = Pick<ExchangeInput, "joinByDate" | "drawMode" | "drawTime" | "eventDate" | "eventTime">;
+type SummaryInput = Pick<ExchangeInput, "joinByDate" | "drawMode" | "drawTime" | "giftDay">;
 
 // "Here's how it runs: ..." under Budget and dates (GCO-002), in the organiser's own zone: the
 // values are the wall-clock dates and times they typed. Null until every date the sentence needs is
@@ -11,13 +11,12 @@ type SummaryInput = Pick<ExchangeInput, "joinByDate" | "drawMode" | "drawTime" |
 // not be "that evening", so earlier times say "that day" (copy-pending).
 export function runSummary(input: SummaryInput): string | null {
   const join = formatYmdDay(input.joinByDate);
-  const gift = formatYmdDay(input.eventDate);
-  const giftTime = formatHm(input.eventTime);
-  if (!join || !gift || !giftTime) return null;
+  const gift = formatYmdDay(input.giftDay);
+  if (!join || !gift) return null;
   const copy = EXCHANGE_COPY.summary;
-  if (input.drawMode === "organiser_chooses") return copy.manual(join, gift, giftTime);
+  if (input.drawMode === "organiser_chooses") return copy.manual(join, gift);
   const drawTime = formatHm(input.drawTime);
   const hour = hourOfHm(input.drawTime);
   if (!drawTime || hour === null) return null;
-  return copy.automatic(join, hour >= 17 ? copy.thatEvening : copy.thatDay, drawTime, gift, giftTime);
+  return copy.automatic(join, hour >= 17 ? copy.thatEvening : copy.thatDay, drawTime, gift);
 }

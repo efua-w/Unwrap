@@ -59,7 +59,8 @@ async function fillDates(page: Page, options: { mode?: "auto" | "manual" } = {})
   await page.getByRole("radio", { name: "₦5,000 to ₦10,000" }).check();
   await page.getByLabel("Join by").fill(JOIN);
   await page.getByLabel("Gift day").fill(GIFT);
-  await page.getByLabel("Gift time").fill("15:00");
+  // The gift day is a date only (owner decision 2026-11-09): there is no gift time field.
+  await expect(page.getByLabel("Gift time")).toHaveCount(0);
   if (options.mode === "manual") await chooseDrawMode(page, "When I choose");
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Rules and review" })).toBeVisible();
@@ -142,8 +143,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         // S27 Budget and dates: empty Next flags every required field.
         await page.getByRole("button", { name: "Next", exact: true }).click();
         await expect(page.getByText("Pick a budget so everyone spends about the same.")).toBeVisible();
-        await expect(page.getByText("Choose a date.").first()).toBeVisible();
-        await expect(page.getByText("Choose a time.")).toBeVisible();
+        // Join by and Gift day are both empty; Draw time has a default, and there is no gift time.
+        await expect(page.getByText("Choose a date.")).toHaveCount(2);
         await expectNoAxeViolations(page);
         await page.screenshot({ path: `test-results/screenshots/exchange-dates-error-${width}.png`, fullPage: true });
 
@@ -151,7 +152,6 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await page.getByRole("radio", { name: "₦5,000 to ₦10,000" }).check();
         await page.getByLabel("Join by").fill(ymdIn(30));
         await page.getByLabel("Gift day").fill(GIFT);
-        await page.getByLabel("Gift time").fill("15:00");
         await page.getByRole("button", { name: "Next", exact: true }).click();
         await expect(page.getByText("Join by has to be before the gift day.")).toBeVisible();
         // A gift day in the past.
@@ -167,13 +167,38 @@ for (const { name: width, viewport } of VIEWPORTS) {
         // Fixed: defaults are "When joining closes" at 6:00 pm, and the summary names the zone.
         await page.getByLabel("Join by").fill(JOIN);
         await expect(page.getByRole("radio", { name: "When joining closes" })).toBeChecked();
-        await expect(page.getByLabel("Draw time")).toHaveValue("18:00");
+        // Draw time is a 12-hour picker: default 6:00 with PM chosen. From 768 it is a dropdown with 24
+        // options; below 768 it is a sheet. Choosing 6:00 with PM keeps the value and returns focus.
+        const drawTime = page.getByRole("combobox", { name: "Draw time" });
+        const drawPeriod = page.getByRole("group", { name: "AM or PM" });
+        await expect(drawTime).toHaveText("6:00");
+        await expect(drawPeriod.getByRole("radio", { name: "PM" })).toBeChecked();
+        await drawTime.click();
+        const timeList = page.getByRole("listbox", { name: "Draw time" });
+        if (viewport.width >= 768) {
+          await expect(page.getByRole("dialog")).toHaveCount(0);
+        } else {
+          await expect(page.getByRole("dialog", { name: "Draw time" })).toBeVisible();
+        }
+        await expect(timeList.getByRole("option")).toHaveCount(24);
+        await expect(timeList.getByRole("option", { name: "6:00" })).toHaveAttribute("aria-selected", "true");
+        await timeList.getByRole("option", { name: "6:00" }).click();
+        await expect(timeList).toHaveCount(0);
+        await expect(drawTime).toBeFocused();
+        await expect(drawTime).toHaveText("6:00");
+        await expect(drawPeriod.getByRole("radio", { name: "PM" })).toBeChecked();
+        // Join by and Gift day share a row from 768 and stack below it.
+        const joinBox = await page.getByLabel("Join by").boundingBox();
+        const giftBox = await page.getByLabel("Gift day").boundingBox();
+        if (!joinBox || !giftBox) throw new Error("Join by and Gift day should be visible.");
+        if (viewport.width >= 768) expect(giftBox.y).toBe(joinBox.y);
+        else expect(giftBox.y).toBeGreaterThan(joinBox.y + joinBox.height);
         await expect(page.getByText("Joining closes at this time on the join-by day.")).toBeVisible();
         const joinLabel = formatYmdDay(JOIN) ?? "";
         const giftLabel = formatYmdDay(GIFT) ?? "";
         const summary = page.getByRole("region", { name: "Summary" });
         await expect(summary).toContainText(
-          `Here's how it runs: people can join until ${joinLabel}. We draw names that evening at 6:00 pm. Gifts are exchanged on ${giftLabel} at 3:00 pm.`,
+          `Here's how it runs: people can join until ${joinLabel}. We draw names that evening at 6:00 pm. Gifts are exchanged on ${giftLabel}.`,
         );
         await expect(summary).toContainText("Times are in your time zone (WAT).");
         await expectNoAxeViolations(page);
@@ -183,10 +208,10 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await chooseDrawMode(page, "When I choose");
         await expect(page.getByLabel("Draw time")).toHaveCount(0);
         await expect(summary).toContainText(
-          `people can join until the end of ${joinLabel}. You draw names when you're ready. Gifts are exchanged on ${giftLabel} at 3:00 pm.`,
+          `people can join until the end of ${joinLabel}. You draw names when you're ready. Gifts are exchanged on ${giftLabel}.`,
         );
         await chooseDrawMode(page, "When joining closes");
-        await expect(page.getByLabel("Draw time")).toHaveValue("18:00");
+        await expect(page.getByRole("combobox", { name: "Draw time" })).toHaveText("6:00");
         await page.getByRole("button", { name: "Next", exact: true }).click();
 
         // S28 Review: defaults preselected, the summary reads back everything, nothing written yet.
@@ -198,7 +223,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(review).toContainText("One book you loved this year, wrapped.");
         await expect(review).toContainText("₦5,000 to ₦10,000");
         await expect(review).toContainText(`${joinLabel}, 6:00 pm`);
-        await expect(review).toContainText(`${giftLabel}, 3:00 pm`);
+        await expect(review).toContainText(giftLabel);
         await expect(page.getByText("Nothing is sent until you tap Start exchange.")).toBeVisible();
         expect((await adminClient().from("exchanges").select("id").eq("organiser_id", userId)).data).toEqual([]);
         await expectNoAxeViolations(page);
@@ -236,7 +261,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByRole("heading", { name: "What happens next" })).toBeVisible();
         await expect(page.getByText(`Anyone with the link can join until ${joinLabel}.`)).toBeVisible();
         await expect(page.getByText(`${joinLabel} at 6:00 pm.`)).toBeVisible();
-        await expect(page.getByText(`${giftLabel} at 3:00 pm.`)).toBeVisible();
+        await expect(page.getByText(`${giftLabel}.`, { exact: true })).toBeVisible();
         await expect(page.getByText("Times are in your time zone (WAT).")).toBeVisible();
         await expect(page.getByRole("heading", { name: "Your part" })).toBeVisible();
         await expect(page.getByText("You're taking part. You'll be drawn and buy a gift too.")).toBeVisible();

@@ -26,6 +26,7 @@ import {
   SegmentedTabsDemo,
   SheetDemo,
   SkeletonDemo,
+  TimeField12Demo,
   ToastDemo,
 } from "./Interactive";
 
@@ -88,8 +89,11 @@ export default function ComponentGallery() {
           <Field label="Name" name="c" disabled defaultValue="Disabled" />
           <Field label="Note" name="d" multiline maxLength={200} helper="Grows as you type." />
           <Field label="Join by" name="e" type="date" defaultValue="2026-12-04" />
-          <Field label="Gift time" name="f" type="time" defaultValue="15:00" error="Choose a time." />
+          <Field label="Draw time" name="f" type="time" defaultValue="15:00" error="Choose a time." />
         </div>
+      </Section>
+      <Section title="TimeField12">
+        <TimeField12Demo />
       </Section>
       <Section title="MoneyField">
         <MoneyFieldDemo />
@@ -114,7 +118,7 @@ export default function ComponentGallery() {
             steps={[
               { title: "People join", detail: "Anyone with the link can join until Fri 4 Dec." },
               { title: "Names are drawn", detail: "Fri 4 Dec at 6:00 pm." },
-              { title: "Gifts are exchanged", detail: "Sat 12 Dec at 3:00 pm." },
+              { title: "Gifts are exchanged", detail: "Sat 12 Dec." },
             ]}
           />
           <p className="text-body-sm-regular text-text-muted">

@@ -8,6 +8,7 @@ import { ListRow } from "@/components/ui/ListRow";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { RadioGroup } from "@/components/ui/RadioGroup";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { TimeField12 } from "@/components/ui/TimeField12";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { Sheet, type SheetVariant } from "@/components/ui/Sheet";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
@@ -282,6 +283,18 @@ export function MoneyFieldDemo() {
     <div className="flex max-w-dialog flex-col gap-16">
       <MoneyField label="Price" name="demo-price" placeholder="0" helper="Whole naira only, like 8500." value={price} onChange={(e) => setPrice(e.target.value)} />
       <MoneyField label="Price" name="demo-price-error" value="85.50" onChange={() => {}} error="Use whole naira, with no kobo. For example, 8,500." />
+    </div>
+  );
+}
+
+// TimeField12 gallery: a live field (shows the 24-hour value it emits) and the error state.
+export function TimeField12Demo() {
+  const [hm, setHm] = useState("18:00");
+  return (
+    <div className="flex max-w-dialog flex-col gap-16">
+      <TimeField12 label="Draw time" name="demo-time" value={hm} onChange={setHm} helper="Joining closes at this time on the join-by day." />
+      <p className="text-body-sm-regular text-text-muted">Emits: {hm === "" ? "(empty)" : hm}</p>
+      <TimeField12 label="Draw time" name="demo-time-error" value="" onChange={() => {}} error="Choose a time." />
     </div>
   );
 }

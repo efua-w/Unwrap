@@ -28,7 +28,6 @@ export const EXCHANGE_COPY = {
       budgetLegend: "Budget per gift",
       joinBy: "Join by",
       giftDay: "Gift day",
-      giftTime: "Gift time",
       drawLegend: "When are names drawn?",
       drawAuto: "When joining closes",
       drawManual: "When I choose",
@@ -69,10 +68,12 @@ export const EXCHANGE_COPY = {
     thatEvening: "that evening",
     // pending: for draw times before 5 pm, where "that evening" would be wrong.
     thatDay: "that day",
-    automatic: (join: string, when: string, drawTime: string, gift: string, giftTime: string) =>
-      `Here's how it runs: people can join until ${join}. We draw names ${when} at ${drawTime}. Gifts are exchanged on ${gift} at ${giftTime}.`,
-    manual: (join: string, gift: string, giftTime: string) =>
-      `Here's how it runs: people can join until the end of ${join}. You draw names when you're ready. Gifts are exchanged on ${gift} at ${giftTime}.`,
+    // The gift day is a date only (owner decision 2026-11-09): no gift time in either sentence.
+    automatic: (join: string, when: string, drawTime: string, gift: string) =>
+      `Here's how it runs: people can join until ${join}. We draw names ${when} at ${drawTime}. Gifts are exchanged on ${gift}.`,
+    // pending: derived from the automatic sentence for "When I choose" (docs/copy-pending.md).
+    manual: (join: string, gift: string) =>
+      `Here's how it runs: people can join until the end of ${join}. You draw names when you're ready. Gifts are exchanged on ${gift}.`,
   },
   detail: {
     back: "Back to Exchanges",
@@ -163,7 +164,6 @@ export function errorLine(field: FieldKey, code: ErrorCode): string {
           return "Add a name so people know which exchange this is.";
         case "budget":
           return "Pick a budget so everyone spends about the same.";
-        case "eventTime":
         case "drawTime":
           return "Choose a time.";
         default:

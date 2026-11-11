@@ -47,7 +47,8 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
           {copy.nextTitle}
         </h2>
         <Timeline steps={timelineSteps(exchange, timeZone)} />
-        <p className="text-body-sm-regular text-text-muted">{copy.zoneLine(zoneShortName(new Date(exchange.eventAt), timeZone))}</p>
+        {/* WHY the zone at join-by: the gift day has no time, so join-by and draw are the only times shown. */}
+        <p className="text-body-sm-regular text-text-muted">{copy.zoneLine(zoneShortName(new Date(exchange.joinByAt), timeZone))}</p>
       </section>
 
       <section aria-labelledby="part-heading" className="flex flex-col gap-8">

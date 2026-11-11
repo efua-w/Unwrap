@@ -91,12 +91,12 @@ describe("budget presets (GCO-002, decided 2026-11-03)", () => {
 });
 
 describe("timeline sentences (GCO-004, GC-013)", () => {
-  // Joining closes at 6:00 pm Lagos on Fri 4 Dec; gifts Sat 12 Dec 3:00 pm Lagos.
+  // Joining closes at 6:00 pm Lagos on Fri 4 Dec; gift day Sat 12 Dec (a date only).
   const automatic: Schedule = {
     joinByAt: "2026-12-04T17:00:00Z",
     drawMode: "at_join_by",
     drawAt: "2026-12-04T17:00:00Z",
-    eventAt: "2026-12-12T14:00:00Z",
+    giftDay: "2026-12-12",
     approvalRequired: false,
   };
   // "When I choose": joining closes at the next Lagos midnight, exclusive (Sat 5 Dec 00:00 = Fri 23:00Z).
@@ -104,7 +104,7 @@ describe("timeline sentences (GCO-004, GC-013)", () => {
     joinByAt: "2026-12-04T23:00:00Z",
     drawMode: "organiser_chooses",
     drawAt: null,
-    eventAt: "2026-12-12T14:00:00Z",
+    giftDay: "2026-12-12",
     approvalRequired: false,
   };
 
@@ -112,7 +112,7 @@ describe("timeline sentences (GCO-004, GC-013)", () => {
     expect(timelineSteps(automatic, LAGOS)).toEqual([
       { title: "People join", detail: "Anyone with the link can join until Fri 4 Dec." },
       { title: "Names are drawn", detail: "Fri 4 Dec at 6:00 pm." },
-      { title: "Gifts are exchanged", detail: "Sat 12 Dec at 3:00 pm." },
+      { title: "Gifts are exchanged", detail: "Sat 12 Dec." },
     ]);
   });
 
@@ -120,7 +120,14 @@ describe("timeline sentences (GCO-004, GC-013)", () => {
     const steps = timelineSteps(manual, LAGOS);
     expect(steps[0]?.detail).toBe("Anyone with the link can join until Fri 4 Dec.");
     expect(steps[1]?.detail).toBe("When you're ready.");
-    expect(steps[2]?.detail).toBe("Sat 12 Dec at 3:00 pm.");
+    expect(steps[2]?.detail).toBe("Sat 12 Dec.");
+  });
+
+  it("shows the gift day as the stored date in every zone, with no time", () => {
+    for (const zone of [LAGOS, "America/Los_Angeles", "Pacific/Kiritimati"]) {
+      expect(timelineSteps(automatic, zone)[2]?.detail).toBe("Sat 12 Dec.");
+      expect(timelineSteps(manual, zone)[2]?.detail).toBe("Sat 12 Dec.");
+    }
   });
 
   it("counts the last joining day in the viewer's zone at the day boundary", () => {
@@ -165,11 +172,11 @@ describe("timeline sentences (GCO-004, GC-013)", () => {
 });
 
 describe("the 'how it runs' summary (GCO-002)", () => {
-  const base = { joinByDate: "2026-12-04", drawMode: "at_join_by", drawTime: "18:00", eventDate: "2026-12-12", eventTime: "15:00" } as const;
+  const base = { joinByDate: "2026-12-04", drawMode: "at_join_by", drawTime: "18:00", giftDay: "2026-12-12" } as const;
 
   it("matches the board for an evening draw", () => {
     expect(runSummary(base)).toBe(
-      "Here's how it runs: people can join until Fri 4 Dec. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 12 Dec at 3:00 pm.",
+      "Here's how it runs: people can join until Fri 4 Dec. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 12 Dec.",
     );
   });
   it("says 'that day' for a draw before 5 pm", () => {
@@ -178,12 +185,12 @@ describe("the 'how it runs' summary (GCO-002)", () => {
   });
   it("matches the board for 'When I choose'", () => {
     expect(runSummary({ ...base, drawMode: "organiser_chooses" })).toBe(
-      "Here's how it runs: people can join until the end of Fri 4 Dec. You draw names when you're ready. Gifts are exchanged on Sat 12 Dec at 3:00 pm.",
+      "Here's how it runs: people can join until the end of Fri 4 Dec. You draw names when you're ready. Gifts are exchanged on Sat 12 Dec.",
     );
   });
   it("shows nothing until the dates are real", () => {
     expect(runSummary({ ...base, joinByDate: "" })).toBeNull();
-    expect(runSummary({ ...base, eventTime: "" })).toBeNull();
+    expect(runSummary({ ...base, giftDay: "" })).toBeNull();
     expect(runSummary({ ...base, drawTime: "" })).toBeNull();
     // The draw time does not matter when the organiser draws.
     expect(runSummary({ ...base, drawMode: "organiser_chooses", drawTime: "" })).not.toBeNull();
@@ -197,8 +204,7 @@ describe("step validation (GCO-001, GCO-002)", () => {
     joinByDate: "2026-12-04",
     drawMode: "at_join_by",
     drawTime: "18:00",
-    eventDate: "2026-12-12",
-    eventTime: "15:00",
+    giftDay: "2026-12-12",
   } as const;
 
   it("requires a name and caps the note at 280 code points", () => {
@@ -214,17 +220,17 @@ describe("step validation (GCO-001, GCO-002)", () => {
   });
 
   it("flags missing budget, dates and times on their fields", () => {
-    expect(validateBudgetAndDates({ ...good, budget: null, joinByDate: "", eventDate: "", eventTime: "", drawTime: "" }, now)).toEqual({
+    expect(validateBudgetAndDates({ ...good, budget: null, joinByDate: "", giftDay: "", drawTime: "" }, now)).toEqual({
       budget: "missing",
       joinBy: "missing",
-      eventDate: "missing",
-      eventTime: "missing",
+      giftDay: "missing",
       drawTime: "missing",
     });
   });
 
-  it("puts a past gift moment on the gift day", () => {
-    expect(validateBudgetAndDates({ ...good, eventDate: "2026-11-09", eventTime: "11:59" }, now).eventDate).toBe("gift-past");
+  it("puts a gift day that has ended on the gift day; today still counts (it ends at midnight)", () => {
+    expect(validateBudgetAndDates({ ...good, giftDay: "2026-11-08" }, now).giftDay).toBe("gift-past");
+    expect(validateBudgetAndDates({ ...good, giftDay: "2026-11-09" }, now).giftDay).toBeUndefined();
   });
 
   it("puts a past join-by on Join by, and join-by after the gift on Join by", () => {
@@ -233,8 +239,9 @@ describe("step validation (GCO-001, GCO-002)", () => {
     expect(validateBudgetAndDates({ ...good, joinByDate: "2026-12-19" }, now).joinBy).toBe("join-not-before-gift");
   });
 
-  it("allows join-by on the gift day when it is earlier in the day (automatic draw)", () => {
-    expect(validateBudgetAndDates({ ...good, joinByDate: "2026-12-12", drawTime: "09:00" }, now)).toEqual({});
+  it("needs the join-by DAY before the gift DAY for an automatic draw too, whatever the draw time", () => {
+    expect(validateBudgetAndDates({ ...good, joinByDate: "2026-12-12", drawTime: "09:00" }, now).joinBy).toBe("join-not-before-gift");
+    expect(validateBudgetAndDates({ ...good, joinByDate: "2026-12-11", drawTime: "23:00" }, now)).toEqual({});
   });
 
   it("needs the join-by DAY before the gift DAY when the organiser draws", () => {
@@ -261,8 +268,7 @@ describe("the Server Action's input check and the refusal hints (GCO-001..003)",
     joinByDate: "2026-12-04",
     drawMode: "organiser_chooses",
     drawTime: "",
-    eventDate: "2026-12-12",
-    eventTime: "15:00",
+    giftDay: "2026-12-12",
     timeZone: LAGOS,
     takingPart: false,
     approvalRequired: true,
@@ -279,8 +285,7 @@ describe("the Server Action's input check and the refusal hints (GCO-001..003)",
         joinByDate: "2026-12-04",
         drawMode: "organiser_chooses",
         drawTime: "18:00",
-        eventDate: "2026-12-12",
-        eventTime: "15:00",
+        giftDay: "2026-12-12",
         timeZone: LAGOS,
         takingPart: false,
         approvalRequired: true,
@@ -291,10 +296,10 @@ describe("the Server Action's input check and the refusal hints (GCO-001..003)",
 
   it("refuses junk with field codes, and a bad zone without one", () => {
     expect(parseExchangeInput(null)).toMatchObject({ ok: false });
-    const bad = parseExchangeInput({ ...raw, name: "", budget: "free", joinByDate: "x", eventTime: "25:00" });
+    const bad = parseExchangeInput({ ...raw, name: "", budget: "free", joinByDate: "x", giftDay: "2026-02-30" });
     expect(bad).toEqual({
       ok: false,
-      errors: { name: "missing", budget: "missing", joinBy: "missing", eventTime: "missing" },
+      errors: { name: "missing", budget: "missing", joinBy: "missing", giftDay: "missing" },
     });
     expect(parseExchangeInput({ ...raw, timeZone: "Mars/Olympus" })).toEqual({ ok: false, errors: {} });
   });
@@ -311,12 +316,12 @@ describe("the Server Action's input check and the refusal hints (GCO-001..003)",
     expect(fieldFromHint("budget")).toEqual({ field: "budget", code: "missing" });
     expect(fieldFromHint("join_by")).toEqual({ field: "joinBy", code: "join-not-before-gift" });
     // R1-1: with the plan, a join-by still before the gift was refused for being in the past.
-    const plan = { joinByDate: "2026-12-04", drawMode: "at_join_by", drawTime: "18:00", eventDate: "2026-12-12", eventTime: "15:00" } as const;
+    const plan = { joinByDate: "2026-12-04", drawMode: "at_join_by", drawTime: "18:00", giftDay: "2026-12-12" } as const;
     expect(fieldFromHint("join_by", plan)).toEqual({ field: "joinBy", code: "join-past" });
-    expect(fieldFromHint("join_by", { ...plan, joinByDate: "2026-12-12", drawTime: "16:00" })).toEqual({ field: "joinBy", code: "join-not-before-gift" });
+    expect(fieldFromHint("join_by", { ...plan, joinByDate: "2026-12-12", drawTime: "09:00" })).toEqual({ field: "joinBy", code: "join-not-before-gift" });
     expect(fieldFromHint("join_by", { ...plan, drawMode: "organiser_chooses", joinByDate: "2026-12-12" })).toEqual({ field: "joinBy", code: "join-not-before-gift" });
     expect(fieldFromHint("join_by", { ...plan, drawMode: "organiser_chooses" })).toEqual({ field: "joinBy", code: "join-past" });
-    expect(fieldFromHint("event")).toEqual({ field: "eventDate", code: "gift-past" });
+    expect(fieldFromHint("event")).toEqual({ field: "giftDay", code: "gift-past" });
     // The person cannot fix a zone, and an unknown hint says nothing: both become "Couldn't start".
     expect(fieldFromHint("time_zone")).toBeNull();
     expect(fieldFromHint("surprise")).toBeNull();
@@ -328,6 +333,6 @@ describe("the Server Action's input check and the refusal hints (GCO-001..003)",
     expect(errorLine("budget", "missing")).toBe("Pick a budget so everyone spends about the same.");
     expect(errorLine("joinBy", "join-not-before-gift")).toBe("Join by has to be before the gift day.");
     expect(errorLine("joinBy", "join-past")).toBe("Join by has to be in the future.");
-    expect(errorLine("eventDate", "gift-past")).toBe("The gift day has to be in the future.");
+    expect(errorLine("giftDay", "gift-past")).toBe("The gift day has to be in the future.");
   });
 });

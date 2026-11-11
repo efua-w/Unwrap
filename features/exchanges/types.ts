@@ -10,7 +10,8 @@ export type Schedule = {
   drawMode: DrawMode;
   /** Null when the organiser draws names themselves ("When I choose"). */
   drawAt: string | null;
-  eventAt: string;
+  /** "2026-12-12": a date only, in the organiser's zone, shown as stored to every viewer. */
+  giftDay: string;
   approvalRequired: boolean;
 };
 
