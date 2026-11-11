@@ -4,7 +4,7 @@ import { EXCHANGE_COPY } from "./copy";
 
 type SummaryInput = Pick<ExchangeInput, "joinByDate" | "drawMode" | "drawTime" | "giftDay">;
 
-// "Here's how it runs: ..." under Budget and dates (GCO-002), in the organiser's own zone: the
+// The schedule summary under Budget and dates (GCO-002), in the organiser's own zone: the
 // values are the wall-clock dates and times they typed. Null until every date the sentence needs is
 // a real one, so a half-filled form shows no half-true sentence.
 // WHY "that evening" only from 5 pm: the board's example draws at 6:00 pm. A 9:00 am draw would

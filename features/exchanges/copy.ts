@@ -70,10 +70,10 @@ export const EXCHANGE_COPY = {
     thatDay: "that day",
     // The gift day is a date only (owner decision 2026-11-09): no gift time in either sentence.
     automatic: (join: string, when: string, drawTime: string, gift: string) =>
-      `Here's how it runs: people can join until ${join}. We draw names ${when} at ${drawTime}. Gifts are exchanged on ${gift}.`,
+      `People can join until ${join}. We draw names ${when} at ${drawTime}. Gifts are exchanged on ${gift}.`,
     // pending: derived from the automatic sentence for "When I choose" (docs/copy-pending.md).
     manual: (join: string, gift: string) =>
-      `Here's how it runs: people can join until the end of ${join}. You draw names when you're ready. Gifts are exchanged on ${gift}.`,
+      `People can join until the end of ${join}. You draw names when you're ready. Gifts are exchanged on ${gift}.`,
   },
   detail: {
     back: "Back to Exchanges",

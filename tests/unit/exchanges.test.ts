@@ -176,7 +176,7 @@ describe("the 'how it runs' summary (GCO-002)", () => {
 
   it("matches the board for an evening draw", () => {
     expect(runSummary(base)).toBe(
-      "Here's how it runs: people can join until Fri 4 Dec. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 12 Dec.",
+      "People can join until Fri 4 Dec. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 12 Dec.",
     );
   });
   it("says 'that day' for a draw before 5 pm", () => {
@@ -185,7 +185,7 @@ describe("the 'how it runs' summary (GCO-002)", () => {
   });
   it("matches the board for 'When I choose'", () => {
     expect(runSummary({ ...base, drawMode: "organiser_chooses" })).toBe(
-      "Here's how it runs: people can join until the end of Fri 4 Dec. You draw names when you're ready. Gifts are exchanged on Sat 12 Dec.",
+      "People can join until the end of Fri 4 Dec. You draw names when you're ready. Gifts are exchanged on Sat 12 Dec.",
     );
   });
   it("shows nothing until the dates are real", () => {

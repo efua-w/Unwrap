@@ -242,7 +242,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const giftLabel = formatYmdDay(GIFT) ?? "";
         const summary = page.getByRole("region", { name: "Summary" });
         await expect(summary).toContainText(
-          `Here's how it runs: people can join until ${joinLabel}. We draw names that evening at 6:00 pm. Gifts are exchanged on ${giftLabel}.`,
+          `People can join until ${joinLabel}. We draw names that evening at 6:00 pm. Gifts are exchanged on ${giftLabel}.`,
         );
         await expect(summary).toContainText("Times are in your time zone (WAT).");
         await expectNoAxeViolations(page);
@@ -252,7 +252,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await chooseDrawMode(page, "When I choose");
         await expect(page.getByLabel("Draw time")).toHaveCount(0);
         await expect(summary).toContainText(
-          `people can join until the end of ${joinLabel}. You draw names when you're ready. Gifts are exchanged on ${giftLabel}.`,
+          `People can join until the end of ${joinLabel}. You draw names when you're ready. Gifts are exchanged on ${giftLabel}.`,
         );
         await chooseDrawMode(page, "When joining closes");
         await expect(page.getByRole("combobox", { name: "Draw time" })).toHaveText("6:00");

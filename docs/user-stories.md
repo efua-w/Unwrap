@@ -1255,7 +1255,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 #### Content
 
-- "Here's how it runs: people can join until Fri 27 Nov. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 19 Dec. Times are in your time zone (WAT)." (board Org-Budget-filled, 2026-11-09)
+- "People can join until Fri 27 Nov. We draw names that evening at 6:00 pm. Gifts are exchanged on Sat 19 Dec. Times are in your time zone (WAT)." (board Org-Budget-filled, 2026-11-09; "Here's how it runs:" removed by the owner 2026-11-12)
 
 ### GCO-003 · Start exchange: Rules & review
 
