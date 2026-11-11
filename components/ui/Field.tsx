@@ -26,6 +26,13 @@ export type FieldProps = InputField | TextareaField;
 export const FIELD_CONTROL =
   "w-full rounded-lg bg-surface-default px-16 text-body-base-regular text-text-default placeholder:text-text-placeholder focus-ring disabled:border-border-default disabled:bg-surface-muted disabled:text-text-disabled";
 
+// WHY focus-within (GCO-002): in Chromium the focused part of a date or time field is inside its shadow
+// tree, so the field itself never matches :focus-visible. The ring follows :focus-within instead, with the
+// same 2px solid outline and 2px offset as focus-ring. `appearance-none` and left alignment keep iOS from
+// centring and restyling the value.
+const PICKER =
+  "min-w-0 appearance-none text-left focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-border-focus";
+
 export function Field(props: FieldProps) {
   const id = useId();
   const helperId = `${id}-helper`;
@@ -35,6 +42,9 @@ export function Field(props: FieldProps) {
   const border = hasError ? "border-2 border-border-error" : "border-1 border-border-input";
   const describedBy = hasError ? errorId : helper ? helperId : undefined;
   const initial = String(rest.value ?? rest.defaultValue ?? "").length;
+  // GCO-002: date and time fields use the browser's own picker, which is accessible and shows the person's own format.
+  const inputType = multiline ? undefined : (rest as { type?: string }).type;
+  const isPicker = inputType === "date" || inputType === "time";
 
   return (
     <div className="flex flex-col gap-8">
@@ -60,7 +70,7 @@ export function Field(props: FieldProps) {
           maxLength={maxLength}
           aria-invalid={hasError || undefined}
           aria-describedby={describedBy}
-          className={cx(FIELD_CONTROL, border, "h-48")}
+          className={cx(FIELD_CONTROL, border, "h-48", isPicker && PICKER)}
         />
       )}
       {hasError || helper || maxLength ? (

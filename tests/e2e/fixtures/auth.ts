@@ -69,6 +69,13 @@ export async function deleteTestUser(email: string): Promise<void> {
   const { data } = await db.auth.admin.listUsers({ perPage: 1000 });
   const user = data?.users.find((u) => u.email === email);
   if (!user) return;
+  // Slice 4: exchanges are never hard-deleted by the app (never-do 8); a throwaway user's go first,
+  // members before exchanges. Before the exchanges migration is applied these deletes just fail.
+  const { data: owned } = await db.from("exchanges").select("id").eq("organiser_id", user.id);
+  const exchangeIds = (owned ?? []).map((e: { id: string }) => e.id);
+  if (exchangeIds.length > 0) await db.from("exchange_members").delete().in("exchange_id", exchangeIds);
+  await db.from("exchange_members").delete().eq("user_id", user.id);
+  await db.from("exchanges").delete().eq("organiser_id", user.id);
   const { data: lists } = await db.from("wishlists").select("id").eq("owner_id", user.id);
   const listIds = (lists ?? []).map((l: { id: string }) => l.id);
   if (listIds.length > 0) await db.from("wishlist_items").delete().in("wishlist_id", listIds);
@@ -113,6 +120,23 @@ export function sharedDbStatus(): Promise<DbStatus> {
     return { ready: true };
   })();
   return sharedCached;
+}
+
+let exchangesCached: Promise<DbStatus> | null = null;
+
+// Slice 4: the exchange specs also need the exchanges migration. Until it is applied they skip with
+// this reason instead of failing on a missing table.
+export function exchangesDbStatus(): Promise<DbStatus> {
+  exchangesCached ??= (async (): Promise<DbStatus> => {
+    const base = await sharedDbStatus();
+    if (!base.ready) return base;
+    const { error } = await adminClient().from("exchanges").select("id").limit(1);
+    if (error) {
+      return { ready: false, reason: "The exchanges migration is not applied to the Supabase project the app points at." };
+    }
+    return { ready: true };
+  })();
+  return exchangesCached;
 }
 
 // The code an email would carry. generateLink sends nothing; it returns the one-time code.

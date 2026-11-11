@@ -12,8 +12,8 @@ export default async function ProfilePage() {
     <AppShell
       profile={{ name: profile.displayName }}
       hideTabs
-      // WHY: board says "Back to Exchanges"; that page doesn't exist yet (progress open item 53).
-      back={{ label: "Go back", href: "/home" }}
+      // Board S42: "Back to Exchanges" (owner decision 2026-11-09; closes progress open item 53).
+      back={{ label: "Back to Exchanges", href: "/exchanges" }}
     >
       <div className="flex flex-col items-start gap-24 md:max-w-dialog">
         <div className="flex items-center gap-20">

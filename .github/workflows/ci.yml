@@ -16,7 +16,8 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # WHY 30: slice 4 added 18 signed-in e2e tests (a real sign-in each); the full run passed but hit 20 minutes.
+    timeout-minutes: 30
     # WHY: the app reads these two public values on every request (proxy.ts), so e2e needs them.
     # They are repository variables, not secrets: the URL and the publishable key are public by design.
     env:

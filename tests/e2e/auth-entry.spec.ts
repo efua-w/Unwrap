@@ -562,12 +562,13 @@ test.describe("R1-1 Where Verify goes (stubbed good code, fake session)", () => 
   });
 
   test("a returning person with a deep link goes there", async ({ page, context }) => {
-    // The route is not built yet and is not gated, so the browser simply lands on it.
+    // The route is not built yet and is not gated, so the browser simply lands on it. (Slice 4 built
+    // /exchanges/[id], which is gated and would bounce this fake session to Log in, so Activity stands in.)
     await stubAuth(page, { verify: [verifyOk({ firstConfirmation: false })] });
-    await seedVerifyState(context, page, { email: EMAIL, flow: "login", next: "/exchanges/1" });
+    await seedVerifyState(context, page, { email: EMAIL, flow: "login", next: "/activity/1" });
     await open(page, "/verify");
     await page.getByLabel("6-digit code").fill("123456");
-    await page.waitForURL((url) => url.pathname === "/exchanges/1", { timeout: 30_000 });
+    await page.waitForURL((url) => url.pathname === "/activity/1", { timeout: 30_000 });
   });
 
   test("a sign-up reaches Profile setup", async ({ page, context }) => {

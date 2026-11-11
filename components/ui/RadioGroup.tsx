@@ -1,5 +1,7 @@
+import { WarningCircle } from "@phosphor-icons/react/dist/ssr";
 import { useId } from "react";
 import { cx } from "./cx";
+import { Icon } from "./Icon";
 
 export type RadioOption<T extends string> = { value: T; label: string; hint?: string };
 
@@ -7,11 +9,14 @@ type Props<T extends string> = {
   legend: string;
   name: string;
   options: readonly RadioOption<T>[];
-  value: T;
+  /** "" while nothing is chosen (no option is checked). */
+  value: T | "";
   onChange: (value: T) => void;
   /** "list": one option per line with its hint (GC-019). "segmented": side-by-side pills (GC-021). */
   variant?: "list" | "segmented";
   disabled?: boolean;
+  /** Shown under the options and read out with the group. The chosen value is kept. */
+  error?: string;
 };
 
 // WHY native radios in a fieldset: arrow keys, one Tab stop for the group, and the group name
@@ -24,10 +29,12 @@ export function RadioGroup<T extends string>({
   onChange,
   variant = "list",
   disabled = false,
+  error,
 }: Props<T>) {
   const id = useId();
+  const errorId = `${id}-error`;
   return (
-    <fieldset className="flex min-w-0 flex-col gap-8" disabled={disabled}>
+    <fieldset className="flex min-w-0 flex-col gap-8" disabled={disabled} aria-describedby={error ? errorId : undefined}>
       <legend className="mb-8 text-body-sm-semibold text-text-default">{legend}</legend>
       {variant === "segmented" ? (
         <div className="flex gap-8">
@@ -80,6 +87,12 @@ export function RadioGroup<T extends string>({
           );
         })
       )}
+      {error ? (
+        <p id={errorId} role="alert" className="flex items-start gap-8 text-body-sm-regular text-text-error">
+          <Icon icon={WarningCircle} size="sm" weight="fill" className="mt-2" />
+          <span>{error}</span>
+        </p>
+      ) : null}
     </fieldset>
   );
 }

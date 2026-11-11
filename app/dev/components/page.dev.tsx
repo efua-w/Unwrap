@@ -7,9 +7,13 @@ import { AvatarStack } from "@/components/ui/AvatarStack";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ExchangeTag } from "@/components/ui/ExchangeTag";
 import { Field } from "@/components/ui/Field";
 import { ListRow } from "@/components/ui/ListRow";
+import { LocalDateTime } from "@/components/ui/LocalDateTime";
+import { ShareActions } from "@/components/ui/ShareActions";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Timeline } from "@/components/ui/Timeline";
 import {
   BusyDemo,
   FormBusyDemo,
@@ -19,6 +23,7 @@ import {
   OfflineDemo,
   OtpDemo,
   RadioGroupDemo,
+  SegmentedTabsDemo,
   SheetDemo,
   SkeletonDemo,
   ToastDemo,
@@ -82,6 +87,8 @@ export default function ComponentGallery() {
           <Field label="Name" name="b" defaultValue="Typed value" error="Enter a name." />
           <Field label="Name" name="c" disabled defaultValue="Disabled" />
           <Field label="Note" name="d" multiline maxLength={200} helper="Grows as you type." />
+          <Field label="Join by" name="e" type="date" defaultValue="2026-12-04" />
+          <Field label="Gift time" name="f" type="time" defaultValue="15:00" error="Choose a time." />
         </div>
       </Section>
       <Section title="MoneyField">
@@ -89,6 +96,44 @@ export default function ComponentGallery() {
       </Section>
       <Section title="RadioGroup">
         <RadioGroupDemo />
+      </Section>
+      <Section title="SegmentedTabs">
+        <SegmentedTabsDemo />
+      </Section>
+      <Section title="ExchangeTag">
+        <div className="flex flex-wrap items-center gap-12">
+          <ExchangeTag name="Book club" tint="clay" />
+          <ExchangeTag name="Office Secret Santa" tint="peach" />
+          <ExchangeTag name="Family" tint="sand" size="header" />
+          <ExchangeTag name="Church choir" tint="mint" size="header" />
+        </div>
+      </Section>
+      <Section title="Timeline and LocalDateTime">
+        <div className="flex max-w-dialog flex-col gap-12">
+          <Timeline
+            steps={[
+              { title: "People join", detail: "Anyone with the link can join until Fri 4 Dec." },
+              { title: "Names are drawn", detail: "Fri 4 Dec at 6:00 pm." },
+              { title: "Gifts are exchanged", detail: "Sat 12 Dec at 3:00 pm." },
+            ]}
+          />
+          <p className="text-body-sm-regular text-text-muted">
+            <LocalDateTime value="2026-12-04T17:00:00Z" timeZone="Africa/Lagos" format="dayTime" /> in Lagos,{" "}
+            <LocalDateTime value="2026-12-04T17:00:00Z" timeZone="Europe/London" format="dayTime" /> in London.
+          </p>
+        </div>
+      </Section>
+      <Section title="ShareActions">
+        <div className="flex max-w-dialog flex-col gap-12">
+          <span id="gallery-share-link" className="break-all text-body-base-semibold">
+            https://example.com/i/0123456789abcdef0123456789abcdef
+          </span>
+          <ShareActions
+            url="https://example.com/i/0123456789abcdef0123456789abcdef"
+            whatsAppHref="https://wa.me/?text=Gallery"
+            linkElementId="gallery-share-link"
+          />
+        </div>
       </Section>
       <Section title="OtpInput">
         <OtpDemo />

@@ -354,6 +354,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-008 · Exchanges: List
 
+**Updated 2026-11-09 (Tobechukwu Olih):** until slice 6 the load error reads "We couldn't load your exchanges. Your wishlists still work.". Each exchange has a tint (clay, peach, sand or mint): the one the organiser uses least among their live exchanges, ties broken at random, and it never changes. Slice 4 lists the exchanges the person started; joined, pending and closed-request rows arrive with slices 5 to 10.
+
 **Updated in v1.1:** desktop personal action is a banner; pending and closed requests show as rows; organiser-only exchanges are marked.
 
 **As Participant, I want to** see every exchange I organise or belong to, **so that** I can find a specific one fast.
@@ -537,6 +539,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ## Exchange detail
 
 ### GC-013 · Exchange detail
+
+**Updated 2026-11-09 (Tobechukwu Olih):** the detail load error reads "We couldn't load this exchange. Nothing has changed.". Slice 4 builds the organiser's "just started" state only (see GCO-004); an exchange the person cannot see, a cancelled one and a missing one all show "This exchange isn't available to you" and no exchange data.
 
 **Updated in v1.1:** adds the organiser-only part, "Hide again" on the recipient row, viewer time zones, and the new lifecycle states (reopened joining, re-draw, awaiting completion, never drawn after the event).
 
@@ -1181,6 +1185,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 ### GCO-001 · Start exchange: Basics
 
+**Updated 2026-11-09 (Tobechukwu Olih):** the note is at most 280 characters; Close with anything entered opens "Discard this exchange?" ("Keep going" / "Discard"); nothing is saved until Start exchange.
+
 **As Organiser, I want to** name a new exchange and add a note for everyone, **so that** I can start quickly.
 
 #### Context
@@ -1205,6 +1211,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 - "This is what people see in the invite."
 
 ### GCO-002 · Start exchange: Budget & dates
+
+**Updated 2026-11-09 (Tobechukwu Olih):** budget labels use "to" everywhere ("₦10,000 to ₦20,000"; the top preset is "Above ₦50,000"). Dates: the join-by moment must be before the gift moment and both in the future, with no minimum or maximum gap; "When joining closes" draws at the join-by time, and "When I choose" closes joining at the end of the join-by day, which must be before the gift day. Errors: "Join by has to be in the future.", "Join by has to be before the gift day.", "The gift day has to be in the future.". The summary ends with "Times are in your time zone ({zone})." using the organiser's browser zone.
 
 **Updated in v1.1:** adds an event time. Everyone sees dates and times in their own time zone.
 
@@ -1241,6 +1249,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 ### GCO-003 · Start exchange: Rules & review
 
+**Updated 2026-11-09 (Tobechukwu Olih):** "Are you taking part?" starts on "Yes, I'm in" and "Who can join?" on "Anyone with the link". In the Review, "Names drawn" reads "When you're ready" when the organiser draws. If starting fails, "We couldn't start the exchange. Everything you entered is still here, so you can try again." shows and every input is kept; Start exchange is disabled offline.
+
 **As Organiser, I want to** decide whether I take part and who can join, then check everything, **so that** nothing goes out wrong.
 
 #### Context
@@ -1266,6 +1276,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 - "Nothing is sent until you tap Start exchange."
 
 ### GCO-004 · Start exchange: Created
+
+**Updated 2026-11-09 (Tobechukwu Olih):** the header follows the board: the title, "Only you so far.", then "Created by you on {Mon 2 Nov} · Everyone spends {budget}" (budget labels as in GCO-002). The page has no separate Dates section and no note; "What happens next" ends with "Times are in your time zone ({zone})." in the viewer's zone. The invite link is `{site}/i/<token>`, readable by the organiser only. Controls whose feature is not built yet are hidden: Invite by email (slice 7), Add your wishlist (slice 5), Organiser tools (slices 5, 10, 13, 15). "Share invite link" on Exchanges goes to the invite section of the exchange page.
 
 **Updated in v1.1:** the timeline shows the event time.
 
