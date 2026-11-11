@@ -30,7 +30,8 @@ export function InviteSection({ exchangeName, lastJoinDay, inviteUrl }: Props) {
           {inviteUrl}
         </span>
       </div>
-      <div className="flex flex-col gap-12">
+      {/* Owner's S14 desktop board (2026-11-11): one row stretched across the column from 768; stacked below. */}
+      <div className="flex flex-col gap-12 md:flex-row md:*:flex-1">
         <ShareActions url={inviteUrl} whatsAppHref={`https://wa.me/?text=${encodeURIComponent(message)}`} linkElementId={LINK_ID} />
       </div>
     </section>

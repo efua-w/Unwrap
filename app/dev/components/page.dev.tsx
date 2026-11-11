@@ -113,7 +113,7 @@ export default function ComponentGallery() {
         </div>
       </Section>
       <Section title="Timeline and LocalDateTime">
-        <div className="flex max-w-dialog flex-col gap-12">
+        <div className="flex max-w-dialog flex-col gap-12 rounded-2xl bg-surface-subtle p-24">
           <Timeline
             steps={[
               { title: "People join", detail: "Anyone with the link can join until Fri 4 Dec." },
