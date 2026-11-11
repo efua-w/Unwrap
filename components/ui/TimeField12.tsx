@@ -1,13 +1,14 @@
 "use client";
 
 import { Check, Clock, WarningCircle } from "@phosphor-icons/react/dist/ssr";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useState, type KeyboardEvent } from "react";
 import { from24Hm, TIME_OPTIONS, to24Hm, type Period } from "@/lib/dates/time12";
 import { cx } from "./cx";
 import { FIELD_CONTROL } from "./Field";
 import { Icon } from "./Icon";
 import { SegmentedTabs } from "./SegmentedTabs";
 import { Sheet } from "./Sheet";
+import { usePicker } from "./usePicker";
 
 type Props = {
   label: string;
@@ -24,10 +25,6 @@ const PERIOD_OPTIONS: readonly { value: Period; label: string }[] = [
   { value: "AM", label: "AM" },
   { value: "PM", label: "PM" },
 ];
-
-// WHY a min-width query on open, not a CSS-only swap: the dropdown and the sheet are different
-// elements, and only one may be in the DOM (one listbox, one set of option ids).
-const DESKTOP = "(min-width: 48rem)"; // the md breakpoint
 
 // WHY 30 minutes: owner decision 2026-11-11 (a native time input cannot be forced to 12-hour).
 function Listbox({
@@ -94,10 +91,8 @@ export function TimeField12({ label, name, value, onChange, helper, error }: Pro
   const errorId = `${id}-error`;
   const parsed = from24Hm(value);
   const [period, setPeriod] = useState<Period>(parsed?.period ?? "AM");
-  const [mode, setMode] = useState<"closed" | "dropdown" | "sheet">("closed");
+  const { mode, triggerRef, wrapRef, openPicker, dismiss, close } = usePicker();
   const [activeIndex, setActiveIndex] = useState(0);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
   const open = mode !== "closed";
   const hasError = Boolean(error);
   const describedBy = hasError ? errorId : helper ? helperId : undefined;
@@ -113,25 +108,9 @@ export function TimeField12({ label, name, value, onChange, helper, error }: Pro
     document.getElementById(`${listId}-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
   }, [open, activeIndex, listId]);
 
-  useEffect(() => {
-    if (mode !== "dropdown") return;
-    // Esc is handled on the field; this is the click outside.
-    function onPointerDown(e: PointerEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) setMode("closed");
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [mode]);
-
-  function openPicker() {
+  function openWithActive() {
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-    setMode(window.matchMedia(DESKTOP).matches ? "dropdown" : "sheet");
-  }
-
-  function close() {
-    setMode("closed");
-    // The sheet returns focus itself; the dropdown never left the field.
-    if (mode === "dropdown") triggerRef.current?.focus();
+    openPicker();
   }
 
   function pick(index: number) {
@@ -155,12 +134,12 @@ export function TimeField12({ label, name, value, onChange, helper, error }: Pro
   }
 
   function onTriggerKey(e: KeyboardEvent) {
-    // WHY Tab only here: in the sheet, Tab must stay inside the modal (Sheet traps focus), not close it.
-    if (mode === "dropdown" && e.key === "Tab") return setMode("closed");
+    // WHY Tab only here: in the sheet, Tab stays inside the native modal dialog, so it must not close it.
+    if (mode === "dropdown" && e.key === "Tab") return dismiss();
     if (mode === "dropdown") return onListKey(e);
     if (["Enter", " ", "ArrowDown", "ArrowUp"].includes(e.key)) {
       e.preventDefault();
-      openPicker();
+      openWithActive();
     }
   }
 
@@ -184,7 +163,7 @@ export function TimeField12({ label, name, value, onChange, helper, error }: Pro
             aria-labelledby={labelId}
             aria-invalid={hasError || undefined}
             aria-describedby={describedBy}
-            onClick={() => (mode === "dropdown" ? close() : openPicker())}
+            onClick={() => (mode === "dropdown" ? close() : openWithActive())}
             onKeyDown={onTriggerKey}
             // WHY: Space activates a button on key-up; keydown already handled it.
             onKeyUp={(e) => {

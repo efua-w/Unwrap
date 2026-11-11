@@ -9,7 +9,8 @@ import {
 } from "./fixtures/auth";
 import { expectNoAxeViolations } from "./fixtures/axe";
 import { VIEWPORTS } from "./viewports";
-import { formatDay, formatTime, formatYmdDay, wallClockIn, zoneShortName } from "../../lib/dates/format";
+import { formatYmdLongFull } from "../../lib/dates/calendar";
+import { formatDay, formatTime, formatYmdDay, formatYmdDayYear, wallClockIn, zoneShortName } from "../../lib/dates/format";
 
 // Slice 4, signed in (GCO-001..004, GC-008, GC-013, GC-029): Start an exchange in three steps, the
 // just-started exchange page, Exchanges, and the "not available" state. Needs the exchanges migration
@@ -55,10 +56,32 @@ async function chooseDrawMode(page: Page, label: "When joining closes" | "When I
   await expect(page.getByRole("radio", { name: label })).toBeChecked();
 }
 
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// Opens the date picker, moves to the month of `ymd` with the arrow buttons, and chooses the day.
+// WHY the month is read from the header: the picker opens on the value's month, else the current one.
+async function pickDate(page: Page, label: "Join by" | "Gift day", ymd: string) {
+  await page.getByRole("button", { name: new RegExp(`^${label}`) }).click();
+  const dialog = page.getByRole("dialog", { name: label });
+  await expect(dialog).toBeVisible();
+  const shown = ((await dialog.locator("[aria-live=polite]").textContent()) ?? "").split(" ");
+  const monthIndex = (year: number, month: number) => year * 12 + month;
+  const from = monthIndex(Number(shown[1]), MONTH_NAMES.indexOf(shown[0] ?? ""));
+  const to = monthIndex(Number(ymd.slice(0, 4)), Number(ymd.slice(5, 7)) - 1);
+  const arrow = dialog.getByRole("button", { name: to > from ? "Next month" : "Previous month" });
+  for (let i = 0; i < Math.abs(to - from); i += 1) await arrow.click();
+  await dialog.getByRole("button", { name: formatYmdLongFull(ymd) ?? "" }).click();
+  await expect(dialog).toBeHidden();
+  const trigger = page.getByRole("button", { name: new RegExp(`^${label}`) });
+  await expect(trigger).toHaveText(formatYmdDayYear(ymd) ?? "");
+  // The name carries the chosen date, not only the label.
+  await expect(trigger).toHaveAccessibleName(`${label} ${formatYmdDayYear(ymd)}`);
+}
+
 async function fillDates(page: Page, options: { mode?: "auto" | "manual" } = {}) {
   await page.getByRole("radio", { name: "₦5,000 to ₦10,000" }).check();
-  await page.getByLabel("Join by").fill(JOIN);
-  await page.getByLabel("Gift day").fill(GIFT);
+  await pickDate(page, "Join by", JOIN);
+  await pickDate(page, "Gift day", GIFT);
   // The gift day is a date only (owner decision 2026-11-09): there is no gift time field.
   await expect(page.getByLabel("Gift time")).toHaveCount(0);
   if (options.mode === "manual") await chooseDrawMode(page, "When I choose");
@@ -148,24 +171,45 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expectNoAxeViolations(page);
         await page.screenshot({ path: `test-results/screenshots/exchange-dates-error-${width}.png`, fullPage: true });
 
+        // The date picker: placeholder when empty, a dropdown from 768 and the Sheet below, keyboard, Esc.
+        const joinTrigger = page.getByRole("button", { name: /^Join by/ });
+        await expect(joinTrigger).toHaveText("Choose a date");
+        await expect(joinTrigger).toHaveAccessibleName("Join by Choose a date");
+        await expect(joinTrigger).toHaveAttribute("aria-haspopup", "dialog");
+        await joinTrigger.click();
+        await expect(joinTrigger).toHaveAttribute("aria-expanded", "true");
+        await expect(page.getByRole("dialog", { name: "Join by" })).toBeVisible();
+        // A native <dialog> only at 390 (the Sheet); the dropdown is a plain element.
+        await expect(page.locator("dialog[open]")).toHaveCount(viewport.width >= 768 ? 0 : 1);
+        const pickerToday = ymdIn(0);
+        const todayButton = page.getByRole("button", { name: formatYmdLongFull(pickerToday) ?? "" });
+        await expect(todayButton).toBeFocused();
+        await expect(todayButton).toHaveAttribute("aria-current", "date");
+        await page.keyboard.press("ArrowDown");
+        await expect(page.getByRole("button", { name: formatYmdLongFull(ymdIn(7)) ?? "" })).toBeFocused();
+        await page.keyboard.press("Escape");
+        await expect(page.getByRole("dialog", { name: "Join by" })).toBeHidden();
+        await expect(joinTrigger).toBeFocused();
+        await expect(joinTrigger).toHaveText("Choose a date");
+
         // Join by after the gift day: the line goes under Join by, and the form keeps the values.
         await page.getByRole("radio", { name: "₦5,000 to ₦10,000" }).check();
-        await page.getByLabel("Join by").fill(ymdIn(30));
-        await page.getByLabel("Gift day").fill(GIFT);
+        await pickDate(page, "Join by", ymdIn(30));
+        await pickDate(page, "Gift day", GIFT);
         await page.getByRole("button", { name: "Next", exact: true }).click();
         await expect(page.getByText("Join by has to be before the gift day.")).toBeVisible();
         // A gift day in the past.
-        await page.getByLabel("Gift day").fill(ymdIn(-2));
+        await pickDate(page, "Gift day", ymdIn(-2));
         await page.getByRole("button", { name: "Next", exact: true }).click();
         await expect(page.getByText("The gift day has to be in the future.")).toBeVisible();
-        await page.getByLabel("Gift day").fill(GIFT);
+        await pickDate(page, "Gift day", GIFT);
         // Join by in the past.
-        await page.getByLabel("Join by").fill(ymdIn(-1));
+        await pickDate(page, "Join by", ymdIn(-1));
         await page.getByRole("button", { name: "Next", exact: true }).click();
         await expect(page.getByText("Join by has to be in the future.")).toBeVisible();
 
         // Fixed: defaults are "When joining closes" at 6:00 pm, and the summary names the zone.
-        await page.getByLabel("Join by").fill(JOIN);
+        await pickDate(page, "Join by", JOIN);
         await expect(page.getByRole("radio", { name: "When joining closes" })).toBeChecked();
         // Draw time is a 12-hour picker: default 6:00 with PM chosen. From 768 it is a dropdown with 24
         // options; below 768 it is a sheet. Choosing 6:00 with PM keeps the value and returns focus.
@@ -188,8 +232,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(drawTime).toHaveText("6:00");
         await expect(drawPeriod.getByRole("radio", { name: "PM" })).toBeChecked();
         // Join by and Gift day share a row from 768 and stack below it.
-        const joinBox = await page.getByLabel("Join by").boundingBox();
-        const giftBox = await page.getByLabel("Gift day").boundingBox();
+        const joinBox = await page.getByRole("button", { name: /^Join by/ }).boundingBox();
+        const giftBox = await page.getByRole("button", { name: /^Gift day/ }).boundingBox();
         if (!joinBox || !giftBox) throw new Error("Join by and Gift day should be visible.");
         if (viewport.width >= 768) expect(giftBox.y).toBe(joinBox.y);
         else expect(giftBox.y).toBeGreaterThan(joinBox.y + joinBox.height);

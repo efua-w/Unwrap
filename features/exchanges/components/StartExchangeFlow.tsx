@@ -7,6 +7,7 @@ import { AuthFrame } from "@/components/auth/AuthFrame";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { DateField } from "@/components/ui/DateField";
 import { Field } from "@/components/ui/Field";
 import { RadioGroup, type RadioOption } from "@/components/ui/RadioGroup";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -335,21 +336,19 @@ function DatesStep({
       />
       <div className="flex flex-col gap-20">
         <div className="grid grid-cols-1 gap-20 md:grid-cols-2 md:items-start md:gap-16">
-          <Field
+          <DateField
             label={copy.joinBy}
             name="joinByDate"
-            type="date"
             error={err("joinBy")}
             value={form.joinByDate}
-            onChange={(e) => set("joinByDate", e.target.value, DATE_FIELDS)}
+            onChange={(ymd) => set("joinByDate", ymd, DATE_FIELDS)}
           />
-          <Field
+          <DateField
             label={copy.giftDay}
             name="giftDay"
-            type="date"
             error={err("giftDay")}
             value={form.giftDay}
-            onChange={(e) => set("giftDay", e.target.value, DATE_FIELDS)}
+            onChange={(ymd) => set("giftDay", ymd, DATE_FIELDS)}
           />
         </div>
         <SegmentedTabs

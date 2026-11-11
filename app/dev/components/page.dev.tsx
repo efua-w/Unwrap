@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Timeline } from "@/components/ui/Timeline";
 import {
   BusyDemo,
+  DateFieldDemo,
   FormBusyDemo,
   ListRowDemo,
   MoneyFieldDemo,
@@ -91,6 +92,9 @@ export default function ComponentGallery() {
           <Field label="Join by" name="e" type="date" defaultValue="2026-12-04" />
           <Field label="Draw time" name="f" type="time" defaultValue="15:00" error="Choose a time." />
         </div>
+      </Section>
+      <Section title="DateField">
+        <DateFieldDemo />
       </Section>
       <Section title="TimeField12">
         <TimeField12Demo />

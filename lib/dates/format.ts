@@ -63,6 +63,12 @@ export function formatYmdDay(ymd: string): string | null {
   return date ? formatDay(date, DAY_ZONE_FREE) : null;
 }
 
+// "Fri 4 Dec 2026": a typed date with its year, as the date fields show it (boards Org-Budget-filled).
+export function formatYmdDayYear(ymd: string): string | null {
+  const date = parseYmd(ymd);
+  return date ? `${formatDay(date, DAY_ZONE_FREE)} ${date.getUTCFullYear()}` : null;
+}
+
 // A time typed into the form ("18:00") as "6:00 pm". Null for anything that is not HH:MM.
 export function formatHm(hm: string): string | null {
   const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(hm);

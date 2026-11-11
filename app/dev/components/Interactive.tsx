@@ -8,6 +8,7 @@ import { ListRow } from "@/components/ui/ListRow";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { RadioGroup } from "@/components/ui/RadioGroup";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { DateField } from "@/components/ui/DateField";
 import { TimeField12 } from "@/components/ui/TimeField12";
 import { OtpInput } from "@/components/ui/OtpInput";
 import { Sheet, type SheetVariant } from "@/components/ui/Sheet";
@@ -295,6 +296,18 @@ export function TimeField12Demo() {
       <TimeField12 label="Draw time" name="demo-time" value={hm} onChange={setHm} helper="Joining closes at this time on the join-by day." />
       <p className="text-body-sm-regular text-text-muted">Emits: {hm === "" ? "(empty)" : hm}</p>
       <TimeField12 label="Draw time" name="demo-time-error" value="" onChange={() => {}} error="Choose a time." />
+    </div>
+  );
+}
+
+export function DateFieldDemo() {
+  const [ymd, setYmd] = useState("");
+  return (
+    <div className="flex max-w-dialog flex-col gap-16">
+      <DateField label="Join by" name="demo-date" value={ymd} onChange={setYmd} />
+      <p className="text-body-sm-regular text-text-muted">Emits: {ymd === "" ? "(empty)" : ymd}</p>
+      <DateField label="Gift day" name="demo-date-filled" value="2026-12-04" onChange={() => {}} helper="Filled, with a helper." />
+      <DateField label="Gift day" name="demo-date-error" value="" onChange={() => {}} error="Choose a date." />
     </div>
   );
 }
