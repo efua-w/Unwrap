@@ -226,6 +226,13 @@ for (const { name: width, viewport } of VIEWPORTS) {
         }
         await expect(timeList.getByRole("option")).toHaveCount(24);
         await expect(timeList.getByRole("option", { name: "6:00" })).toHaveAttribute("aria-selected", "true");
+        if (viewport.width < 768) {
+          // Item 67: the sheet focuses the list itself, so ArrowDown moves the active option with no Tab first.
+          await expect(timeList).toBeFocused();
+          const before = await timeList.getAttribute("aria-activedescendant");
+          await page.keyboard.press("ArrowDown");
+          await expect(timeList).not.toHaveAttribute("aria-activedescendant", before ?? "");
+        }
         await timeList.getByRole("option", { name: "6:00" }).click();
         await expect(timeList).toHaveCount(0);
         await expect(drawTime).toBeFocused();

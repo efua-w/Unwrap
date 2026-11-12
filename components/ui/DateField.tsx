@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarBlank, CaretLeft, CaretRight, WarningCircle } from "@phosphor-icons/react/dist/ssr";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import {
   addDays,
   addMonths,
@@ -48,13 +48,13 @@ function Calendar({
   value,
   min,
   onPick,
-  deferFocus,
+  activeDayRef,
 }: {
   value: string;
   min?: string;
   onPick: (ymd: string) => void;
-  /** In the sheet, the dialog opens (and focuses its heading) after this mounts, so focus waits a tick. */
-  deferFocus: boolean;
+  /** Set in the sheet: the sheet focuses the active day on open, so this does not. Points at that day. */
+  activeDayRef?: RefObject<HTMLButtonElement | null>;
 }) {
   const monthId = useId();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -63,23 +63,17 @@ function Calendar({
   const selected = parseYmdParts(value) ? value : null;
   // WHY min when the value is empty or too early: the first pickable day is where a person starts (APG).
   const [focusYmd, setFocusYmd] = useState(selected && !isBeforeMin(selected, min) ? selected : (min ?? today));
-  const moveFocus = useRef(true);
+  // WHY: in the sheet the dialog is not shown until after this mounts; the Sheet moves the first focus.
+  const moveFocus = useRef(!activeDayRef);
   const focus = parseYmdParts(focusYmd) ?? { year: 2000, month: 1, day: 1 };
   const weeks = monthGrid(focus.year, focus.month);
   const previous = parseYmdParts(addMonths(focusYmd, -1)) ?? focus;
 
   useEffect(() => {
     if (!moveFocus.current) return;
-    function focusDay() {
-      gridRef.current?.querySelector<HTMLButtonElement>(`button[data-ymd="${focusYmd}"]`)?.focus();
-      moveFocus.current = false;
-    }
-    if (deferFocus) {
-      const timer = window.setTimeout(focusDay, 0);
-      return () => window.clearTimeout(timer);
-    }
-    focusDay();
-  }, [focusYmd, deferFocus]);
+    gridRef.current?.querySelector<HTMLButtonElement>(`button[data-ymd="${focusYmd}"]`)?.focus();
+    moveFocus.current = false;
+  }, [focusYmd]);
 
   function go(next: string) {
     moveFocus.current = true;
@@ -149,6 +143,7 @@ function Calendar({
                 <div key={ymd} role="gridcell" aria-selected={isSelected}>
                   <button
                     type="button"
+                    ref={ymd === focusYmd ? activeDayRef : undefined}
                     data-ymd={ymd}
                     tabIndex={ymd === focusYmd ? 0 : -1}
                     aria-label={formatYmdLongFull(ymd) ?? ymd}
@@ -188,6 +183,7 @@ export function DateField({ label, name, value, onChange, helper, error, min }: 
   const helperId = `${id}-helper`;
   const errorId = `${id}-error`;
   const { mode, triggerRef, wrapRef, openPicker, dismiss, close } = usePicker();
+  const activeDayRef = useRef<HTMLButtonElement>(null);
   const open = mode !== "closed";
   const hasError = Boolean(error);
   const describedBy = hasError ? errorId : helper ? helperId : undefined;
@@ -247,7 +243,7 @@ export function DateField({ label, name, value, onChange, helper, error, min }: 
             aria-label={label}
             className="absolute inset-x-0 top-full z-10 mt-4 rounded-lg border-1 border-border-default bg-surface-default p-12 shadow-overlay"
           >
-            <Calendar value={value} min={min} onPick={pick} deferFocus={false} />
+            <Calendar value={value} min={min} onPick={pick} />
           </div>
         ) : null}
       </div>
@@ -261,8 +257,8 @@ export function DateField({ label, name, value, onChange, helper, error, min }: 
           {helper}
         </p>
       ) : null}
-      <Sheet open={mode === "sheet"} onClose={close} variant="form" title={label} footer={null}>
-        {mode === "sheet" ? <Calendar value={value} min={min} onPick={pick} deferFocus /> : null}
+      <Sheet open={mode === "sheet"} onClose={close} variant="form" title={label} footer={null} initialFocusRef={activeDayRef}>
+        {mode === "sheet" ? <Calendar value={value} min={min} onPick={pick} activeDayRef={activeDayRef} /> : null}
       </Sheet>
     </div>
   );

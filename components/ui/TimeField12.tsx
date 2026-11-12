@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Clock, WarningCircle } from "@phosphor-icons/react/dist/ssr";
-import { useEffect, useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { from24Hm, TIME_OPTIONS, to24Hm, type Period } from "@/lib/dates/time12";
 import { cx } from "./cx";
 import { FIELD_CONTROL } from "./Field";
@@ -36,6 +36,7 @@ function Listbox({
   onKeyDown,
   focusable,
   className,
+  listRef,
 }: {
   id: string;
   labelId: string;
@@ -46,9 +47,11 @@ function Listbox({
   /** In the sheet the list itself takes focus; in the dropdown the field keeps it. */
   focusable: boolean;
   className?: string;
+  listRef?: RefObject<HTMLUListElement | null>;
 }) {
   return (
     <ul
+      ref={listRef}
       id={id}
       role="listbox"
       aria-labelledby={labelId}
@@ -93,6 +96,7 @@ export function TimeField12({ label, name, value, onChange, helper, error }: Pro
   const [period, setPeriod] = useState<Period>(parsed?.period ?? "AM");
   const { mode, triggerRef, wrapRef, openPicker, dismiss, close } = usePicker();
   const [activeIndex, setActiveIndex] = useState(0);
+  const sheetListRef = useRef<HTMLUListElement>(null);
   const open = mode !== "closed";
   const hasError = Boolean(error);
   const describedBy = hasError ? errorId : helper ? helperId : undefined;
@@ -215,9 +219,10 @@ export function TimeField12({ label, name, value, onChange, helper, error }: Pro
           {helper}
         </p>
       ) : null}
-      <Sheet open={mode === "sheet"} onClose={close} variant="form" title={label} footer={null}>
+      <Sheet open={mode === "sheet"} onClose={close} variant="form" title={label} footer={null} initialFocusRef={sheetListRef}>
         {mode === "sheet" ? (
           <Listbox
+            listRef={sheetListRef}
             id={listId}
             labelId={labelId}
             activeIndex={activeIndex}
