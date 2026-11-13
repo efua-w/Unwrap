@@ -18,7 +18,7 @@ Branch `fix-audit-1-7` (from `slice-4-date-picker`). Done in the main session at
   - pgTAP on dev, each run rolled back: 140 9/9, 150 9/9, 160 12/12; regressions 010 4/4, 015 6/6, 020 11/11, 030 7/7, 040 5/5, 060 22/22, 100 56/56, 130 97/97. Not run on dev: 090 (name collision with leftover dev data, open item 72); 050, 070, 080, 110, 120 (untouched by these changes). CI runs all on a fresh database.
   - Types regenerated from dev through the connector (open item 74).
   - typecheck, lint, tokens:check pass; unit 211/211; `next build` and `secrets:check` pass. E2E: see round 2.
-- Outstanding issues: open items 71 to 74. Nothing committed.
+- Outstanding issues: open items 71 to 74. Not committed in this round (see round 2: af98b7d).
 - Next action: owner checks the hosted OTP expiry, approves the two copy rows, and asks to commit.
 
 ## Main session — round 2 — 2026-11-13
@@ -28,3 +28,11 @@ Branch `fix-audit-1-7` (from `slice-4-date-picker`). Done in the main session at
 - Work completed: full e2e against the running dev server (port 3000): 294 passed, 9 skipped (opt-in specs), 9 failed, all on the Exchanges list. Cause: `exchange_members(count)` makes PostgREST run count(*), which needs a table-wide grant; exchange_members has column grants only (42501, reproduced with a throwaway user). The view itself worked. Fixed by embedding `exchange_members(user_id, taking_part)` per exchange (bounded by the 100-person limit) and counting the embedded rows. Re-run of exchanges-signed-in.spec.ts: 18/18 at 390, 768 and 1440. Typecheck and lint pass.
 - Outstanding issues: open items 71 to 74.
 - Next action: commit to `fix-audit-1-7` (owner asked, 2026-11-13); owner checks the hosted OTP expiry and approves the two copy rows.
+
+## Main session — round 3 — 2026-11-13
+- Task: audit-fixes — owner sign-off, dev clean-up, merge
+- Requirements: owner 2026-11-13: "All good. Clean rows. Update audit doc. Merge branch."
+- Files/components: docs/copy-pending.md, docs/progress.md, this log
+- Work completed: commit af98b7d (round 2). Owner confirmed the hosted OTP expiry (item 71 closed) and the two copy rows (approved). Deleted the four leftover e2e "Birthday list" lists and their four items on dev (all owned by throwaway e2e users), then ran pgTAP 090 on dev: 48/48. Security total on dev: 286/286 across 12 files.
+- Outstanding issues: open items 73 (rate-limit copy) and 74 (take CI's types file).
+- Next action: merge `fix-audit-1-7`.
