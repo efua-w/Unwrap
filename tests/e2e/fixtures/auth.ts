@@ -50,13 +50,24 @@ export function uniqueEmail(label: string): string {
 
 // Creates a confirmed user the way sign-up would: first_name in the metadata, so the database
 // trigger writes the profile and settings rows. No email is sent.
-export async function createTestUser(email: string, firstName: string, confirmed = true): Promise<string> {
+// WHY `onboarded` (audit finding 3, 2026-11-13): the server sends anyone without
+// profiles.onboarded_at to Profile setup. A confirmed test user stands for someone who already
+// finished it; an unconfirmed one is an abandoned sign-up, which has not. The service role writes the
+// column (no client grant).
+export async function createTestUser(email: string, firstName: string, confirmed = true, onboarded = confirmed): Promise<string> {
   const { data, error } = await adminClient().auth.admin.createUser({
     email,
     email_confirm: confirmed,
     user_metadata: { first_name: firstName },
   });
   if (error || !data.user) throw new Error(`createTestUser failed: ${error?.message ?? "no user"}`);
+  if (onboarded) {
+    const { error: profileError } = await adminClient()
+      .from("profiles")
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq("id", data.user.id);
+    if (profileError) throw new Error(`createTestUser could not mark onboarding done: ${profileError.message}`);
+  }
   return data.user.id;
 }
 
@@ -242,7 +253,7 @@ function fakeJwt(): string {
   return `${part({ alg: "HS256", typ: "JWT" })}.${part({ sub: "00000000-0000-4000-8000-000000000099", exp: 4102444800, role: "authenticated" })}.sig`;
 }
 
-export function verifyOk(options: { firstConfirmation: boolean }): OtpStub {
+export function verifyOk(): OtpStub {
   const confirmed = "2026-11-04T10:00:00.000Z";
   return {
     status: 200,
@@ -259,8 +270,7 @@ export function verifyOk(options: { firstConfirmation: boolean }): OtpStub {
         email: "amaka.obi@example.com",
         created_at: "2026-11-04T09:00:00.000Z",
         email_confirmed_at: confirmed,
-        // Same instant: this sign-in confirmed the address. Seconds later: confirmed before.
-        last_sign_in_at: options.firstConfirmation ? "2026-11-04T10:00:00.005Z" : "2026-11-04T10:00:07.000Z",
+        last_sign_in_at: "2026-11-04T10:00:07.000Z",
         app_metadata: {},
         user_metadata: {},
       },

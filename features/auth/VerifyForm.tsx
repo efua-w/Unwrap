@@ -106,14 +106,13 @@ export function VerifyForm({ initial }: { initial: VerifyState | null }) {
       if (result.ok) {
         leaving.current = true;
         clearStoredVerifyState();
-        const destination = destinationAfterVerify(state, result.firstConfirmation);
+        const destination = destinationAfterVerify(state);
         try {
           // Records the zone, clears the cookie and redirects, all in one response.
           await finishSignIn({
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             flow: state.flow,
             next: state.next,
-            firstConfirmation: result.firstConfirmation,
           });
         } catch {
           // The person is signed in; only the hand-off failed (network). Navigate ourselves.

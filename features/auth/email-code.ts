@@ -1,5 +1,4 @@
 import { classifyAuthError, type AuthErrorKind } from "@/lib/auth/auth-errors";
-import { isFirstConfirmation } from "@/lib/auth/verify-state";
 import { createClient } from "@/lib/supabase/client";
 
 // The two calls that run in the browser (owner decision 2026-11-04): Supabase counts rate limits
@@ -41,13 +40,13 @@ export function sendSignupCode(email: string, firstName: string): Promise<CodeRe
   );
 }
 
-export type VerifyResult = { ok: true; firstConfirmation: boolean } | { ok: false; kind: AuthErrorKind };
+export type VerifyResult = CodeResult;
 
 export async function verifyCode(email: string, token: string): Promise<VerifyResult> {
   try {
-    const { data, error } = await createClient().auth.verifyOtp({ email, token, type: "email" });
+    const { error } = await createClient().auth.verifyOtp({ email, token, type: "email" });
     if (error) return { ok: false, kind: classifyAuthError(error) };
-    return { ok: true, firstConfirmation: data.user ? isFirstConfirmation(data.user) : false };
+    return { ok: true };
   } catch {
     return { ok: false, kind: "network" };
   }

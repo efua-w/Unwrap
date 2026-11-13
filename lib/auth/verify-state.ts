@@ -79,31 +79,15 @@ export function serializeVerifyState(state: VerifyState): string {
   return JSON.stringify(state);
 }
 
-// Where to go after a good code. WHY the verified user decides, not only the flow: an abandoned
-// sign-up leaves an unconfirmed account, and a later Sign up or Log in for that address looks like
-// a log-in to Supabase. Its first confirmation must still reach Profile setup (GC-005). A new
-// account (signup flow, or a first confirmation) goes to Profile setup, keeping any deep link for
-// after it; a returning person goes to the page they wanted, or Home (GC-004).
-export function destinationAfterVerify(
-  state: { flow: VerifyFlow; next?: string },
-  firstConfirmation: boolean,
-): string {
-  if (state.flow === "signup" || firstConfirmation) {
+// Where to go after a good code. A sign-up goes to Profile setup, keeping any deep link for after
+// it (GC-005); a returning person goes to the page they wanted, or Home (GC-004).
+// WHY no "first confirmation" guess here any more (audit finding 3, 2026-11-13): an abandoned sign-up
+// that later logs in looks like a log-in to Supabase. The server now sends anyone without
+// profiles.onboarded_at to Profile setup from every signed-in page (lib/auth/session.ts), so the
+// destination below needs no clue from the browser.
+export function destinationAfterVerify(state: { flow: VerifyFlow; next?: string }): string {
+  if (state.flow === "signup") {
     return state.next ? `/welcome?next=${encodeURIComponent(state.next)}` : "/welcome";
   }
   return state.next ?? DEFAULT_NEXT_PATH;
-}
-
-// True when this verification is the one that confirmed the address. Supabase sets
-// email_confirmed_at and last_sign_in_at in the same step on a first confirmation (a few ms
-// apart, measured 5 ms on the dev project), while an account confirmed earlier (including by an
-// admin) has a confirmation time well before this sign-in (measured 3.5 s after a 3 s wait).
-const FIRST_CONFIRMATION_WINDOW_MS = 1000;
-
-export function isFirstConfirmation(user: { email_confirmed_at?: string | null; last_sign_in_at?: string | null }): boolean {
-  if (!user.email_confirmed_at || !user.last_sign_in_at) return false;
-  const confirmed = Date.parse(user.email_confirmed_at);
-  const signedIn = Date.parse(user.last_sign_in_at);
-  if (!Number.isFinite(confirmed) || !Number.isFinite(signedIn)) return false;
-  return Math.abs(signedIn - confirmed) <= FIRST_CONFIRMATION_WINDOW_MS;
 }

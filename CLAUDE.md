@@ -26,7 +26,7 @@ Commands (npm, Node 26.13.0 (`.nvmrc`)).
 - `npm run db:migration:new -- <name>` creates a timestamped file in `supabase/migrations` (same as `npx supabase migration new <name>`)
 - `npm run db:test` runs the pgTAP security tests in `supabase/tests/security` (`supabase test db`; needs a local database, so CI runs it). Each file is also plain SQL inside `begin; … rollback;`, so it can be run through any SQL tool
 - `npm run db:types` generates `lib/supabase/database.types.ts` from a local database (CI). Without Docker, the main session generates it from the hosted dev project through the Supabase connector. Never hand-edit the file
-- Migration convention: one file per change; **never edit a migration after it has been applied** (write a new one). The main session applies migrations to the hosted dev project (`ulziqspdjtjszvdcwdek`) only with the owner's approval, then regenerates the types. `supabase/seed.sql` holds fake local/dev personas and never runs on production
+- Migration convention: one file per change; **never edit a migration after it has been applied** (write a new one). The main session applies migrations to the hosted dev project (`ulziqspdjtjszvdcwdek`) only with the owner's approval, then regenerates the types. Apply DDL to a hosted project only with the connector's `apply_migration` or `supabase db push`, never with `execute_sql` or the SQL editor, which change the schema without recording the migration. After applying, read `select version from supabase_migrations.schema_migrations` and run `npm run db:drift -- --strict <versions>`. `supabase/seed.sql` holds fake local/dev personas and never runs on production
 
 ## Source of truth
 

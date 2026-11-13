@@ -24,6 +24,12 @@ isOneToOne: false
       referencedRelation: "exchanges"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "exchange_members_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges_visible"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "exchange_members_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
@@ -53,14 +59,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "anonymised_at": string | null,"avatar_path": string | null,"created_at": string,"display_name": string,"id": string,"photo_prompt_dismissed_at": string | null,"updated_at": string
+                    "anonymised_at": string | null,"avatar_path": string | null,"created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"photo_prompt_dismissed_at": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "anonymised_at"?: string | null,"avatar_path"?: string | null,"created_at"?: string,"display_name": string,"id": string,"photo_prompt_dismissed_at"?: string | null,"updated_at"?: string
+                    "anonymised_at"?: string | null,"avatar_path"?: string | null,"created_at"?: string,"display_name": string,"id": string,"onboarded_at"?: string | null,"photo_prompt_dismissed_at"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "anonymised_at"?: string | null,"avatar_path"?: string | null,"created_at"?: string,"display_name"?: string,"id"?: string,"photo_prompt_dismissed_at"?: string | null,"updated_at"?: string
+                    "anonymised_at"?: string | null,"avatar_path"?: string | null,"created_at"?: string,"display_name"?: string,"id"?: string,"onboarded_at"?: string | null,"photo_prompt_dismissed_at"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -122,7 +128,27 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "exchanges_visible": {
+                  Row: {
+                    "approval_required": boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at": string | null,"completed_at": string | null,"created_at": string,"draw_at": string | null,"draw_blocked_reason": string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round": number,"gift_day": string,"id": string,"join_by_at": string,"name": string,"note": string | null,"organiser_id": string,"organiser_tz": string,"reopened_join_by_at": string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "approval_required"?: boolean | null,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"] | null,"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string | null,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"] | null,"draw_round"?: number | null,"gift_day"?: string | null,"id"?: string | null,"join_by_at"?: string | null,"name"?: string | null,"note"?: string | null,"organiser_id"?: string | null,"organiser_tz"?: string | null,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"] | null,"updated_at"?: string | null
+                         }
+                        Update: {
+                           "approval_required"?: boolean | null,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"] | null,"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string | null,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"] | null,"draw_round"?: number | null,"gift_day"?: string | null,"id"?: string | null,"join_by_at"?: string | null,"name"?: string | null,"note"?: string | null,"organiser_id"?: string | null,"organiser_tz"?: string | null,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"] | null,"updated_at"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "exchanges_organiser_id_fkey"
+      columns: ["organiser_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
           }
           Functions: {
             "create_exchange":

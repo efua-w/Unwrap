@@ -76,7 +76,7 @@ export async function finishSignIn(input: unknown): Promise<void> {
   await clearVerifyCookie();
   const flow = raw.flow === "login" ? "login" : "signup";
   const next = typeof raw.next === "string" ? sanitizeNext(raw.next) : undefined;
-  redirect(destinationAfterVerify({ flow, next }, raw.firstConfirmation === true));
+  redirect(destinationAfterVerify({ flow, next }));
 }
 
 // "Change email": same single-response rule. Clears the saved state and goes back to the form.
