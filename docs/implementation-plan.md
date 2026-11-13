@@ -6,7 +6,7 @@ Design screens are cited as S01–S48 and emails as E01–E28, as numbered on th
 
 ## 1. Product
 
-Unwrap replaces WhatsApp-run Secret Santa for 18–40 year olds in Nigeria and West Africa. An organiser creates an exchange (₦ budget, join-by, draw time, event date and time) and shares a link. People join with a passwordless email-code account, attach a wishlist or add ideas, names are drawn, and each giver privately reveals their person, browses their list and privately marks what they bought. Wishlists also stand alone and can be shared by link. Nobody, the organiser included, can read the pairs; wishlist owners never see purchase marks; repairs after someone leaves are blind.
+Unwrap replaces WhatsApp-run Secret Santa for 18–40 year olds in Nigeria and West Africa. An organiser creates an exchange (₦ budget, join-by, draw time, gift day as a date only) and shares a link. People join with a passwordless email-code account, attach a wishlist or add ideas, names are drawn, and each giver privately reveals their person, browses their list and privately marks what they bought. Wishlists also stand alone and can be shared by link. Nobody, the organiser included, can read the pairs; wishlist owners never see purchase marks; repairs after someone leaves are blind.
 
 Limits: at most **100 people** per exchange (this is GCO-005's invite limit and GC-009's "full"). People who left may **rejoin** under the normal join rules. People the organiser **removed** may rejoin only through a join request the organiser approves, even when approval is off.
 
@@ -41,6 +41,7 @@ Approved with this plan. Sheets and dialogs are client overlays on their parent 
 | `/exchanges` (`?view=past`), `/exchanges/new` | auth | GC-008, GCO-001–003 |
 | `/exchanges/[id]` | member | GC-013, GCO-004, 006, 015 |
 | `/exchanges/[id]/list`, `/joined` | member | GC-010, 011 |
+| `/exchanges/[id]/my-list` (S49 "Your list for this exchange", organiser taking part; route name pending owner OK) | organiser | GC-010, GCO-004 |
 | `/exchanges/[id]/reveal`, `/recipient` (`?item=<ref>`), `/drawn` | giver / member | GC-014, 015, GCO-012 |
 | `/exchanges/[id]/participants`, `/exclusions`, `/edit` | organiser | GCO-006, 007, 009, 010 |
 | `/wishlists`, `/wishlists/[id]` | owner | GC-018, 020 |
@@ -80,7 +81,7 @@ Two schemas:
 | `user_settings` | 4 notification toggles, default wishlist visibility, **time zone** (captured on sign-in; used for emails) | self |
 | `wishlists` | `kind` (`personal` / `exchange_ideas`), owner, name (60), visibility (`private` / `link`), permanent share token, deleted_at. A check stops `exchange_ideas` lists being `link`. | owner; public via `get_shared_wishlist(token)`; giver via assignment |
 | `wishlist_items` | name (120), link, price_kobo (bigint, `≤ 100000000000`, `% 100 = 0`), priority, note (280), photo path, updated_at, deleted_at | as the wishlist |
-| `exchanges` | name (40), note, organiser_id, `budget_preset` enum, join_by_at, draw_mode, draw_at, event_at, organiser_tz, approval_required, invite token (resettable, ≥ 128-bit random), tint, cancelled_at, completed_at, reopened_join_by_at, draw_blocked_reason, draw_round | members; non-members via `get_invite_preview(token)` (inviter, count, dates) |
+| `exchanges` | name (40), note, organiser_id, `budget_preset` enum, join_by_at, draw_mode, draw_at, `gift_day date` (replaces `event_at`, 2026-11-09; a date in `organiser_tz`, passed at the end of that day in `organiser_tz`), organiser_tz, approval_required, invite token (resettable, ≥ 128-bit random), tint, cancelled_at, completed_at, reopened_join_by_at, draw_blocked_reason, draw_round | members; non-members via `get_invite_preview(token)` (inviter, count, dates) |
 | `exchange_members` | taking_part, state (`active` / `left` / `removed`), joined_at, left_at, `attached_wishlist_id`. The organiser always has a member row, with `taking_part = false` when just organising. Partial unique index on (exchange, user) **where state = 'active'**, so people who left can rejoin. Join is refused at 100 active members. | co-members; organiser readiness via function (booleans only) |
 | `join_requests` | status (`pending` / `approved` / `declined` / `closed`), dismissed_at | requester, organiser |
 | `email_invites` | invited email, sent_by, created_at | organiser of that exchange |
@@ -151,7 +152,7 @@ Tests that expect a refused read check for `insufficient_privilege`, not zero ro
 | Reveal data must not be in the HTML | Med | Fetched by a Server Action after the tap; "Hide again" per device in `localStorage`, keyed by assignment id (a changed person is a new row, so every device resets) |
 | Contrast | Med | `text/pending` (3.67:1), `text/placeholder` (3.49:1), `text/brand` on `brand-subtle` (4.13:1) and `border/pending` / `border/success` fall short; they never carry meaning alone (see §8) |
 | Account deletion keeps pairs intact | Med | Anonymise profile, remove auth user, soft-delete wishlists, run leave repairs |
-| Large queries on Home and Exchanges | Low | Faces for all rows in one query; indexes on `join_by_at`, `draw_at`, `event_at` for the scheduled job |
+| Large queries on Home and Exchanges | Low | Faces for all rows in one query; indexes on `join_by_at`, `draw_at`, `gift_day` for the scheduled job |
 | Token drift | Low | Tokens generated from `design/variables_tokens.json`; check script fails on arbitrary values |
 
 ## 8. Architecture
@@ -219,7 +220,7 @@ Each slice: branch `slice-<n>-<topic>`, handoff log `docs/tasks/slice-<n>.md`, p
 | 2 | Wishlists core, manual entry | GC-018–021 (no link import or photo) | S19–S22, S24 | `wishlists` (with `kind`), `wishlist_items` |
 | 3 | Share and public view, default visibility | GC-022, 023, 027 (default) | S23, S25, S45 | `get_shared_wishlist` |
 | 4 | Start an exchange | GCO-001–004, GC-008 (basic), GC-013 (just started) | S26–S28, S14, S08 | `exchanges` (budget enum), `exchange_members`, `exchange_state()` |
-| 5 | Invite and join (open joining) | GC-002, 009–012, GC-013 (before draw), GCO-005 (link, copy, WhatsApp) | S02, S10–S13, S29 | `get_invite_preview`, token-only `join_exchange`, 100-member limit, rejoin, `attached_wishlist_id`, ideas lists |
+| 5 | Invite and join (open joining) | GC-002, 009–012, GC-013 (before draw), GCO-005 (link, copy, WhatsApp) | S02, S10–S13, S29, S49 (boards Org-List-*, Exchange-Detail-oattached / -oideas) | `get_invite_preview`, token-only `join_exchange`, 100-member limit, rejoin, `attached_wishlist_id`, ideas lists |
 | 6 | Approval, participants, Activity v1 | GCO-003 (approval), GCO-007 (before draw), GC-012 (ask to join), GC-006/008 request rows, GC-007; removed people rejoin by request only | S30, S31, S09, S13 | `join_requests`, `activity_events`; join RPC routes removed users to a request |
 | 7 | Email outbox, sender, notification preferences, email invites | GC-026, GCO-005 (email) | S44, emails | `private.email_outbox`, send-email function, `email_invites` |
 | 8 | Readiness and nudges | GCO-006, 008 | S30, S32, S07 | `get_readiness`; nudge limits from the outbox |
@@ -237,6 +238,11 @@ Each slice: branch `slice-<n>-<topic>`, handoff log `docs/tasks/slice-<n>.md`, p
 Not in v1 (do not build): phone/SMS login and phone numbers, invite QR code, hint requests (GC-016), web push, SMS/WhatsApp sending, wishlist dates, claim-an-item mode, switch account, swipe-to-close sheets.
 
 ## Revision log
+
+**2026-11-09 (decided by Tobechukwu Olih):**
+
+- **Gift day:** a date only, with no gift time. `exchanges.event_at` becomes `gift_day date` through a new migration; the applied `exchanges` migration is not edited. The gift day is set in `organiser_tz` and has passed at the end of that day in `organiser_tz`. The join-by day must be before the gift day, in both draw modes. The gift day is shown as stored, the same date for every viewer; only the end-of-day cutoff uses the organiser's time zone (owner, Q2, 2026-11-09). Join-by and draw times show in each viewer's own time zone. The E24 reminder goes at 9:00 am the day before the gift day, in each recipient's time zone.
+- **S49 Your list for this exchange:** its own route (`/exchanges/[id]/my-list`, name pending owner OK), entered from S14 › Your part for an organiser taking part. It attaches a whole wishlist or ideas, never single items, and is built in slice 5 with the attach work.
 
 **2026-11-03, after the architecture review (approved by Tobechukwu Olih):**
 

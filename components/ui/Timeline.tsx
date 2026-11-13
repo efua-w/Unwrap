@@ -9,7 +9,7 @@ export function Timeline({ steps }: { steps: readonly TimelineStep[] }) {
         <li key={step.title} className="flex items-start gap-16">
           <span
             aria-hidden
-            className="flex size-40 shrink-0 items-center justify-center rounded-full bg-surface-subtle font-heading text-body-xl-bold"
+            className="flex size-40 shrink-0 items-center justify-center rounded-full bg-surface-default font-heading text-body-xl-bold"
           >
             {i + 1}
           </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode, type SyntheticEvent } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject, type SyntheticEvent } from "react";
 import { announceModalClosed, isModalOpen } from "./top-layer";
 
 export type SheetVariant = "confirm" | "destructive" | "form";
@@ -16,11 +16,13 @@ type Props = {
   /** The actions. Pinned to the bottom of the sheet so a mobile keyboard never covers them. */
   footer: ReactNode;
   children?: ReactNode;
+  /** Element that takes focus on open, read once the sheet is shown. Defaults to the heading. */
+  initialFocusRef?: RefObject<HTMLElement | null>;
 };
 
 // Bottom sheet below 768, centred dialog from 768. Built on native <dialog>.showModal(), which
 // gives the focus trap, the inert background and Esc for free. No swipe to close (out of scope).
-export function Sheet({ open, onClose, variant, title, description, busy = false, footer, children }: Props) {
+export function Sheet({ open, onClose, variant, title, description, busy = false, footer, children, initialFocusRef }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const returnFocusTo = useRef<Element | null>(null);
@@ -36,11 +38,13 @@ export function Sheet({ open, onClose, variant, title, description, busy = false
       dialog.showModal();
       document.documentElement.classList.add("scroll-lock");
       // WHY: focus the heading, not the first button, so a destructive action is never pre-focused (A4).
-      headingRef.current?.focus();
+      // A caller may name a better target (the picker's list or day), so arrows work with no Tab first.
+      // Child effects run before this one, so the target is mounted by now.
+      (initialFocusRef?.current ?? headingRef.current)?.focus();
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open]);
+  }, [open, initialFocusRef]);
 
   useEffect(() => {
     const dialog = dialogRef.current;

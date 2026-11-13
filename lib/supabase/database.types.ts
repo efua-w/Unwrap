@@ -33,14 +33,14 @@ isOneToOne: false
                   ]
                 },"exchanges": {
                   Row: {
-                    "approval_required": boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at": string | null,"completed_at": string | null,"created_at": string,"draw_at": string | null,"draw_blocked_reason": string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round": number,"event_at": string,"id": string,"invite_token": string,"join_by_at": string,"name": string,"note": string | null,"organiser_id": string,"organiser_tz": string,"reopened_join_by_at": string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at": string
+                    "approval_required": boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at": string | null,"completed_at": string | null,"created_at": string,"draw_at": string | null,"draw_blocked_reason": string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round": number,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"name": string,"note": string | null,"organiser_id": string,"organiser_tz": string,"reopened_join_by_at": string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approval_required"?: boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round"?: number,"event_at": string,"id"?: string,"invite_token"?: string,"join_by_at": string,"name": string,"note"?: string | null,"organiser_id"?: string,"organiser_tz": string,"reopened_join_by_at"?: string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at"?: string
+                    "approval_required"?: boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round"?: number,"gift_day": string,"id"?: string,"invite_token"?: string,"join_by_at": string,"name": string,"note"?: string | null,"organiser_id"?: string,"organiser_tz": string,"reopened_join_by_at"?: string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at"?: string
                   }
                   Update: {
-                    "approval_required"?: boolean,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"],"draw_round"?: number,"event_at"?: string,"id"?: string,"invite_token"?: string,"join_by_at"?: string,"name"?: string,"note"?: string | null,"organiser_id"?: string,"organiser_tz"?: string,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"],"updated_at"?: string
+                    "approval_required"?: boolean,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"],"draw_round"?: number,"gift_day"?: string,"id"?: string,"invite_token"?: string,"join_by_at"?: string,"name"?: string,"note"?: string | null,"organiser_id"?: string,"organiser_tz"?: string,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -126,7 +126,7 @@ isOneToOne: false
           }
           Functions: {
             "create_exchange":
-{ Args: { "p_approval_required": boolean,"p_budget": Database["public"]['Enums']["exchange_budget_preset"],"p_draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"p_draw_time": string,"p_event_date": string,"p_event_time": string,"p_join_by_date": string,"p_name": string,"p_note": string,"p_taking_part": boolean,"p_time_zone": string }; Returns: string
+{ Args: { "p_approval_required": boolean,"p_budget": Database["public"]['Enums']["exchange_budget_preset"],"p_draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"p_draw_time": string,"p_gift_day": string,"p_join_by_date": string,"p_name": string,"p_note": string,"p_taking_part": boolean,"p_time_zone": string }; Returns: string
                            },
 "delete_wishlist":
 { Args: { "p_wishlist_id": string }; Returns: undefined

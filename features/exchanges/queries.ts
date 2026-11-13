@@ -8,7 +8,7 @@ import type { ExchangeListItem, OrganiserExchange } from "./types";
 // columns are listed: the table's column grants refuse `select *` (invite_token is not readable by
 // anyone through the API), and naming them keeps anything else from reaching a page by accident.
 const EXCHANGE_COLUMNS =
-  "id, organiser_id, name, note, budget_preset, join_by_at, draw_mode, draw_at, event_at, approval_required, tint, created_at, cancelled_at, completed_at";
+  "id, organiser_id, name, note, budget_preset, join_by_at, draw_mode, draw_at, gift_day, approval_required, tint, created_at, cancelled_at, completed_at";
 
 // WHY P0002: get_exchange_invite_token raises no_data_found for "not the organiser", "no such
 // exchange" and an outsider alike (migration 20261109104934_exchanges).
@@ -40,7 +40,7 @@ export async function listMyExchanges(viewerId: string): Promise<ExchangeListIte
       joinByAt: row.join_by_at,
       drawMode: row.draw_mode,
       drawAt: row.draw_at,
-      eventAt: row.event_at,
+      giftDay: row.gift_day,
       approvalRequired: row.approval_required,
       isOrganiser: row.organiser_id === viewerId,
       takingPart: inIt.find((m) => m.user_id === viewerId)?.taking_part ?? false,
@@ -89,7 +89,7 @@ export async function getOrganiserExchange(id: string, viewerId: string): Promis
       joinByAt: row.join_by_at,
       drawMode: row.draw_mode,
       drawAt: row.draw_at,
-      eventAt: row.event_at,
+      giftDay: row.gift_day,
       approvalRequired: row.approval_required,
       takingPart: members.data.find((m) => m.user_id === viewerId)?.taking_part ?? false,
       peopleCount: members.data.length,

@@ -18,10 +18,24 @@ import {
 const EMAIL = "amaka.obi@example.com";
 const OFFLINE_COPY = "You're offline. Pages you've opened stay on screen.";
 
-// WHY wait for network idle: a form submitted before React hydrates would do a native GET submit.
+// WHY wait for hydration (item 66): a form submitted before React hydrates would do a native GET
+// submit, and a click or fill before hydration is lost. The toast region (app/layout.tsx) only becomes
+// :popover-open in a client effect, so that means React has hydrated (same signal as gallery.spec.ts).
+// Network idle stays as well: it covers the dev server still compiling or streaming the page.
+async function waitForHydration(page: Page) {
+  await expect(page.locator("[popover]:popover-open")).toBeAttached();
+  await page.waitForLoadState("networkidle");
+}
+
+// WHY (item 66): under a cold `next dev`, the first navigation to /verify waits for that route to
+// compile and can outlast the 10s URL check. Compile every entry route once before the tests run.
+test.beforeAll(async ({ request }) => {
+  for (const path of ["/signup", "/login", "/verify"]) await request.get(path);
+});
+
 async function open(page: Page, path: string) {
   await page.goto(path);
-  await page.waitForLoadState("networkidle");
+  await waitForHydration(page);
 }
 
 async function fillSignup(page: Page, name = "Amaka", email = EMAIL) {
@@ -307,7 +321,7 @@ test.describe("Verify code (GC-003, GC-004)", () => {
 
     await context.clearCookies({ name: "uw_verify" });
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await waitForHydration(page);
     await expect(page).toHaveURL(/\/verify$/);
     await expect(page.getByText(EMAIL, { exact: true })).toBeVisible();
     // The cookie is put back from the storage copy.

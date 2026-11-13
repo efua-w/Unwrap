@@ -5,11 +5,15 @@
 -- under `supabase test db`. Everything rolls back.
 -- Written BEFORE the exchanges migration: until that is applied the first statement that names
 -- public.exchanges fails (relation does not exist) and the run stops. That is the expected "red".
--- Pass: "ok 1".."ok 80", "1..80", no "not ok".
+-- Gift-day change (gift-day-date-only): extended BEFORE the gift_day migration. The gift day is a DATE
+-- in the organiser's zone (exchanges.gift_day) and counts as passed at the END of that day in that zone;
+-- the join-by DAY is strictly before the gift day in both draw modes. Until that migration is applied the
+-- gift_day assertions fail (column / 10-argument function do not exist). That is the expected "red".
+-- Pass: "ok 1".."ok 97", "1..97", no "not ok".
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(80);
+select plan(97);
 
 -- Same helpers as 060/090 (inline so the file runs on its own); nothing is left in `public`
 -- (it would break the function allowlist test 030).
@@ -80,7 +84,7 @@ end $$;
 
 -- mk builds the create_exchange call. Defaults are a valid "At join-by time" exchange; dates are SQL
 -- expressions (text) so the test never goes stale. Lagos is UTC+1 all year, and every default date
--- is days away, so the session's current_date cannot flip a result.
+-- is days away, so the session's current_date cannot flip a result. ev is the gift DAY (a date, no time).
 create function pg_temp.mk(
   p_name text,
   p_note text default null,
@@ -89,14 +93,13 @@ create function pg_temp.mk(
   mode text default 'at_join_by',
   dtime text default '18:00',
   ev text default 'current_date + 20',
-  etime text default '15:00',
   tz text default 'Africa/Lagos',
   taking text default 'true',
   approval text default 'false'
 ) returns text
 language sql as $$
-  select format('select public.create_exchange(%L, %L, %L, %s, %L, %L, %s, %L, %L, %s, %s)',
-    p_name, p_note, p_budget, jb, mode, dtime, ev, etime, tz, taking, approval)
+  select format('select public.create_exchange(%L, %L, %L, %s, %L, %L, %s, %L, %s, %s)',
+    p_name, p_note, p_budget, jb, mode, dtime, ev, tz, taking, approval)
 $$;
 
 -- No passwords, no real addresses: the .test TLD can never reach an inbox.
@@ -142,7 +145,7 @@ select ok(
   not has_function_privilege('anon', 'public.is_member(uuid)', 'execute')
   and not has_function_privilege('anon', 'public.is_organiser(uuid)', 'execute')
   and not has_function_privilege('anon',
-    'public.create_exchange(text,text,public.exchange_budget_preset,date,public.exchange_draw_mode,time without time zone,date,time without time zone,text,boolean,boolean)',
+    'public.create_exchange(text,text,public.exchange_budget_preset,date,public.exchange_draw_mode,time without time zone,date,text,boolean,boolean)',
     'execute')
   and not has_function_privilege('anon', 'public.exchange_state(uuid)', 'execute')
   and not has_function_privilege('anon', 'public.get_exchange_invite_token(uuid)', 'execute'),
@@ -151,14 +154,33 @@ select ok(
   has_function_privilege('authenticated', 'public.is_member(uuid)', 'execute')
   and has_function_privilege('authenticated', 'public.is_organiser(uuid)', 'execute')
   and has_function_privilege('authenticated',
-    'public.create_exchange(text,text,public.exchange_budget_preset,date,public.exchange_draw_mode,time without time zone,date,time without time zone,text,boolean,boolean)',
+    'public.create_exchange(text,text,public.exchange_budget_preset,date,public.exchange_draw_mode,time without time zone,date,text,boolean,boolean)',
     'execute')
   and has_function_privilege('authenticated', 'public.exchange_state(uuid)', 'execute')
   and has_function_privilege('authenticated', 'public.get_exchange_invite_token(uuid)', 'execute'),
   'authenticated can execute the exchange functions');
 
+-- Gift day is a date (gift-day-date-only): a plain date column, no time, no old column, one function
+-- (the 11-argument overload with a gift time is gone), and read by signed-in people through a column
+-- grant only (never a table-wide grant, which would expose invite_token).
+select col_type_is('public', 'exchanges', 'gift_day', 'date', 'exchanges.gift_day is a date');
+select col_not_null('public', 'exchanges', 'gift_day', 'exchanges.gift_day is required');
+select hasnt_column('public', 'exchanges', 'event_at', 'exchanges has no event_at (the gift time is gone)');
+select ok(
+  has_column_privilege('authenticated', 'public.exchanges', 'gift_day', 'select')
+  and not has_column_privilege('anon', 'public.exchanges', 'gift_day', 'select')
+  and not has_table_privilege('authenticated', 'public.exchanges', 'select')
+  and not has_column_privilege('authenticated', 'public.exchanges', 'invite_token', 'select'),
+  'gift_day is readable by signed-in people by column grant only; no table-wide grant, invite_token still unreadable');
+select ok(
+  to_regprocedure('public.create_exchange(text,text,public.exchange_budget_preset,date,public.exchange_draw_mode,time without time zone,date,time without time zone,text,boolean,boolean)') is null,
+  'the old 11-argument create_exchange (with a gift time) no longer exists');
+select is(
+  (select count(*)::int from pg_proc where pronamespace = 'public'::regnamespace and proname = 'create_exchange'),
+  1, 'create_exchange has exactly one signature');
+
 -- 8-9. Create (GCO-001..003), "At join-by time": every value is computed in Postgres from the dates,
--- times and zone, never sent as a timestamp.
+-- time and zone, never sent as a timestamp. The gift day is stored as the date picked.
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('Office Secret Santa')),
   'ok:1', 'a signed-in person can create an exchange');
 select set_config('test.ex_a', (select id::text from public.exchanges where name = 'Office Secret Santa'), true);
@@ -169,11 +191,11 @@ select is(
        and reopened_join_by_at is null and draw_blocked_reason is null)::text,
      (join_by_at = ((current_date + 10) + time '18:00') at time zone 'Africa/Lagos'
        and draw_at = join_by_at
-       and event_at = ((current_date + 20) + time '15:00') at time zone 'Africa/Lagos')::text,
+       and gift_day = current_date + 20)::text,
      (invite_token ~ '^[0-9a-f]{32}$')::text)
    from public.exchanges where id = current_setting('test.ex_a')::uuid),
   'b0000000-0000-4000-8000-000000001301/null/10k_20k/at_join_by/Africa/Lagos/false/0/true/true/true',
-  'the exchange stores the caller as organiser, the zone, the computed join-by = draw = date + time in that zone, and a 32-hex token');
+  'the exchange stores the caller as organiser, the zone, the computed join-by = draw = date + time in that zone, the gift day as a date, and a 32-hex token');
 
 -- 10. The organiser always gets a member row (taking part here).
 select is(
@@ -230,12 +252,14 @@ select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('Odd
 select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('Past join', jb => 'current_date - 2')),
   'err:22023/join_by', 'a join-by time in the past is refused (hint join_by)');
 select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('Past gift', jb => 'current_date - 4', ev => 'current_date - 2')),
-  'err:22023/event', 'a gift time in the past is refused (hint event)');
+  'err:22023/event', 'a gift day in the past is refused (hint event)');
+select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('No gift day', ev => 'null')),
+  'err:22023/event', 'a missing gift day is refused (hint event)');
 select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('Out of order', jb => 'current_date + 20', ev => 'current_date + 10')),
-  'err:22023/join_by', 'a join-by time after the gift time is refused (hint join_by)');
+  'err:22023/join_by', 'a join-by day after the gift day is refused (hint join_by)');
 select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301',
-  pg_temp.mk('Same moment', jb => 'current_date + 10', dtime => '15:00', ev => 'current_date + 10', etime => '15:00')),
-  'err:22023/join_by', 'a join-by time equal to the gift time is refused (it must be strictly before)');
+  pg_temp.mk('Same day', jb => 'current_date + 10', dtime => '09:00', ev => 'current_date + 10')),
+  'err:22023/join_by', '"At join-by time": a join-by day on the gift day is refused (it must be the day before or earlier)');
 select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301',
   pg_temp.mk('Manual same day', mode => 'organiser_chooses', jb => 'current_date + 10', ev => 'current_date + 10')),
   'err:22023/join_by', '"When I choose": a join-by day on the gift day is refused (it must be the day before or earlier)');
@@ -246,6 +270,20 @@ select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('Ba
   'err:22023/time_zone', 'an unknown time zone is refused (hint time_zone)');
 select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301', pg_temp.mk('No zone', tz => null)),
   'err:22023/time_zone', 'a missing time zone is refused (hint time_zone)');
+-- UTC+14 (Pacific/Kiritimati): the gift day counts as passed at the END of that day in the ORGANISER'S
+-- zone. Their local today is often tomorrow in UTC, so these would flip if the cutoff used the server's day.
+select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301',
+  pg_temp.mk('Kiri today', tz => 'Pacific/Kiritimati',
+    jb => '(now() at time zone ''Pacific/Kiritimati'')::date',
+    ev => '(now() at time zone ''Pacific/Kiritimati'')::date')),
+  'err:22023/join_by',
+  'UTC+14: a gift day that is the organiser''s today is not past (refused on the join-by, not on the gift day)');
+select is(pg_temp.hint_as('b0000000-0000-4000-8000-000000001301',
+  pg_temp.mk('Kiri yesterday', tz => 'Pacific/Kiritimati',
+    jb => '(now() at time zone ''Pacific/Kiritimati'')::date - 3',
+    ev => '(now() at time zone ''Pacific/Kiritimati'')::date - 1')),
+  'err:22023/event',
+  'UTC+14: a gift day that has ended in the organiser''s zone is refused on the gift day (hint event)');
 select is(
   (select count(*)::text from public.exchanges where organiser_id = 'b0000000-0000-4000-8000-000000001301'),
   current_setting('test.ada_count'), 'refused calls create no exchange');
@@ -255,6 +293,19 @@ select is(
      and not exists (select 1 from public.exchanges e where e.id = m.exchange_id)),
   0, 'refused calls leave no orphan member row');
 
+-- UTC+14 happy path: join closes at the time asked in the organiser's zone, the gift day is the date picked.
+select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301',
+  pg_temp.mk('Kiritimati', tz => 'Pacific/Kiritimati',
+    jb => '(now() at time zone ''Pacific/Kiritimati'')::date + 1',
+    ev => '(now() at time zone ''Pacific/Kiritimati'')::date + 3')),
+  'ok:1', 'a person in UTC+14 can create an exchange');
+select is(
+  (select (join_by_at = (((now() at time zone 'Pacific/Kiritimati')::date + 1) + time '18:00') at time zone 'Pacific/Kiritimati'
+     and gift_day = (now() at time zone 'Pacific/Kiritimati')::date + 3
+     and organiser_tz = 'Pacific/Kiritimati')::text
+   from public.exchanges where name = 'Kiritimati'),
+  'true', 'UTC+14: join-by is computed in the organiser''s zone and the gift day is the date picked');
+
 -- 36. A caller with no signed-in identity cannot create (execute is already refused for anon; this
 -- guards the function body if it is ever reached with no uid).
 select is(pg_temp.try_as(null, pg_temp.mk('Visitor')), 'err:42501', 'anon cannot call create_exchange');
@@ -262,8 +313,8 @@ select is(pg_temp.try_as(null, pg_temp.mk('Visitor')), 'err:42501', 'anon cannot
 -- 37-41. No client writes at all: every change goes through a function (no INSERT, UPDATE or
 -- DELETE grant on either table).
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301',
-  $$insert into public.exchanges (name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('Direct', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, now() + interval '2 days', 'Africa/Lagos', 'clay')$$),
+  $$insert into public.exchanges (name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('Direct', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay')$$),
   'err:42501', 'a user cannot insert an exchange directly');
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301',
   format('insert into public.exchange_members (exchange_id, user_id, taking_part) values (%L, %L, true)',
@@ -303,7 +354,7 @@ select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301', 'select left_at
 
 -- 45-50. Who can read an exchange: its active members (the organiser included), nobody else.
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001301',
-  format('select id, name, budget_preset, event_at, tint from public.exchanges where id = %L', current_setting('test.ex_a'))),
+  format('select id, name, budget_preset, gift_day, tint from public.exchanges where id = %L', current_setting('test.ex_a'))),
   'ok:1', 'the organiser can read their exchange');
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000001302',
   format('select id, name from public.exchanges where id = %L', current_setting('test.ex_a'))),
@@ -379,10 +430,25 @@ select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.
 update public.exchanges set reopened_join_by_at = now() + interval '1 day' where id = current_setting('test.ex_b')::uuid;
 select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.exchange_state(%L)', current_setting('test.ex_b'))),
   'open', 'exchange_state is open again while a reopened join-by is in the future');
-update public.exchanges set reopened_join_by_at = null, join_by_at = now() - interval '2 days',
-  event_at = now() - interval '1 minute' where id = current_setting('test.ex_b')::uuid;
+-- The gift day counts as passed at the END of that day in the organiser's zone (gift-day-date-only):
+-- the organiser's local today is still not passed, their local yesterday is. Checked in UTC+14 and UTC+1.
+update public.exchanges set reopened_join_by_at = null, join_by_at = now() - interval '3 days',
+  organiser_tz = 'Pacific/Kiritimati', gift_day = (now() at time zone 'Pacific/Kiritimati')::date
+  where id = current_setting('test.ex_b')::uuid;
 select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.exchange_state(%L)', current_setting('test.ex_b'))),
-  'event_passed', 'exchange_state is event_passed once the gift time has passed');
+  'joining_closed', 'UTC+14: on the gift day itself the exchange is not event_passed yet');
+update public.exchanges set gift_day = (now() at time zone 'Pacific/Kiritimati')::date - 1
+  where id = current_setting('test.ex_b')::uuid;
+select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.exchange_state(%L)', current_setting('test.ex_b'))),
+  'event_passed', 'UTC+14: the day after the gift day, in the organiser''s zone, it is event_passed');
+update public.exchanges set organiser_tz = 'Africa/Lagos', gift_day = (now() at time zone 'Africa/Lagos')::date
+  where id = current_setting('test.ex_b')::uuid;
+select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.exchange_state(%L)', current_setting('test.ex_b'))),
+  'joining_closed', 'UTC+1: on the gift day itself the exchange is not event_passed yet');
+update public.exchanges set gift_day = (now() at time zone 'Africa/Lagos')::date - 1
+  where id = current_setting('test.ex_b')::uuid;
+select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.exchange_state(%L)', current_setting('test.ex_b'))),
+  'event_passed', 'exchange_state is event_passed once the gift day has ended');
 update public.exchanges set completed_at = now() where id = current_setting('test.ex_b')::uuid;
 select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.exchange_state(%L)', current_setting('test.ex_b'))),
   'complete', 'exchange_state is complete once completed_at is set');
@@ -392,39 +458,57 @@ select is(pg_temp.val_as('b0000000-0000-4000-8000-000000001301', format('public.
 
 -- 67-73. Table checks, tried as the migration role (clients cannot write these tables at all).
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '3 days', 'organiser_chooses', null, now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
-  '23514', null, 'an exchange cannot close joining at or after the gift time');
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '3 days', 'organiser_chooses', null, current_date + 1, 'Africa/Lagos', 'clay')$$,
+  '23514', null, 'an exchange cannot close joining after the start of the gift day');
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '1 day', 'organiser_chooses', now() + interval '1 day', now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '1 day', 'organiser_chooses', now() + interval '1 day', current_date + 3, 'Africa/Lagos', 'clay')$$,
   '23514', null, 'a manual-draw exchange cannot have a draw time');
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '1 day', 'at_join_by', null, now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '1 day', 'at_join_by', null, current_date + 3, 'Africa/Lagos', 'clay')$$,
   '23514', null, 'an automatic-draw exchange must have a draw time');
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '1 day', 'at_join_by', now() + interval '1 day 1 hour', now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'X', '5k_10k', now() + interval '1 day', 'at_join_by', now() + interval '1 day 1 hour', current_date + 3, 'Africa/Lagos', 'clay')$$,
   '23514', null, 'an automatic draw happens exactly at the join-by time');
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', ' X', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', ' X', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay')$$,
   '23514', null, 'a name with surrounding spaces is refused by the table');
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, note, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', 'X', '   ', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
+  $$insert into public.exchanges (organiser_id, name, note, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'X', '   ', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay')$$,
   '23514', null, 'a blank note is refused by the table (no note is null)');
 select throws_ok(
-  $$insert into public.exchanges (organiser_id, name, note, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint)
-    values ('b0000000-0000-4000-8000-000000001301', 'X', repeat('n', 281), '5k_10k', now() + interval '1 day', 'organiser_chooses', null, now() + interval '2 days', 'Africa/Lagos', 'clay')$$,
+  $$insert into public.exchanges (organiser_id, name, note, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'X', repeat('n', 281), '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay')$$,
   '23514', null, 'a 281-character note is refused by the table');
+
+-- The join-by instant may be exactly the start of the gift day in the organiser's zone (a manual draw
+-- closes at the end of the day before), never later.
+select lives_ok(
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'Boundary', '5k_10k', (current_date + 10)::timestamp at time zone 'Africa/Lagos',
+            'organiser_chooses', null, current_date + 10, 'Africa/Lagos', 'clay')$$,
+  'joining may close exactly at the start of the gift day');
+select throws_ok(
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'Boundary+1s', '5k_10k', ((current_date + 10)::timestamp at time zone 'Africa/Lagos') + interval '1 second',
+            'organiser_chooses', null, current_date + 10, 'Africa/Lagos', 'clay')$$,
+  '23514', null, 'joining cannot close one second into the gift day');
+select throws_ok(
+  $$insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+    values ('b0000000-0000-4000-8000-000000001301', 'Auto on gift day', '5k_10k', ((current_date + 10) + time '09:00') at time zone 'Africa/Lagos',
+            'at_join_by', ((current_date + 10) + time '09:00') at time zone 'Africa/Lagos', current_date + 10, 'Africa/Lagos', 'clay')$$,
+  '23514', null, 'an automatic draw cannot happen on the gift day');
 
 -- 74-75. The invite token is server-made even for a privileged insert; a person has at most one
 -- ACTIVE membership per exchange, but a person who left may join again.
-insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, event_at, organiser_tz, tint, invite_token)
+insert into public.exchanges (organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint, invite_token)
 values ('b0000000-0000-4000-8000-000000001301', 'Token check', '5k_10k', now() + interval '1 day', 'organiser_chooses', null,
-        now() + interval '2 days', 'Africa/Lagos', 'clay', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+        current_date + 3, 'Africa/Lagos', 'clay', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 select ok(
   (select invite_token <> 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' and invite_token ~ '^[0-9a-f]{32}$'
    from public.exchanges where name = 'Token check'),

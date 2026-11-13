@@ -24,7 +24,8 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
   const copy = EXCHANGE_COPY.detail;
   return (
     <div className="flex flex-col gap-32 md:max-w-reading-max">
-      <header className="flex items-start gap-16">
+      {/* Boards Exchange-Detail-ostarted -m/-d: the tag sits above the title, all left-aligned. */}
+      <header className="flex flex-col items-start gap-12">
         <ExchangeTag name={exchange.name} tint={exchange.tint} size="header" />
         <div className="flex min-w-0 flex-col gap-4">
           <h1 className="break-words text-heading-2">{exchange.name}</h1>
@@ -42,12 +43,13 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
         <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
       ) : null}
 
-      <section aria-labelledby="next-heading" className="flex flex-col gap-16">
+      <section aria-labelledby="next-heading" className="flex flex-col gap-20 rounded-2xl bg-surface-subtle p-24">
         <h2 id="next-heading" className="text-heading-4">
           {copy.nextTitle}
         </h2>
         <Timeline steps={timelineSteps(exchange, timeZone)} />
-        <p className="text-body-sm-regular text-text-muted">{copy.zoneLine(zoneShortName(new Date(exchange.eventAt), timeZone))}</p>
+        {/* WHY the zone at join-by: the gift day has no time, so join-by and draw are the only times shown. */}
+        <p className="text-body-sm-regular text-text-muted">{copy.zoneLine(zoneShortName(new Date(exchange.joinByAt), timeZone))}</p>
       </section>
 
       <section aria-labelledby="part-heading" className="flex flex-col gap-8">
