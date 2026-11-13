@@ -9,6 +9,8 @@ export default async function WelcomePage({ searchParams }: { searchParams: Sear
   const { next: rawNext } = await searchParams;
   const next = safeNextOrUndefined(rawNext);
   // WHY: a signed-out visit keeps its deep link through Log in, instead of dropping it.
-  const profile = await requireProfile(next ? `/welcome?next=${encodeURIComponent(next)}` : "/welcome");
+  const profile = await requireProfile(next ? `/welcome?next=${encodeURIComponent(next)}` : "/welcome", {
+    allowNotOnboarded: true,
+  });
   return <ProfileSetupForm initialName={profile.displayName} next={sanitizeNext(next)} />;
 }

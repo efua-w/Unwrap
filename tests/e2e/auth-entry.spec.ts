@@ -551,9 +551,8 @@ test.describe("R1-1 Where Verify goes (stubbed good code, fake session)", () => 
     page: Page,
     context: import("@playwright/test").BrowserContext,
     seed: { flow: "signup" | "login"; next?: string; firstName?: string },
-    firstConfirmation: boolean,
   ): Promise<string | null> {
-    await stubAuth(page, { verify: [verifyOk({ firstConfirmation })] });
+    await stubAuth(page, { verify: [verifyOk()] });
     await seedVerifyState(context, page, { email: EMAIL, ...seed });
     await open(page, "/verify");
     await page.getByLabel("6-digit code").fill("123456");
@@ -561,24 +560,18 @@ test.describe("R1-1 Where Verify goes (stubbed good code, fake session)", () => 
     return new URL(page.url()).searchParams.get("next");
   }
 
-  test("an abandoned sign-up logging in (first confirmation) reaches Profile setup", async ({ page, context }) => {
-    expect(await verifyAndRead(page, context, { flow: "login" }, true)).toBe("/welcome");
-  });
-
-  test("a first confirmation keeps the deep link for after Profile setup", async ({ page, context }) => {
-    expect(await verifyAndRead(page, context, { flow: "login", next: "/exchanges/1" }, true)).toBe(
-      "/welcome?next=%2Fexchanges%2F1",
-    );
-  });
+  // WHY no "first confirmation" cases here (audit finding 3, 2026-11-13): an abandoned sign-up that
+  // logs in is sent to Profile setup by the server, from profiles.onboarded_at, which a fake session
+  // cannot reach. auth-signed-in.spec.ts "R1-1" covers it with a real unconfirmed account.
 
   test("a returning person goes Home", async ({ page, context }) => {
-    expect(await verifyAndRead(page, context, { flow: "login" }, false)).toBe("/home");
+    expect(await verifyAndRead(page, context, { flow: "login" })).toBe("/home");
   });
 
   test("a returning person with a deep link goes there", async ({ page, context }) => {
     // The route is not built yet and is not gated, so the browser simply lands on it. (Slice 4 built
     // /exchanges/[id], which is gated and would bounce this fake session to Log in, so Activity stands in.)
-    await stubAuth(page, { verify: [verifyOk({ firstConfirmation: false })] });
+    await stubAuth(page, { verify: [verifyOk()] });
     await seedVerifyState(context, page, { email: EMAIL, flow: "login", next: "/activity/1" });
     await open(page, "/verify");
     await page.getByLabel("6-digit code").fill("123456");
@@ -586,7 +579,7 @@ test.describe("R1-1 Where Verify goes (stubbed good code, fake session)", () => 
   });
 
   test("a sign-up reaches Profile setup", async ({ page, context }) => {
-    expect(await verifyAndRead(page, context, { flow: "signup", firstName: "Amaka" }, true)).toBe("/welcome");
+    expect(await verifyAndRead(page, context, { flow: "signup", firstName: "Amaka" })).toBe("/welcome");
   });
 });
 

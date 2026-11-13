@@ -8,7 +8,6 @@ import {
   cooldownRemainingMs,
   destinationAfterVerify,
   formatCountdown,
-  isFirstConfirmation,
   parseVerifyJson,
   parseVerifyState,
   RESEND_COOLDOWN_MS,
@@ -121,35 +120,15 @@ describe("resend cooldown", () => {
 
 describe("destinationAfterVerify", () => {
   it("sends a new account to Profile setup, keeping a deep link for after it", () => {
-    expect(destinationAfterVerify({ flow: "signup" }, true)).toBe("/welcome");
-    expect(destinationAfterVerify({ flow: "signup", next: "/i/abc" }, true)).toBe("/welcome?next=%2Fi%2Fabc");
+    expect(destinationAfterVerify({ flow: "signup" })).toBe("/welcome");
+    expect(destinationAfterVerify({ flow: "signup", next: "/i/abc" })).toBe("/welcome?next=%2Fi%2Fabc");
   });
   it("sends a returning person to their page, or Home", () => {
-    expect(destinationAfterVerify({ flow: "login" }, false)).toBe("/home");
-    expect(destinationAfterVerify({ flow: "login", next: "/exchanges/1" }, false)).toBe("/exchanges/1");
+    expect(destinationAfterVerify({ flow: "login" })).toBe("/home");
+    expect(destinationAfterVerify({ flow: "login", next: "/exchanges/1" })).toBe("/exchanges/1");
   });
-  it("R1-1: a first confirmation reaches Profile setup even on the log-in flow (abandoned sign-up)", () => {
-    expect(destinationAfterVerify({ flow: "login" }, true)).toBe("/welcome");
-    expect(destinationAfterVerify({ flow: "login", next: "/i/abc" }, true)).toBe("/welcome?next=%2Fi%2Fabc");
-  });
-  it("a sign-up flow always reaches Profile setup", () => {
-    expect(destinationAfterVerify({ flow: "signup" }, false)).toBe("/welcome");
-  });
-});
-
-describe("isFirstConfirmation (R1-1)", () => {
-  it("is true when the address was confirmed by this sign-in (same instant)", () => {
-    expect(isFirstConfirmation({ email_confirmed_at: "2026-11-04T10:00:00.592Z", last_sign_in_at: "2026-11-04T10:00:00.597Z" })).toBe(true);
-  });
-  it("is false for an account confirmed earlier", () => {
-    expect(isFirstConfirmation({ email_confirmed_at: "2026-11-04T10:00:00.000Z", last_sign_in_at: "2026-11-04T10:00:03.479Z" })).toBe(false);
-    expect(isFirstConfirmation({ email_confirmed_at: "2026-10-01T10:00:00.000Z", last_sign_in_at: "2026-11-04T10:00:00.000Z" })).toBe(false);
-  });
-  it("is false when a time is missing or unreadable", () => {
-    expect(isFirstConfirmation({})).toBe(false);
-    expect(isFirstConfirmation({ email_confirmed_at: "2026-11-04T10:00:00Z", last_sign_in_at: null })).toBe(false);
-    expect(isFirstConfirmation({ email_confirmed_at: "nope", last_sign_in_at: "nope" })).toBe(false);
-  });
+  // An abandoned sign-up that logs in is sent to Profile setup by the server (profiles.onboarded_at,
+  // lib/auth/session.ts), not here; the signed-in e2e "R1-1" test covers it with a real account.
 });
 
 describe("classifyAuthError", () => {
