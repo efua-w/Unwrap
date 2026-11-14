@@ -82,15 +82,23 @@ export async function deleteTestUser(email: string): Promise<void> {
   if (!user) return;
   // Slice 4: exchanges are never hard-deleted by the app (never-do 8); a throwaway user's go first,
   // members before exchanges. Before the exchanges migration is applied these deletes just fail.
+  // Slice 5: memberships go first (they point at attached lists), then ideas lists (they point at
+  // exchanges, whoever owns them), then the user's own lists, then the exchanges.
   const { data: owned } = await db.from("exchanges").select("id").eq("organiser_id", user.id);
   const exchangeIds = (owned ?? []).map((e: { id: string }) => e.id);
   if (exchangeIds.length > 0) await db.from("exchange_members").delete().in("exchange_id", exchangeIds);
   await db.from("exchange_members").delete().eq("user_id", user.id);
-  await db.from("exchanges").delete().eq("organiser_id", user.id);
+  if (exchangeIds.length > 0) {
+    const { data: ideas } = await db.from("wishlists").select("id").in("exchange_id", exchangeIds);
+    const ideaIds = (ideas ?? []).map((l: { id: string }) => l.id);
+    if (ideaIds.length > 0) await db.from("wishlist_items").delete().in("wishlist_id", ideaIds);
+    if (ideaIds.length > 0) await db.from("wishlists").delete().in("id", ideaIds);
+  }
   const { data: lists } = await db.from("wishlists").select("id").eq("owner_id", user.id);
   const listIds = (lists ?? []).map((l: { id: string }) => l.id);
   if (listIds.length > 0) await db.from("wishlist_items").delete().in("wishlist_id", listIds);
   await db.from("wishlists").delete().eq("owner_id", user.id);
+  await db.from("exchanges").delete().eq("organiser_id", user.id);
   await db.from("profiles").delete().eq("id", user.id);
   await db.auth.admin.deleteUser(user.id);
 }

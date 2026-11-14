@@ -118,6 +118,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-002 · Entry: Invite preview
 
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/i/[inviteToken]`. The board lines replace the one-sentence explainer: "{Inviter} invited you", "{N} people have joined so far." (hidden at 0, where the board says "You'd be one of the first to join."; one person reads "1 person has joined so far."), and "How it works" with three steps. The count is active members other than the organiser (Q5). Join this exchange goes to Sign up when signed out (with the invite carried, GC-003), to the join confirmation when signed in, and to the exchange page for a member. A link that is wrong, reset, closed, cancelled or full shows Invite unavailable (GC-012) with status 200 and no search indexing (Q10). The page is `noindex`, sends no referrer, and its title is generic. Not in v1: "Open in browser" fallback, Switch account, QR. Manual-draw exchanges read "Names drawn" as the join-by moment until the preview returns the draw mode (open item, owner decision pending).
+
 **Updated in v1.1:** the public preview shows a count of who has joined, not faces or names. Shows the event time.
 
 **Updated 2026-11-09 (Tobechukwu Olih):** the gift day is a date only, with no gift time (board Entry-Invite: "Gift day Thu 24 Dec").
@@ -154,10 +156,12 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 #### Content
 
 - "Amaka Obi invited you"
-- "{N} people have joined"
-- "Everyone adds a wishlist. Names are drawn when joining closes, and you'll see only the person you're buying for."
+- "{N} people have joined so far." (board; replaces "{N} people have joined")
+- "How it works": "Join and add a wishlist so your giver has ideas." / "On {day} we draw names for everyone." / "You find out who you are buying for. Only you." (boards Entry-Invite-*; replaces the one-sentence explainer, 2026-11-13)
 
 ### GC-003 · Authentication: Sign up
+
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** when an invite is pending, Sign up, Log in and Verify show "You're joining {exchange}" above the title (the banner comes only from an exact `/i/<token>` or `/i/<token>/join` next, never from other paths). After Verify with an invite pending the person goes straight to the join confirmation and skips Profile setup (Q1): joining sets `onboarded_at` and keeps the name typed at sign-up; "Not now" goes to Home, which then shows Profile setup. A Landing sign-up still reaches Profile setup. Verify shows the banner when the verify cookie holds the invite (not when only the localStorage backup restores it; open item).
 
 **Updated in v1.1:** sign-up stays email only. Invitees skip Profile setup. Returning to the page after fetching the code must resume, not restart.
 
@@ -359,6 +363,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-008 · Exchanges: List
 
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** Exchanges lists joined exchanges as well as the ones the person organises (slice 5). Member rows: "You joined today. Names are drawn {date}." (board Exchanges-joined); a person who joined earlier reads "You're in. Names are drawn {date}."; organiser-draws exchanges say "Names are drawn when the organiser is ready." (members) or "You draw names when you're ready." (organiser). An organiser's row with people in reads "You created this. {N} people in. Names are drawn {date}." and, when only organising, "You're just organising. {N} people in. Names are drawn {date}."; this replaces the slice 4 line "{N} people in." until readiness counts arrive with slice 8. Pending, request and closed-request rows stay with slices 6 to 10.
+
 **Updated 2026-11-09 (Tobechukwu Olih):** until slice 6 the load error reads "We couldn't load your exchanges. Your wishlists still work.". Each exchange has a tint (clay, peach, sand or mint): the one the organiser uses least among their live exchanges, ties broken at random, and it never changes. Slice 4 lists the exchanges the person started; joined, pending and closed-request rows arrive with slices 5 to 10.
 
 **Updated in v1.1:** desktop personal action is a banner; pending and closed requests show as rows; organiser-only exchanges are marked.
@@ -400,6 +406,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-009 · Joining: Confirm
 
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/i/[inviteToken]/join`. Shows what you're agreeing to, the organiser, faces and names of people already in, budget, join-by, names-drawn moment (or "When {first name} is ready" for organiser-draws), gift day, the organiser's note, and "Joining as {name}" with the person's own email only. Only `join_exchange(token)` creates a membership: one active membership per person, idempotent, the 100-person limit counts every active row including the organiser (Q5), a person who left can rejoin, a removed person is refused, and an approval-required exchange admits nobody directly until slice 6 (Q2). Join exchange goes to the attach page (`/exchanges/[id]/list?from=join`); a refusal re-renders as Invite unavailable; a failed attempt keeps everything and offers Try again. A person without Profile setup may join (Q1). Not now goes to Home.
+
 **Updated in v1.1:** first screen to show faces and names. Invitees arrive here straight from Verify code.
 
 **As Participant, I want to** confirm joining an exchange and see what I'm agreeing to, **so that** I join with the right account and know the rules.
@@ -431,6 +439,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "Joining as Ifeoma Nwosu"
 
 ### GC-010 · Joining: Attach wishlist
+
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/exchanges/[id]/list` (S11). Skip for now shows only when reached from Join (`?from=join`, Q11); from the exchange page the page has Back and no Skip. Choose a wishlist opens a picker ("Use this wishlist"); Add items instead makes an ideas list for this exchange (add, edit, remove with Undo, names in single quotes, Q9). A chosen wishlist replaces the ideas; the ideas are kept and return when the person switches back. Ideas never appear in My wishlists, cannot be shared and cannot be attached elsewhere. Nobody sees whether another person has added a list. A failed attach shows "We couldn't attach '{name}'. Nothing has changed, so you can try again." with Try again. After the draw (slice 11) and deleting an attached list (slice 16) are out of this slice. Toasts "Wishlist attached. Your giver will see it after the draw." and "Your list is ready. Your giver will see it after the draw." show on the exchange page.
 
 **Updated in v1.1:** whatever is attached shows as one "Your list for this exchange" with a source subline. Skip for now is backed by the join-by reminder email.
 
@@ -482,6 +492,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-011 · Joining: You're in
 
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/exchanges/[id]/joined` (S12). Shows "You're in", the timeline (names drawn, gift day), the list status with its source line, "There's nothing else to do until names are drawn.", Go to exchange and Close. Left out until the features exist: the notification and email promises (slices 7 and 12, Q8), "Share the invite link" (the token stays organiser-only, Q7) and the "You're in" action card (slice 10, Q12). A skipped list reads "No list yet" and "Add one before {day}."; the email sentence is omitted.
+
 **Updated in v1.1:** names the list as "Your list for this exchange" and can mention reminder emails.
 
 **As Participant, I want to** see that I'm done and what happens next, **so that** I know there's nothing to do until the draw.
@@ -511,6 +523,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "There's nothing else to do until names are drawn."
 
 ### GC-012 · Joining: Invite unavailable
+
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as the Invite unavailable state on `/i/[inviteToken]` and `/join` (S13): "This invite can't be used" with a reason line for a wrong or reset link, closed joining ("{Organiser} closed joining for '{exchange}' on {day}."), cancelled, full (100 people), approval-required (neutral line, Q2) and removed; "Go to Unwrap" goes to Home when signed in. "You can still ask to be let in" and Ask to join arrive with slice 6. The status is 200 and the page is not indexed (Q10). Reasons are read from the public preview only, so no private data is shown.
 
 **Updated in v1.1:** joining can reopen after the draw in one case (only 2 left); a request still waiting at the draw closes and shows on the requester's Home.
 
@@ -546,6 +560,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ## Exchange detail
 
 ### GC-013 · Exchange detail
+
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** before the draw, a participant's `/exchanges/[id]` shows: "Names are drawn on {date}." (or "when {first name} is ready"), "Organised by {name} · Everyone spends {budget}", "You're all set" once a list is attached, Your part (the list row to `/exchanges/[id]/list` with its source line, and "Who you're buying for" with the draw date), Dates (join by, names drawn, gifts exchanged, time zone line), People (faces and names only, never list status), and "From {first name}" for the organiser's note. A participant's page has no invite link, no organiser tools, no Leave (slice 14) and no "Add your wishlist" card (slice 10). The organiser's page gains Your part (the S49 row, only when taking part), People (header "{N} people in." once someone has joined, Q14) and Organiser tools > Invite people. Every date shows in the viewer's zone; the gift day shows as stored.
 
 **Updated 2026-11-09 (Tobechukwu Olih):** the detail load error reads "We couldn't load this exchange. Nothing has changed.". Slice 4 builds the organiser's "just started" state only (see GCO-004); an exchange the person cannot see, a cancelled one and a missing one all show "This exchange isn't available to you" and no exchange data.
 
@@ -1288,6 +1304,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 ### GCO-004 · Start exchange: Created
 
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** the organiser's exchange page shows Your part with "Your list for this exchange" (to `/exchanges/[id]/my-list`, S49) only when the organiser takes part; the sublines follow the boards ("From '{wishlist}'. {N} items. You can change it until the draw.", "Only for this exchange. {N} items. You can change them until the draw.", "Nothing yet. Add one so your giver has ideas."). S49 has no Skip, Back leaves without a list, and "Choose a different wishlist" is offered once a wishlist is attached. Just organising shows no list row and `/my-list` is "isn't available". People shows faces and names, or "Only you so far. People show here as they join." when alone. Organiser tools shows only Invite people; Edit details, Draw names now, Exclusions, Hand over and Cancel come with their slices.
+
 **Updated 2026-11-09 (Tobechukwu Olih):** the header follows the board: the title, "Only you so far.", then "Created by you on {Mon 2 Nov} · Everyone spends {budget}" (budget labels as in GCO-002). The page has no separate Dates section and no note; "What happens next" ends with "Times are in your time zone ({zone})." in the viewer's zone. The invite link is `{site}/i/<token>`, readable by the organiser only. Controls whose feature is not built yet are hidden: Invite by email (slice 7), Add your wishlist (slice 5), Organiser tools (slices 5, 10, 13, 15). "Share invite link" on Exchanges goes to the invite section of the exchange page.
 
 **Updated 2026-11-09 (Tobechukwu Olih), later the same day:** the gift day is a date only. "What happens next" step 3 reads "{Sat 12 Dec}." with no time. "Add your wishlist" for an organiser taking part becomes Your part › "Your list for this exchange", which opens S49, its own page. S49 is built with the attach work in slice 5; boards Org-List-* and Exchange-Detail-oattached / -oideas. S49 copy:
@@ -1333,6 +1351,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 ## Run an exchange
 
 ### GCO-005 · Invite people
+
+**Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** Invite people is built as a sheet from Organiser tools: "People can join until {date}.", the link, Share to WhatsApp, Copy link, Done and Reset link…. Reset link asks "Reset the invite link?" ("The old link stops working straight away. Anyone who hasn't joined yet needs the new one. People already in aren't affected.", Reset link / Keep link); on success the toast reads "Link reset. The old link no longer works." and the new link replaces the old one on screen. Only the organiser can reset it (Q6), and a cancelled or complete exchange refuses. Invite by email, the approval line and "waiting for you to let them in" are not built (slices 6 and 7).
 
 **Updated 2026-11-03 (Tobechukwu Olih):** QR code dropped from v1.
 

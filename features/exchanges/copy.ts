@@ -94,9 +94,44 @@ export const EXCHANGE_COPY = {
     zoneLine: (zone: string) => `Times are in your time zone (${zone}).`,
     yourPart: "Your part",
     justOrganising: "You're just organising.",
-    // pending: Your part when the organiser takes part (no board; nothing to attach until slice 5).
-    takingPart: "You're taking part. You'll be drawn and buy a gift too.",
     people: "People",
+    peopleCount: (n: number) => `People (${n})`,
+    organisedBy: (name: string) => `Organised by ${name}`,
+    namesDrawnOn: (day: string) => `Names are drawn on ${day}.`,
+    // pending: the organiser-draws variants of the lines around it (no board).
+    namesDrawnWhenReady: (first: string) => `Names are drawn when ${first} is ready.`,
+    allSetTitle: "You're all set",
+    allSetBody: (when: string) => `Names are drawn on ${when}. We'll tell you who you're buying for. Only you will see it.`,
+    allSetBodyManual: "We'll tell you who you're buying for. Only you will see it.",
+    datesTitle: "Dates",
+    joinByLabel: "Join by",
+    namesDrawnLabel: "Names drawn",
+    giftsLabel: "Gifts exchanged",
+    // Your part rows (boards Exchange-Detail-before/-nolist/-oattached/-oideas/-ostarted).
+    yourListTitle: "Your list for this exchange",
+    listNoneParticipant: "Nothing yet. Your giver has nothing to go on.",
+    listNoneOrganiser: "Nothing yet. Add one so your giver has ideas.",
+    buyingTitle: "Who you're buying for",
+    buyingSub: (when: string) => `You'll find out on ${when}.`,
+    buyingSubManual: "You'll find out when names are drawn.",
+    fromOrganiser: (first: string) => `From ${first}`,
+    // Organiser tools (boards Exchange-Detail-oattached, Org-Invite-*).
+    toolsTitle: "Organiser tools",
+    toolInvite: "Invite people",
+    toolInviteSub: (day: string) => `People can join until ${day}.`,
+    inviteSheetBody: (day: string) => `People can join until ${day}.`,
+    done: "Done",
+    resetLink: "Reset link…",
+    resetTitle: "Reset the invite link?",
+    resetBody:
+      "The old link stops working straight away. Anyone who hasn't joined yet needs the new one. People already in aren't affected.",
+    resetConfirm: "Reset link",
+    resetKeep: "Keep link",
+    resetToast: "Link reset. The old link no longer works.",
+    // pending: failure and refusal of Reset link (no board).
+    resetFailed: "We couldn't reset the link. Nothing has changed, so you can try again.",
+    resetOffline: "You're offline. You can reset the link once you're back online.",
+    resetClosed: "This exchange has ended, so its link can't be reset.",
     peopleOnlyYou: "Only you so far. People show here as they join.",
     // S47 Acc-NA-exchange.
     notAvailableTitle: "This exchange isn't available to you",
@@ -122,8 +157,17 @@ export const EXCHANGE_COPY = {
     blockBodyManual: (day: string) => `Share the invite link so people can join by ${day}. You draw names when you're ready.`,
     rowOnlyYouTaking: "You created this. Only you so far.",
     rowOnlyYouOrganising: "You're just organising. Only you so far.",
-    // pending: a row for an exchange with other people in it; slice 5 replaces it with the board's wording.
+    // Header line of the organiser's page once people have joined (owner Q14, 2026-11-13).
     rowPeople: (n: number) => `${n} people in.`,
+    // Boards Exchanges-joined / Exchanges-active. "You joined today." is the board; the rest are pending
+    // variants of it (docs/copy-pending.md).
+    rowJoinedToday: (when: string) => `You joined today. ${when}`,
+    rowJoined: (when: string) => `You're in. ${when}`,
+    rowCreated: (n: number, when: string) => `You created this. ${n} ${n === 1 ? "person" : "people"} in. ${when}`,
+    rowJustOrganisingPeople: (n: number, when: string) => `You're just organising. ${n} ${n === 1 ? "person" : "people"} in. ${when}`,
+    rowNamesDrawn: (day: string) => `Names are drawn ${day}.`,
+    rowNamesDrawnManualMember: "Names are drawn when the organiser is ready.",
+    rowNamesDrawnManualOrganiser: "You draw names when you're ready.",
     pastEmpty: "Nothing here yet. Finished exchanges will move here.",
     inviteHelp: "Got an invite? Open the link you were sent and you'll land in that exchange.",
     // Owner decision 2026-11-09 (item 10), until slice 6 adds Activity.

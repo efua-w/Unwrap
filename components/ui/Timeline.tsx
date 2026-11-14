@@ -1,4 +1,5 @@
-export type TimelineStep = { title: string; detail: string };
+// `note` is an optional second line under the detail (Joining-In-* boards: the date, then what happens).
+export type TimelineStep = { title: string; detail: string; note?: string };
 
 // Boards: the "What happens next" list on Exchange-Detail-started (numbered steps, title + one line).
 // The numbers are decoration: an <ol> already announces the order.
@@ -16,6 +17,7 @@ export function Timeline({ steps }: { steps: readonly TimelineStep[] }) {
           <span className="flex min-w-0 flex-col gap-2 pt-8">
             <strong className="text-body-base-semibold">{step.title}</strong>
             <span className="text-body-sm-regular text-text-secondary">{step.detail}</span>
+            {step.note ? <span className="text-body-sm-regular text-text-secondary">{step.note}</span> : null}
           </span>
         </li>
       ))}

@@ -307,7 +307,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByRole("heading", { name: "Share the invite link" })).toBeVisible();
         await expect(page.getByText(`People can join until ${joinLabel}. Names need at least 3 people to draw.`)).toBeVisible();
         const inviteUrl = `${new URL(page.url()).origin}/i/${exchange?.invite_token}`;
-        await expect(page.getByText(inviteUrl, { exact: true })).toBeVisible();
+        // WHY the id: the Invite people sheet (closed) holds the same link, so the page section is named by its id.
+        await expect(page.locator("#exchange-invite-link")).toHaveText(inviteUrl);
         expect(inviteUrl).toMatch(/\/i\/[0-9a-f]{32}$/);
         await expect(page.getByRole("heading", { name: "What happens next" })).toBeVisible();
         await expect(page.getByText(`Anyone with the link can join until ${joinLabel}.`)).toBeVisible();
@@ -315,10 +316,13 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByText(`${giftLabel}.`, { exact: true })).toBeVisible();
         await expect(page.getByText("Times are in your time zone (WAT).")).toBeVisible();
         await expect(page.getByRole("heading", { name: "Your part" })).toBeVisible();
-        await expect(page.getByText("You're taking part. You'll be drawn and buy a gift too.")).toBeVisible();
+        // Slice 5 (boards Exchange-Detail-ostarted): the S49 row and the placeholder, People, Organiser tools.
+        await expect(page.getByText("Nothing yet. Add one so your giver has ideas.")).toBeVisible();
+        await expect(page.getByText(`You'll find out on ${formatDay(new Date(`${JOIN}T17:00:00Z`), ZONE)}.`)).toBeVisible();
         await expect(page.getByText("Only you so far. People show here as they join.")).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Organiser tools" })).toBeVisible();
         // Owner decision 5: nothing whose feature is not built yet.
-        for (const hidden of ["Invite by email", "Add your wishlist", "Organiser tools", "Cancel exchange…", "Edit details", "Draw names now…"]) {
+        for (const hidden of ["Invite by email", "Add your wishlist", "Cancel exchange…", "Edit details", "Draw names now…"]) {
           await expect(page.getByText(hidden)).toHaveCount(0);
         }
         await expectNoAxeViolations(page);

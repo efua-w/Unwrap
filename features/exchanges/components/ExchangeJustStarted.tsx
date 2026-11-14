@@ -1,12 +1,16 @@
 import { ExchangeTag } from "@/components/ui/ExchangeTag";
 import { LocalDateTime } from "@/components/ui/LocalDateTime";
 import { Timeline } from "@/components/ui/Timeline";
-import { zoneShortName } from "@/lib/dates/format";
+import { formatDay, zoneShortName } from "@/lib/dates/format";
 import { budgetLabel } from "@/lib/money/budget";
 import { EXCHANGE_COPY } from "../copy";
+import { peopleIn } from "../people";
 import { lastJoinDay, timelineSteps } from "../timeline";
 import type { OrganiserExchange } from "../types";
-import { InviteSection } from "./InviteSection";
+import { InviteSection } from "./InviteSection";
+import { OrganiserTools } from "./OrganiserTools";
+import { PeopleSection } from "./PeopleSection";
+import { YourPart } from "./YourPart";
 
 type Props = {
   exchange: OrganiserExchange;
@@ -18,10 +22,16 @@ type Props = {
 
 // S14 Exchange-Detail-started (GC-013, GCO-004) with the owner's decisions of 2026-11-09: header
 // "Only you so far.", no separate Dates section, no note, the time zone line under "What happens
-// next", and no control whose feature is not built yet (Invite by email, Add your wishlist,
-// Organiser tools, Cancel). Those arrive with slices 5, 7, 10, 13 and 15.
+// next", and no control whose feature is not built yet (Invite by email, Edit, Draw, Cancel). Slice 5
+// adds Your part (S49 row), People and Organiser tools > Invite people (boards Exchange-Detail-oattached,
+// -oideas, -ostarted, Org-People-default; owner Q14).
 export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
   const copy = EXCHANGE_COPY.detail;
+  // WHY others, not the count: "alone" is about people other than the viewer, who may only be organising.
+  const others = exchange.people.filter((p) => !p.isMe);
+  const alone = others.length === 0;
+  const drawDay =
+    exchange.drawMode === "at_join_by" && exchange.drawAt ? formatDay(new Date(exchange.drawAt), timeZone) : null;
   return (
     <div className="flex flex-col gap-32 md:max-w-reading-max">
       {/* Boards Exchange-Detail-ostarted -m/-d: the tag sits above the title, all left-aligned. */}
@@ -30,7 +40,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
         <div className="flex min-w-0 flex-col gap-4">
           <h1 className="break-words text-heading-2">{exchange.name}</h1>
           <p className="text-body-base-regular text-text-default">
-            {exchange.peopleCount <= 1 ? copy.onlyYou : EXCHANGE_COPY.list.rowPeople(exchange.peopleCount)}
+            {alone ? copy.onlyYou : EXCHANGE_COPY.list.rowPeople(peopleIn(exchange.takingPart, exchange.peopleCount))}
           </p>
           <p className="text-body-sm-regular text-text-muted">
             Created by you on <LocalDateTime value={exchange.createdAt} timeZone={timeZone} /> ·{" "}
@@ -40,7 +50,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
       </header>
 
       {inviteUrl ? (
-        <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
+        <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
       ) : null}
 
       <section aria-labelledby="next-heading" className="flex flex-col gap-20 rounded-2xl bg-surface-subtle p-24">
@@ -52,19 +62,31 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
         <p className="text-body-sm-regular text-text-muted">{copy.zoneLine(zoneShortName(new Date(exchange.joinByAt), timeZone))}</p>
       </section>
 
-      <section aria-labelledby="part-heading" className="flex flex-col gap-8">
-        <h2 id="part-heading" className="text-heading-4">
-          {copy.yourPart}
-        </h2>
-        <p className="text-body-base-regular text-text-secondary">{exchange.takingPart ? copy.takingPart : copy.justOrganising}</p>
-      </section>
+      {exchange.myList ? (
+        <YourPart mode="organiser" exchangeId={exchange.id} list={exchange.myList} drawDay={drawDay} />
+      ) : (
+        <section aria-labelledby="part-heading" className="flex flex-col gap-8">
+          <h2 id="part-heading" className="text-heading-4">
+            {copy.yourPart}
+          </h2>
+          <p className="text-body-base-regular text-text-secondary">{copy.justOrganising}</p>
+        </section>
+      )}
 
-      <section aria-labelledby="people-heading" className="flex flex-col gap-8">
-        <h2 id="people-heading" className="text-heading-4">
-          {copy.people}
-        </h2>
-        <p className="text-body-base-regular text-text-secondary">{copy.peopleOnlyYou}</p>
-      </section>
+      <PeopleSection
+        people={exchange.takingPart ? exchange.people : others}
+        alone={alone}
+        count={peopleIn(exchange.takingPart, exchange.peopleCount)}
+      />
+
+      {inviteUrl ? (
+        <OrganiserTools
+          exchangeId={exchange.id}
+          exchangeName={exchange.name}
+          lastJoinDay={lastJoinDay(exchange, timeZone)}
+          inviteUrl={inviteUrl}
+        />
+      ) : null}
     </div>
   );
 }

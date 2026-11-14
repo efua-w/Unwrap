@@ -54,8 +54,14 @@ insert into public.wishlists (id, owner_id, name)
 values ('c0000000-0000-4000-8000-000000001001', 'b0000000-0000-4000-8000-000000001001', 'Birthday list');
 insert into public.wishlists (id, owner_id, name, deleted_at)
 values ('c0000000-0000-4000-8000-000000001002', 'b0000000-0000-4000-8000-000000001001', 'Old list', now());
-insert into public.wishlists (id, owner_id, kind, name)
-values ('c0000000-0000-4000-8000-000000001003', 'b0000000-0000-4000-8000-000000001001', 'exchange_ideas', 'Ideas');
+-- Ideas lists belong to an exchange (exchange_lists migration). Its organiser is NOT the list's owner and
+-- nobody is made a member, so the owner is outside the exchange, exactly as before that column existed.
+do $fx$ begin
+  insert into public.exchanges (id, organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+  values ('e0000000-0000-4000-8000-000000001001', 'b0000000-0000-4000-8000-000000001002', 'T100 Ada ideas exchange', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay');
+end $fx$;
+insert into public.wishlists (id, owner_id, kind, name, exchange_id)
+values ('c0000000-0000-4000-8000-000000001003', 'b0000000-0000-4000-8000-000000001001', 'exchange_ideas', 'Ideas', 'e0000000-0000-4000-8000-000000001001');
 insert into public.wishlists (id, owner_id, name)
 values ('c0000000-0000-4000-8000-000000001004', 'b0000000-0000-4000-8000-000000001002', 'Bola''s list');
 

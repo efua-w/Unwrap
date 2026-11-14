@@ -1,4 +1,5 @@
 import { LoginForm } from "@/features/auth/LoginForm";
+import { inviteBannerForNext } from "@/features/joining/invite-banner";
 import { safeNextOrUndefined } from "@/lib/auth/next-path";
 import { redirectIfSignedIn } from "@/lib/auth/session";
 
@@ -9,5 +10,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   const { next: rawNext } = await searchParams;
   const next = safeNextOrUndefined(rawNext);
   await redirectIfSignedIn(next);
-  return <LoginForm next={next} />;
+  return <LoginForm next={next} banner={await inviteBannerForNext(next)} />;
 }
