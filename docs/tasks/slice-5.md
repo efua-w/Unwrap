@@ -247,3 +247,8 @@ Tobechukwu Olih: "Accept all".
 - Outstanding issues: the timeline's step 1 still says "Anyone with the link can join until {day}." after the date passes; names-drawn step stays future-tense until slice 10.
 - Next action: owner approves the commit.
 - Copy: owner approved all slice 5 copy-pending rows (incl. the closed card) on 2026-11-14.
+
+## Main session — close — 2026-11-14
+- PR #14 merged (d907e5d). CI green after taking CI's generated database.types.ts (security job: pgTAP PASS).
+- Owner: signed-in phone click-through and board comparison at 390/768/1440 done 2026-11-14.
+- Slice 5: Done. Open items 75–78, 80–82 carry forward in docs/progress.md.
