@@ -11,6 +11,8 @@ type Props = {
   headerAction?: ReactNode;
   /** Parent page for Back. Omit on Profile setup, which has no Back (S06). */
   backHref?: string;
+  /** What the person is here for, above the title: "You're joining {exchange}" from an invite (GC-003). */
+  banner?: ReactNode;
   /** The fields, between the title and the actions. */
   children?: ReactNode;
   /** The actions. Pinned to the bottom of the screen below 768, so they stay above the keyboard. */
@@ -22,7 +24,7 @@ type Props = {
 // Below 768: a Back bar (or the wordmark), the content, and the actions pinned at the bottom.
 // From 768: the wordmark top left and one centred column with the actions under the fields.
 // Boards: Entry-Signup / Login / Verify / Profile, default-m and default-d.
-export function AuthFrame({ title, intro, eyebrow, headerAction, backHref, children, footer, onSubmit }: Props) {
+export function AuthFrame({ title, intro, eyebrow, headerAction, backHref, banner, children, footer, onSubmit }: Props) {
   return (
     <div className="flex min-h-dvh flex-col">
       <OfflineBanner />
@@ -52,6 +54,7 @@ export function AuthFrame({ title, intro, eyebrow, headerAction, backHref, child
           ) : null}
           <div className="flex flex-1 flex-col gap-32 px-20 pb-24 pt-16 md:flex-none md:p-0">
             <div className="flex flex-col gap-8">
+              {banner}
               {eyebrow ? <span className="text-body-sm-semibold text-text-muted">{eyebrow}</span> : null}
               <h1 className="text-heading-1">{title}</h1>
               {intro ? <p className="text-body-base-regular text-text-secondary">{intro}</p> : null}

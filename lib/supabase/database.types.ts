@@ -7,17 +7,23 @@ export type Database = {
           Tables: {
             "exchange_members": {
                   Row: {
-                    "exchange_id": string,"id": string,"joined_at": string,"left_at": string | null,"state": Database["public"]['Enums']["exchange_member_state"],"taking_part": boolean,"user_id": string
+                    "attached_wishlist_id": string | null,"exchange_id": string,"id": string,"joined_at": string,"left_at": string | null,"state": Database["public"]['Enums']["exchange_member_state"],"taking_part": boolean,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "exchange_id": string,"id"?: string,"joined_at"?: string,"left_at"?: string | null,"state"?: Database["public"]['Enums']["exchange_member_state"],"taking_part": boolean,"user_id": string
+                    "attached_wishlist_id"?: string | null,"exchange_id": string,"id"?: string,"joined_at"?: string,"left_at"?: string | null,"state"?: Database["public"]['Enums']["exchange_member_state"],"taking_part": boolean,"user_id": string
                   }
                   Update: {
-                    "exchange_id"?: string,"id"?: string,"joined_at"?: string,"left_at"?: string | null,"state"?: Database["public"]['Enums']["exchange_member_state"],"taking_part"?: boolean,"user_id"?: string
+                    "attached_wishlist_id"?: string | null,"exchange_id"?: string,"id"?: string,"joined_at"?: string,"left_at"?: string | null,"state"?: Database["public"]['Enums']["exchange_member_state"],"taking_part"?: boolean,"user_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "exchange_members_attached_wishlist_id_fkey"
+      columns: ["attached_wishlist_id"]
+isOneToOne: false
+      referencedRelation: "wishlists"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "exchange_members_exchange_id_fkey"
       columns: ["exchange_id"]
 isOneToOne: false
@@ -107,17 +113,29 @@ isOneToOne: false
                   ]
                 },"wishlists": {
                   Row: {
-                    "created_at": string,"deleted_at": string | null,"id": string,"kind": Database["public"]['Enums']["wishlist_kind"],"name": string,"owner_id": string,"share_token": string,"updated_at": string,"visibility": Database["public"]['Enums']["wishlist_visibility"]
+                    "created_at": string,"deleted_at": string | null,"exchange_id": string | null,"id": string,"kind": Database["public"]['Enums']["wishlist_kind"],"name": string,"owner_id": string,"share_token": string,"updated_at": string,"visibility": Database["public"]['Enums']["wishlist_visibility"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["wishlist_kind"],"name": string,"owner_id"?: string,"share_token"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["wishlist_visibility"]
+                    "created_at"?: string,"deleted_at"?: string | null,"exchange_id"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["wishlist_kind"],"name": string,"owner_id"?: string,"share_token"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["wishlist_visibility"]
                   }
                   Update: {
-                    "created_at"?: string,"deleted_at"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["wishlist_kind"],"name"?: string,"owner_id"?: string,"share_token"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["wishlist_visibility"]
+                    "created_at"?: string,"deleted_at"?: string | null,"exchange_id"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["wishlist_kind"],"name"?: string,"owner_id"?: string,"share_token"?: string,"updated_at"?: string,"visibility"?: Database["public"]['Enums']["wishlist_visibility"]
                   }
                   Relationships: [
                     {
+      foreignKeyName: "wishlists_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "wishlists_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges_visible"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "wishlists_owner_id_fkey"
       columns: ["owner_id"]
 isOneToOne: false
@@ -151,7 +169,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "create_exchange":
+            "attach_wishlist":
+{ Args: { "p_exchange": string,"p_wishlist": string }; Returns: undefined
+                           },
+"create_exchange":
 { Args: { "p_approval_required": boolean,"p_budget": Database["public"]['Enums']["exchange_budget_preset"],"p_draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"p_draw_time": string,"p_gift_day": string,"p_join_by_date": string,"p_name": string,"p_note": string,"p_taking_part": boolean,"p_time_zone": string }; Returns: string
                            },
 "delete_wishlist":
@@ -162,6 +183,20 @@ isOneToOne: false
                            },
 "get_exchange_invite_token":
 { Args: { "p_exchange": string }; Returns: string
+                           },
+"get_exchange_people":
+{ Args: { "p_exchange": string }; Returns: {
+              "display_name": string,"is_me": boolean,"is_organiser": boolean,"taking_part": boolean
+            }[]
+                           },
+"get_invite_preview":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"get_join_details":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"get_my_exchange_list":
+{ Args: { "p_exchange": string }; Returns: Json
                            },
 "get_shared_wishlist":
 { Args: { "p_token": string }; Returns: Json
@@ -175,14 +210,23 @@ isOneToOne: false
 "is_organiser":
 { Args: { "p_exchange": string }; Returns: boolean
                            },
+"join_exchange":
+{ Args: { "p_token": string }; Returns: string
+                           },
 "remove_wishlist_item":
 { Args: { "p_item_id": string }; Returns: undefined
+                           },
+"reset_invite_token":
+{ Args: { "p_exchange": string }; Returns: string
                            },
 "restore_wishlist":
 { Args: { "p_wishlist_id": string }; Returns: undefined
                            },
 "restore_wishlist_item":
 { Args: { "p_item_id": string }; Returns: undefined
+                           },
+"use_exchange_ideas":
+{ Args: { "p_exchange": string }; Returns: string
                            }
           }
           Enums: {

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ListRow } from "@/components/ui/ListRow";
 import { useToast } from "@/components/ui/Toast";
-import { removeWishlistItem, restoreWishlist, restoreWishlistItem } from "../actions";
+import { addWishlistItem, removeWishlistItem, restoreWishlist, restoreWishlistItem, updateWishlistItem } from "../actions";
 import { itemCountLabel, itemSub, quoted, WISHLIST_COPY } from "../copy";
 import type { OwnerWishlist, OwnerWishlistItem } from "../types";
 import { DeleteWishlistSheet } from "./DeleteWishlistSheet";
@@ -77,6 +77,12 @@ export function WishlistDetail({ list, items, shareUrl }: Props) {
     // every update, R1-4), so the list jumps to the top of My wishlists. Accepted; asserted in 100.
     return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }, [items, hidden, putBack]);
+
+  // WHY bound here: the sheet is shared with exchange ideas lists, so it is handed the list's own actions.
+  const itemActions = {
+    add: (input: unknown) => addWishlistItem(list.id, input),
+    update: (itemId: string, input: unknown) => updateWishlistItem(itemId, input),
+  };
 
   const signedOut = () => router.replace(`/login?next=${encodeURIComponent(`/wishlists/${list.id}`)}`);
 
@@ -265,7 +271,8 @@ export function WishlistDetail({ list, items, shareUrl }: Props) {
         key={`item-${sessions.item}`}
         open={sheet.kind === "add-item" || sheet.kind === "edit-item"}
         onClose={close}
-        wishlistId={list.id}
+        actions={itemActions}
+        signedOutNext={`/wishlists/${list.id}`}
         item={sheet.kind === "edit-item" ? sheet.item : undefined}
         onSaved={(name, mode) => {
           close();

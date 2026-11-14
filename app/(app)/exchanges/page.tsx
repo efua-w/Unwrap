@@ -13,15 +13,17 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { listMyExchanges } from "@/features/exchanges/queries";
 import type { ExchangeListItem } from "@/features/exchanges/types";
+import { peopleIn, joinedToday } from "@/features/exchanges/people";
 import { HowItWorks } from "@/features/onboarding/HowItWorks";
 import { requireProfile } from "@/lib/auth/session";
+import { formatDay } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 
 type SearchParams = Promise<{ view?: string | string[] }>;
 
-// S08 Exchanges (GC-008). Boards: Exchanges-first, -started, -active, -pastempty, -loading, -error,
-// -offline (m and d). Slice 4 shows only exchanges the person organises; joined, pending and closed-request
-// rows and the personal action arrive with slices 5 to 10.
+// S08 Exchanges (GC-008). Boards: Exchanges-first, -started, -active, -joined, -pastempty, -loading, -error,
+// -offline (m and d). Slices 4 and 5: exchanges the person organises or has joined; pending and closed-request
+// rows and the personal action arrive with slices 6 to 10.
 export default async function ExchangesPage({ searchParams }: { searchParams: SearchParams }) {
   const { view } = await searchParams;
   const past = view === "past";
@@ -63,11 +65,24 @@ function ExchangesLoading() {
   );
 }
 
-// GC-008: one written sentence per row. Slice 4 has only the exchanges the person started.
-function rowSub(item: ExchangeListItem): string {
+// GC-008: one written sentence per row (boards Exchanges-joined, Exchanges-active). "Names are drawn {date}."
+// names the draw day in the viewer's zone; the organiser-draws variants are pending copy. Before the draw
+// there are no readiness counts (slice 8), so an organiser's row says how many people are in.
+function rowSub(item: ExchangeListItem, timeZone: string): string {
   const copy = EXCHANGE_COPY.list;
-  if (item.peopleCount > 1) return copy.rowPeople(item.peopleCount);
-  return item.takingPart ? copy.rowOnlyYouTaking : copy.rowOnlyYouOrganising;
+  const when =
+    item.drawMode === "at_join_by" && item.drawAt
+      ? copy.rowNamesDrawn(formatDay(new Date(item.drawAt), timeZone))
+      : item.isOrganiser
+        ? copy.rowNamesDrawnManualOrganiser
+        : copy.rowNamesDrawnManualMember;
+  if (!item.isOrganiser) {
+    return joinedToday(item.joinedAt, new Date(), timeZone) ? copy.rowJoinedToday(when) : copy.rowJoined(when);
+  }
+  const others = item.peopleCount - 1;
+  if (others <= 0) return item.takingPart ? copy.rowOnlyYouTaking : copy.rowOnlyYouOrganising;
+  const n = peopleIn(item.takingPart, item.peopleCount);
+  return item.takingPart ? copy.rowCreated(n, when) : copy.rowJustOrganisingPeople(n, when);
 }
 
 async function ExchangesContent({ viewerId, past }: { viewerId: string; past: boolean }) {
@@ -123,7 +138,7 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
             href={`/exchanges/${item.id}`}
             leading={<ExchangeTag name={item.name} tint={item.tint} />}
             title={item.name}
-            sub={rowSub(item)}
+            sub={rowSub(item, timeZone)}
             divider={index > 0}
           />
         ))}

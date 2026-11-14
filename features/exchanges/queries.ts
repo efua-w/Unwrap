@@ -2,7 +2,8 @@ import "server-only";
 import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/wishlist";
-import type { ExchangeListItem, OrganiserExchange } from "./types";
+import { parseMyExchangeList } from "@/features/exchange-list/parse";
+import type { ExchangeListItem, MemberExchange, OrganiserExchange, OwnListSummary, PersonLine } from "./types";
 
 // Reads for Exchanges and the exchange page (GC-008, GC-013, GCO-004). Every query runs under the
 // signed-in person's Row Level Security, which already limits rows to exchanges they are in.
@@ -14,7 +15,7 @@ type VisibleRow = Database["public"]["Views"]["exchanges_visible"]["Row"];
 // WHY: Postgres reports every view column as nullable, but these are NOT NULL columns of
 // public.exchanges seen through a plain projection. A null here means the view is broken, so it fails
 // loudly instead of rendering a half-empty exchange.
-function fromView(row: VisibleRow) {
+export function fromView(row: VisibleRow) {
   const { id, organiser_id, name, budget_preset, join_by_at, draw_mode, gift_day, approval_required, tint, created_at } = row;
   if (
     id === null || organiser_id === null || name === null || budget_preset === null || join_by_at === null ||
@@ -44,7 +45,7 @@ export async function listMyExchanges(viewerId: string): Promise<ExchangeListIte
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("exchanges_visible")
-    .select("*, people:exchange_members(user_id, taking_part)")
+    .select("*, people:exchange_members(user_id, taking_part, joined_at)")
     .eq("people.state", "active")
     .order("created_at", { ascending: false });
   if (error) throw new Error("Could not read exchanges.");
@@ -63,6 +64,7 @@ export async function listMyExchanges(viewerId: string): Promise<ExchangeListIte
       isOrganiser: exchange.organiserId === viewerId,
       takingPart: row.people.find((m) => m.user_id === viewerId)?.taking_part ?? false,
       peopleCount: row.people.length,
+      joinedAt: row.people.find((m) => m.user_id === viewerId)?.joined_at ?? exchange.createdAt,
       createdAt: exchange.createdAt,
       isPast: exchange.isPast,
     };
@@ -86,16 +88,21 @@ export async function getOrganiserExchange(id: string, viewerId: string): Promis
   // does not refuse a cancelled exchange yet (progress open item).
   if (!row || row.organiserId !== viewerId || row.cancelled) return null;
 
-  const [members, state, token] = await Promise.all([
-    supabase.from("exchange_members").select("user_id, taking_part").eq("exchange_id", id).eq("state", "active"),
+  const [people, state, token] = await Promise.all([
+    supabase.rpc("get_exchange_people", { p_exchange: id }),
     supabase.rpc("exchange_state", { p_exchange: id }),
     supabase.rpc("get_exchange_invite_token", { p_exchange: id }),
   ]);
-  if (members.error || state.error) throw new Error("Could not read the exchange.");
+  if (people.error || state.error) throw new Error("Could not read the exchange.");
   if (token.error) {
     if (token.error.code === NOT_FOUND) return null;
     throw new Error("Could not read the invite link.");
   }
+
+  const lines = toPersonLines(people.data);
+  const takingPart = people.data.find((p) => p.is_me)?.taking_part ?? false;
+  // WHY only when taking part: just-organising has no list row (GCO-004 S49).
+  const myList = takingPart ? await readOwnList(id) : null;
 
   return {
     inviteToken: token.data,
@@ -110,10 +117,69 @@ export async function getOrganiserExchange(id: string, viewerId: string): Promis
       drawAt: row.drawAt,
       giftDay: row.giftDay,
       approvalRequired: row.approvalRequired,
-      takingPart: members.data.find((m) => m.user_id === viewerId)?.taking_part ?? false,
-      peopleCount: members.data.length,
+      takingPart,
+      peopleCount: people.data.length,
       createdAt: row.createdAt,
       isOpen: state.data === "open",
+      people: lines,
+      myList,
     },
+  };
+}
+
+type PeopleRows = Database["public"]["Functions"]["get_exchange_people"]["Returns"];
+
+// WHY no taking_part or ids in the line: faces and names only (GC-013).
+function toPersonLines(rows: PeopleRows): PersonLine[] {
+  return rows.map((p) => ({ name: p.display_name, isOrganiser: p.is_organiser, isMe: p.is_me }));
+}
+
+// The viewer's own list. WHY the strict parser: the answer is list status and nothing else.
+async function readOwnList(id: string): Promise<OwnListSummary> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_my_exchange_list", { p_exchange: id });
+  if (error) throw new Error("Could not read your list.");
+  const parsed = parseMyExchangeList(data);
+  if (!parsed) throw new Error("Could not read your list.");
+  return { source: parsed.source, name: parsed.name, itemCount: parsed.itemCount };
+}
+
+// One exchange for an active member who is not the organiser, before the draw, or null. WHY one answer:
+// missing, cancelled, not a member, left, removed and already-drawn all give "isn't available to you"
+// (GC-029). Draw and later states arrive with slices 10 to 15.
+export async function getMemberExchange(id: string, viewerId: string): Promise<MemberExchange | null> {
+  if (!isUuid(id)) return null;
+  const supabase = await createClient();
+  const { data: viewRow, error } = await supabase.from("exchanges_visible").select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error("Could not read the exchange.");
+  const row = viewRow ? fromView(viewRow) : null;
+  if (!row || row.cancelled || row.organiserId === viewerId) return null;
+
+  const [people, state] = await Promise.all([
+    supabase.rpc("get_exchange_people", { p_exchange: id }),
+    supabase.rpc("exchange_state", { p_exchange: id }),
+  ]);
+  if (people.error || state.error) throw new Error("Could not read the exchange.");
+  // WHY: get_exchange_people answers active members only, so an empty or me-less answer is "not a member".
+  const lines = toPersonLines(people.data);
+  if (!lines.some((p) => p.isMe)) return null;
+  if (state.data !== "open" && state.data !== "joining_closed") return null;
+  const organiser = lines.find((p) => p.isOrganiser);
+  if (!organiser) throw new Error("Could not read the exchange.");
+
+  return {
+    id: row.id,
+    name: row.name,
+    note: row.note,
+    budget: row.budget,
+    tint: row.tint,
+    joinByAt: row.joinByAt,
+    drawMode: row.drawMode,
+    drawAt: row.drawAt,
+    giftDay: row.giftDay,
+    approvalRequired: row.approvalRequired,
+    organiserName: organiser.name,
+    people: lines,
+    myList: await readOwnList(id),
   };
 }

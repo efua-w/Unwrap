@@ -17,7 +17,7 @@ import {
   type ItemErrors,
   type ItemPriority,
 } from "@/lib/validation/wishlist";
-import { addWishlistItem, updateWishlistItem } from "../actions";
+import type { ItemResult } from "../actions";
 import { PRIORITY_LABEL, WISHLIST_COPY } from "../copy";
 import type { OwnerWishlistItem } from "../types";
 
@@ -54,18 +54,32 @@ const PRIORITY_OPTIONS: readonly RadioOption<ItemPriority>[] = [
 // Form field order, for moving focus to the first field with an error.
 const FIELD_ORDER = ["link", "name", "price"] as const;
 
+// WHY actions are props (GC-010, GC-021): the same sheet adds to a personal wishlist and to an
+// exchange ideas list, and each has its own list id and revalidation. The caller binds the list in
+// `add`; this component never learns which kind of list it is.
+export type ItemSheetActions = {
+  add: (input: unknown) => Promise<ItemResult>;
+  update: (itemId: string, input: unknown) => Promise<ItemResult>;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
-  wishlistId: string;
+  actions: ItemSheetActions;
+  /** Where to come back to after signing in again (a path inside the app). */
+  signedOutNext: string;
   /** Absent when adding. */
   item?: OwnerWishlistItem;
   onSaved: (name: string, mode: "added" | "saved") => void;
+  /** A line under the title, such as who will see the item (GC-010). */
+  description?: string;
+  /** Replaces the helper under Price, such as the exchange budget (GCO-004 S49). */
+  priceHelper?: string;
 };
 
 // WHY the parent remounts this (a new `key`) for each opening: "Add another" starts empty, and
 // editing starts from the saved item.
-export function ItemSheet({ open, onClose, wishlistId, item, onSaved }: Props) {
+export function ItemSheet({ open, onClose, actions, signedOutNext, item, onSaved, description, priceHelper }: Props) {
   const router = useRouter();
   const formId = useId();
   const { online, reportNetworkError } = useNetworkStatus();
@@ -106,7 +120,7 @@ export function ItemSheet({ open, onClose, wishlistId, item, onSaved }: Props) {
     }
     setBusy(true);
     try {
-      const result = editing ? await updateWishlistItem(item.id, input) : await addWishlistItem(wishlistId, input);
+      const result = editing ? await actions.update(item.id, input) : await actions.add(input);
       if (result.ok) {
         onSaved(parsed.value.name, editing ? "saved" : "added");
         return;
@@ -118,7 +132,7 @@ export function ItemSheet({ open, onClose, wishlistId, item, onSaved }: Props) {
         return;
       }
       if (result.reason === "signed-out") {
-        return router.replace(`/login?next=${encodeURIComponent(`/wishlists/${wishlistId}`)}`);
+        return router.replace(`/login?next=${encodeURIComponent(signedOutNext)}`);
       }
       setFailed(true);
     } catch {
@@ -133,6 +147,7 @@ export function ItemSheet({ open, onClose, wishlistId, item, onSaved }: Props) {
       onClose={onClose}
       variant="form"
       title={editing ? COPY.editTitle : COPY.addTitle}
+      description={description}
       busy={busy}
       footer={
         <>
@@ -171,7 +186,7 @@ export function ItemSheet({ open, onClose, wishlistId, item, onSaved }: Props) {
           label={COPY.priceLabel}
           name="price"
           placeholder="0"
-          helper={COPY.priceHelper}
+          helper={priceHelper ?? COPY.priceHelper}
           error={
             errors.price === "too-large" ? COPY.priceTooLarge : errors.price ? COPY.priceNotWhole : undefined
           }

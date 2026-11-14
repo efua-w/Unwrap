@@ -84,8 +84,14 @@ insert into public.wishlists (owner_id, name, visibility) values
   ('b0000000-0000-4000-8000-000000001201', 'T120 Empty', 'link'),
   ('b0000000-0000-4000-8000-000000001201', 'T120 Toggle', 'link'),
   ('b0000000-0000-4000-8000-000000001203', 'T120 Anonymised', 'link');
-insert into public.wishlists (owner_id, name, kind, visibility) values
-  ('b0000000-0000-4000-8000-000000001201', 'T120 Ideas', 'exchange_ideas', 'private');
+-- Ideas lists belong to an exchange (exchange_lists migration). Its organiser is NOT the list's owner and
+-- nobody is made a member, so the owner is outside the exchange, exactly as before that column existed.
+do $fx$ begin
+  insert into public.exchanges (id, organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+  values ('e0000000-0000-4000-8000-000000001201', 'b0000000-0000-4000-8000-000000001202', 'T120 Ada ideas exchange', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay');
+end $fx$;
+insert into public.wishlists (owner_id, name, kind, visibility, exchange_id) values
+  ('b0000000-0000-4000-8000-000000001201', 'T120 Ideas', 'exchange_ideas', 'private', 'e0000000-0000-4000-8000-000000001201');
 update public.wishlists set deleted_at = now() where name = 'T120 Deleted';
 update public.profiles set anonymised_at = now() where id = 'b0000000-0000-4000-8000-000000001203';
 

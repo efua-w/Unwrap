@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { buildInviteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
+import { isUuid } from "@/lib/validation/wishlist";
 import { fieldFromHint, parseExchangeInput, type ErrorCode, type ExchangeErrors, type FieldKey } from "@/lib/validation/exchange";
 
 // Server Action for Start exchange (GCO-001..003). It validates its input, never takes a user id
@@ -52,4 +54,23 @@ export async function createExchange(input: unknown): Promise<CreateExchangeResu
   }
   revalidatePath("/exchanges");
   return { ok: true, id: data };
+}
+
+export type ResetInviteResult =
+  | { ok: true; inviteUrl: string }
+  | { ok: false; reason: "signed-out" | "ended" | "failed" };
+
+// GCO-005 Reset link. The database decides who may (reset_invite_token: organiser only, P0002 for anyone
+// else) and refuses a cancelled or complete exchange (22023). WHY the new link is built here and returned:
+// it is made from SITE_URL on the server, and goes only to the organiser who asked (token stays
+// organiser-only, AC-5).
+export async function resetInviteLink(exchangeId: string): Promise<ResetInviteResult> {
+  if (!isUuid(exchangeId)) return { ok: false, reason: "failed" };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, reason: "signed-out" };
+  const { data, error } = await supabase.rpc("reset_invite_token", { p_exchange: exchangeId });
+  if (error || !data) return { ok: false, reason: error?.code === INVALID_PARAMETER ? "ended" : "failed" };
+  revalidatePath(`/exchanges/${exchangeId}`);
+  return { ok: true, inviteUrl: await buildInviteUrl(data) };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AuthFrame } from "@/components/auth/AuthFrame";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
@@ -24,7 +24,7 @@ const COPY = {
 
 type Notice = "limited" | "failed" | null;
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, banner }: { next?: string; banner?: ReactNode }) {
   const router = useRouter();
   const { online, reportNetworkError } = useNetworkStatus();
   const [email, setEmail] = useState("");
@@ -107,6 +107,7 @@ export function LoginForm({ next }: { next?: string }) {
 
   return (
     <AuthFrame
+      banner={banner}
       title="Welcome back"
       intro="Enter your email and we'll send you a code to log in."
       backHref="/"

@@ -186,16 +186,23 @@ select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000901',
   $$delete from public.wishlists where name = 'Birthday — 14 March'$$),
   'err:42501', 'a user cannot hard-delete a list (no DELETE grant)');
 
+-- Ideas lists belong to an exchange (exchange_lists migration). Its organiser is NOT the list's owner and
+-- nobody is made a member, so the owner is outside the exchange, exactly as before that column existed.
+do $fx$ begin
+  insert into public.exchanges (id, organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+  values ('e0000000-0000-4000-8000-000000000901', 'b0000000-0000-4000-8000-000000000902', 'T090 Ada ideas exchange', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay');
+end $fx$;
 -- 31. An ideas list can never be shared by link (plan §5, invariant 7). Inserted as the migration
 -- role, because clients cannot create ideas lists at all.
 select throws_ok(
-  $$insert into public.wishlists (owner_id, kind, name, visibility)
-    values ('b0000000-0000-4000-8000-000000000901', 'exchange_ideas', 'Ideas', 'link')$$,
-  '23514', null, 'an exchange_ideas list cannot be visible by link');
+  $$insert into public.wishlists (owner_id, kind, name, visibility, exchange_id)
+    values ('b0000000-0000-4000-8000-000000000901', 'exchange_ideas', 'Ideas', 'link', 'e0000000-0000-4000-8000-000000000901')$$,
+  '23514', 'new row for relation "wishlists" violates check constraint "wishlists_ideas_never_link"',
+  'an exchange_ideas list cannot be visible by link');
 
 -- An ideas list fixture (private), for the delete/update rules below.
-insert into public.wishlists (id, owner_id, kind, name)
-values ('c0000000-0000-4000-8000-000000000901', 'b0000000-0000-4000-8000-000000000901', 'exchange_ideas', 'Ideas');
+insert into public.wishlists (id, owner_id, kind, name, exchange_id)
+values ('c0000000-0000-4000-8000-000000000901', 'b0000000-0000-4000-8000-000000000901', 'exchange_ideas', 'Ideas', 'e0000000-0000-4000-8000-000000000901');
 
 -- 32-33. Ideas lists are not managed from My wishlists: no rename, no delete through these paths.
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000901',
@@ -256,8 +263,14 @@ select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000901',
 
 -- 47. R1-5: a deleted exchange ideas list does not count for has_deleted_wishlists (the function only
 -- looks at personal lists, so Bola, whose only deleted list is an ideas list, gets false).
-insert into public.wishlists (owner_id, kind, name, deleted_at)
-values ('b0000000-0000-4000-8000-000000000902', 'exchange_ideas', 'Bola ideas', now());
+-- Ideas lists belong to an exchange (exchange_lists migration). Its organiser is NOT the list's owner and
+-- nobody is made a member, so the owner is outside the exchange, exactly as before that column existed.
+do $fx$ begin
+  insert into public.exchanges (id, organiser_id, name, budget_preset, join_by_at, draw_mode, draw_at, gift_day, organiser_tz, tint)
+  values ('e0000000-0000-4000-8000-000000000902', 'b0000000-0000-4000-8000-000000000901', 'T090 Bola ideas exchange', '5k_10k', now() + interval '1 day', 'organiser_chooses', null, current_date + 3, 'Africa/Lagos', 'clay');
+end $fx$;
+insert into public.wishlists (owner_id, kind, name, deleted_at, exchange_id)
+values ('b0000000-0000-4000-8000-000000000902', 'exchange_ideas', 'Bola ideas', now(), 'e0000000-0000-4000-8000-000000000902');
 select is(pg_temp.val_as('b0000000-0000-4000-8000-000000000902', 'public.has_deleted_wishlists()'),
   'false', 'has_deleted_wishlists ignores a deleted exchange ideas list');
 

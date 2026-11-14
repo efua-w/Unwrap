@@ -1,5 +1,6 @@
 import { isPlausibleEmail } from "./email";
 import { DISPLAY_NAME_MAX } from "./display-name";
+import { inviteJoinPath, inviteTokenFromNext } from "./invite-path";
 import { DEFAULT_NEXT_PATH, sanitizeNext } from "./next-path";
 
 // GC-003: Verify code keeps its state (email, invite context, cooldown) when the person leaves for
@@ -85,7 +86,13 @@ export function serializeVerifyState(state: VerifyState): string {
 // that later logs in looks like a log-in to Supabase. The server now sends anyone without
 // profiles.onboarded_at to Profile setup from every signed-in page (lib/auth/session.ts), so the
 // destination below needs no clue from the browser.
+//
+// WHY an invite goes straight to the join confirmation, sign-up included (owner decision Q1,
+// 2026-11-13; GC-003, GC-005): invitees skip Profile setup, and join_exchange marks them as set up.
+// Only a `next` that is exactly an invite path does this; a Landing sign-up still reaches Profile setup.
 export function destinationAfterVerify(state: { flow: VerifyFlow; next?: string }): string {
+  const inviteToken = inviteTokenFromNext(state.next);
+  if (inviteToken) return inviteJoinPath(inviteToken);
   if (state.flow === "signup") {
     return state.next ? `/welcome?next=${encodeURIComponent(state.next)}` : "/welcome";
   }

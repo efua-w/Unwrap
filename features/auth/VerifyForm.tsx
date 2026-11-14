@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AuthFrame } from "@/components/auth/AuthFrame";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
@@ -40,7 +40,7 @@ const COPY = {
 type Status = "idle" | "checking" | "locked";
 type Notice = "limited" | "failed" | null;
 
-export function VerifyForm({ initial }: { initial: VerifyState | null }) {
+export function VerifyForm({ initial, banner }: { initial: VerifyState | null; banner?: ReactNode }) {
   const router = useRouter();
   const toast = useToast();
   const { online, reportNetworkError } = useNetworkStatus();
@@ -190,6 +190,7 @@ export function VerifyForm({ initial }: { initial: VerifyState | null }) {
 
   return (
     <AuthFrame
+      banner={banner}
       title="Check your email"
       backHref={parentHref}
       intro={

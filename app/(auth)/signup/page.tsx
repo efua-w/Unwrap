@@ -1,4 +1,5 @@
 import { SignupForm } from "@/features/auth/SignupForm";
+import { inviteBannerForNext } from "@/features/joining/invite-banner";
 import { safeNextOrUndefined } from "@/lib/auth/next-path";
 import { redirectIfSignedIn } from "@/lib/auth/session";
 
@@ -9,5 +10,5 @@ export default async function SignupPage({ searchParams }: { searchParams: Searc
   const { next: rawNext } = await searchParams;
   const next = safeNextOrUndefined(rawNext);
   await redirectIfSignedIn(next);
-  return <SignupForm next={next} />;
+  return <SignupForm next={next} banner={await inviteBannerForNext(next)} />;
 }

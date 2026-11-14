@@ -29,6 +29,15 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "no-referrer" },
         ],
       },
+      // WHY (GC-002, slice 5): an invite link is a secret address too. It stays out of search results, and
+      // leaving the page (for example through the sign-up links) must not send the token as the Referer.
+      {
+        source: "/i/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
     ];
   },
 };

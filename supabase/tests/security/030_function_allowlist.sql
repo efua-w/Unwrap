@@ -1,18 +1,18 @@
 -- 030_function_allowlist — plan §6 invariant 2 and §7 "Functions callable by anyone by default".
 -- Self-contained: runs as plain SQL and under `supabase test db`.
--- Pass: "ok 1".."ok 7", "1..7", no "not ok".
+-- Pass: "ok 1".."ok 9", "1..9", no "not ok".
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(7);
+select plan(9);
 
 -- WHY (plan §6): anon is the whole public attack surface, so the only functions in `public` it
 -- may execute are the two token-gated ones. The check uses effective privilege
 -- (has_function_privilege, which includes PUBLIC and role inheritance), not ACL text. Functions
 -- owned by an extension are excluded visibly, via pg_depend deptype 'e'.
 -- R1-5 (done in slice 3, open item 23): the allowlist matches the EXACT signature, name plus
--- argument types, so an overload of an allowed name cannot ride on it. get_invite_preview(text)
--- arrives in slice 5; until then its entry simply matches nothing.
+-- argument types, so an overload of an allowed name cannot ride on it. get_invite_preview(text) arrived
+-- in slice 5 (invite_and_join): assertions 7 and 9 check it is open to anon and that an overload is flagged.
 -- Scope is public only: widen it if the API schemas in supabase/config.toml ever change.
 create function pg_temp.anon_open_functions() returns text
 language sql stable as $$
@@ -68,11 +68,23 @@ select ok(
     and pg_temp.anon_open_functions() = '',
   'anon can execute public.get_shared_wishlist(text), and the detector does not flag it');
 
--- 7. Self-check: an overload of an allowed name is flagged, because only the exact signature is allowed.
+-- 7. The second allowlisted function, the invite preview (slice 5), is open to anon and not flagged.
+select ok(
+  has_function_privilege('anon', 'public.get_invite_preview(text)', 'execute')
+    and pg_temp.anon_open_functions() = '',
+  'anon can execute public.get_invite_preview(text), and the detector does not flag it');
+
+-- 8. Self-check: an overload of an allowed name is flagged, because only the exact signature is allowed.
 create function public.get_shared_wishlist(zz_selfcheck int) returns int language sql as $$ select 1 $$;
 grant execute on function public.get_shared_wishlist(int) to anon;
 select ok(pg_temp.anon_open_functions() like '%get_shared_wishlist(integer)%',
   'self-check: an overload get_shared_wishlist(int) granted to anon is flagged');
+
+-- 9. Same for the invite preview: an overload of get_invite_preview is flagged.
+create function public.get_invite_preview(zz_selfcheck int) returns int language sql as $$ select 1 $$;
+grant execute on function public.get_invite_preview(int) to anon;
+select ok(pg_temp.anon_open_functions() like '%get_invite_preview(integer)%',
+  'self-check: an overload get_invite_preview(int) granted to anon is flagged');
 
 select * from finish();
 rollback;

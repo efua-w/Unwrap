@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AuthFrame } from "@/components/auth/AuthFrame";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
@@ -28,7 +28,7 @@ const COPY = {
 
 type Notice = "limited" | "failed" | null;
 
-export function SignupForm({ next }: { next?: string }) {
+export function SignupForm({ next, banner }: { next?: string; banner?: ReactNode }) {
   const router = useRouter();
   const { online, reportNetworkError } = useNetworkStatus();
   const [firstName, setFirstName] = useState("");
@@ -132,6 +132,7 @@ export function SignupForm({ next }: { next?: string }) {
 
   return (
     <AuthFrame
+      banner={banner}
       title="Create your account"
       intro="Just your first name and email. No password needed."
       backHref="/"
