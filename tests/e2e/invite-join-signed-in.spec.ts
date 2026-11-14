@@ -144,6 +144,24 @@ for (const { name: width, viewport } of VIEWPORTS) {
         }
       });
 
+      test("organiser page after joining closes shows the closed card instead of the invite link (GCO-004)", async ({ context, page }) => {
+        test.setTimeout(120_000);
+        const organiser = await newPerson("Ngozi");
+        const exchange = await seedExchange(organiser, "Closed Christmas", { manual: true });
+        const past = new Date(Date.now() - 2 * 86_400_000).toISOString();
+        const closed = await adminClient().from("exchanges").update({ join_by_at: past }).eq("id", exchange.id);
+        if (closed.error) throw new Error(`close failed: ${closed.error.message}`);
+
+        await signIn(context, page, organiser, `/exchanges/${exchange.id}`);
+        await expect(page.getByRole("heading", { level: 1, name: "Closed Christmas" })).toBeVisible();
+        await expect(page.getByText("Joining has closed")).toBeVisible();
+        await expect(page.getByRole("heading", { name: "The join-by date has passed" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Share the invite link" })).toHaveCount(0);
+        await expect(page.locator("#exchange-invite-link")).toHaveCount(0);
+        await expectNoAxeViolations(page);
+        await page.screenshot({ path: `test-results/screenshots/exchange-closed-${width}.png`, fullPage: true });
+      });
+
       test("signed-out visitor: preview without other names, a bad token, Join goes to Sign up, /join goes to Log in", async ({ browser }) => {
         test.setTimeout(120_000);
         const organiser = await newPerson("Ngozi");

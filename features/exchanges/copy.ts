@@ -80,6 +80,11 @@ export const EXCHANGE_COPY = {
     onlyYou: "Only you so far.",
     spends: (budget: string) => `Everyone spends ${budget}`,
     inviteTitle: "Share the invite link",
+    // Board Exchange-Detail-oclosed (owner request 2026-11-14). The board's second body sentence and its
+    // "Edit exchange" action wait for the edit feature (copy-pending).
+    closedMeta: "Joining has closed",
+    closedTitle: "The join-by date has passed",
+    closedBody: "The invite link no longer works, so this exchange can't be shared.",
     inviteBody: (day: string) => `People can join until ${day}. Names need at least 3 people to draw.`,
     inviteLinkLabel: "Invite link",
     nextTitle: "What happens next",

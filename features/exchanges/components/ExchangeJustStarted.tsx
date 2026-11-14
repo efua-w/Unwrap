@@ -7,7 +7,8 @@ import { EXCHANGE_COPY } from "../copy";
 import { peopleIn } from "../people";
 import { lastJoinDay, timelineSteps } from "../timeline";
 import type { OrganiserExchange } from "../types";
-import { InviteSection } from "./InviteSection";
+import { InviteSection } from "./InviteSection";
+import { JoiningClosedCard } from "./JoiningClosedCard";
 import { OrganiserTools } from "./OrganiserTools";
 import { PeopleSection } from "./PeopleSection";
 import { YourPart } from "./YourPart";
@@ -50,7 +51,11 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
       </header>
 
       {inviteUrl ? (
-        <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
+        <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
+      ) : !exchange.isOpen ? (
+        // WHY lowest priority (owner, 2026-11-14): this card shows only when no other card applies. Slice 10's
+        // draw and readiness cards take this slot first; add them above this branch.
+        <JoiningClosedCard />
       ) : null}
 
       <section aria-labelledby="next-heading" className="flex flex-col gap-20 rounded-2xl bg-surface-subtle p-24">
