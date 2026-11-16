@@ -16,9 +16,9 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    # WHY 50: slice 4 took the run past 20 minutes; slice 6 added about 40 signed-in tests (a real sign-in each),
-    # and the run was cancelled at 30 minutes with every test so far passing.
-    timeout-minutes: 50
+    # WHY 70: slice 4 took the run past 20 minutes; slice 6 added about 40 signed-in tests (a real sign-in each).
+    # The organiser-emails PR passed once in 49.5 minutes, then was cancelled at 50 with every test so far passing.
+    timeout-minutes: 70
     # WHY: the app reads these two public values on every request (proxy.ts), so e2e needs them.
     # They are repository variables, not secrets: the URL and the publishable key are public by design.
     env:
