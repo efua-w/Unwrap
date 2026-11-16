@@ -8,6 +8,7 @@ import {
   uniqueEmail,
 } from "./fixtures/auth";
 import { expectNoAxeViolations } from "./fixtures/axe";
+import { closeJoining, people, seedExchange } from "./fixtures/exchange-seed";
 import { VIEWPORTS } from "./viewports";
 import { formatYmdLongFull } from "../../lib/dates/calendar";
 import { formatDay, formatTime, formatYmdDay, formatYmdDayYear, wallClockIn, zoneShortName } from "../../lib/dates/format";
@@ -40,6 +41,9 @@ async function openFlow(page: Page) {
   await page.goto("/exchanges/new");
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("heading", { level: 1, name: "Name your exchange" })).toBeVisible();
+  // WHY: under `next dev` the dev-tools badge (<nextjs-portal>) can sit over the flow's Close button at 390 and
+  // swallow the click. Production has no badge, so hiding it changes nothing the test proves.
+  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
 }
 
 async function fillBasics(page: Page, name: string, note = "") {
@@ -486,6 +490,28 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await startExchange(page);
         const rows = await adminClient().from("exchanges").select("id").eq("organiser_id", userId).eq("name", "Book club gift swap");
         expect((rows.data ?? []).length).toBeGreaterThanOrEqual(1);
+      });
+
+      test("organiser alone after the join-by date: no invite block on Exchanges, the row still links", async ({ context, page }) => {
+        test.setTimeout(120_000);
+        const cast = people();
+        try {
+          const organiser = await cast.newPerson("Amaka");
+          const seeded = await seedExchange(organiser, "Past join-by swap");
+          await closeJoining(seeded.id);
+          await signInThroughVerify(context, page, organiser.email, { next: "/exchanges" });
+          await expect(page.getByRole("navigation", { name: "Show exchanges" })).toBeVisible();
+          // WHY: joining has closed, so "share the invite link" would point at a link that no longer works.
+          // WHY exact: the row's own line ("You created this. Only you so far.") is not the block's meta line.
+          await expect(page.getByText("Only you so far", { exact: true })).toHaveCount(0);
+          await expect(page.getByRole("heading", { name: "Share the invite link" })).toHaveCount(0);
+          await expect(page.getByRole("link", { name: "Share invite link" })).toHaveCount(0);
+          const row = page.locator(`a[href="/exchanges/${seeded.id}"]`);
+          await expect(row.first()).toBeVisible();
+          await expect(row.first()).toContainText("Past join-by swap");
+        } finally {
+          await cast.cleanup();
+        }
       });
 
       test("an outsider and a signed-out visitor get no exchange data", async ({ browser, context, page }) => {

@@ -5,7 +5,45 @@ export type Database = {
   
   "public": {
           Tables: {
-            "exchange_members": {
+            "activity_events": {
+                  Row: {
+                    "created_at": string,"exchange_id": string,"id": string,"kind": Database["public"]['Enums']["activity_kind"],"read_at": string | null,"subject_user_id": string | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"exchange_id": string,"id"?: string,"kind": Database["public"]['Enums']["activity_kind"],"read_at"?: string | null,"subject_user_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"exchange_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["activity_kind"],"read_at"?: string | null,"subject_user_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_events_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activity_events_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges_visible"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activity_events_subject_user_id_fkey"
+      columns: ["subject_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "activity_events_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"exchange_members": {
                   Row: {
                     "attached_wishlist_id": string | null,"exchange_id": string,"id": string,"joined_at": string,"left_at": string | null,"state": Database["public"]['Enums']["exchange_member_state"],"taking_part": boolean,"user_id": string
                   }
@@ -58,6 +96,38 @@ isOneToOne: false
                     {
       foreignKeyName: "exchanges_organiser_id_fkey"
       columns: ["organiser_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"join_requests": {
+                  Row: {
+                    "created_at": string,"decided_at": string | null,"dismissed_at": string | null,"exchange_id": string,"id": string,"status": Database["public"]['Enums']["join_request_status"],"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"decided_at"?: string | null,"dismissed_at"?: string | null,"exchange_id": string,"id"?: string,"status"?: Database["public"]['Enums']["join_request_status"],"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"decided_at"?: string | null,"dismissed_at"?: string | null,"exchange_id"?: string,"id"?: string,"status"?: Database["public"]['Enums']["join_request_status"],"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "join_requests_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "join_requests_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges_visible"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "join_requests_user_id_fkey"
+      columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -169,11 +239,17 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "attach_wishlist":
+            "approve_join_request":
+{ Args: { "p_request": string }; Returns: string
+                           },
+"attach_wishlist":
 { Args: { "p_exchange": string,"p_wishlist": string }; Returns: undefined
                            },
 "create_exchange":
 { Args: { "p_approval_required": boolean,"p_budget": Database["public"]['Enums']["exchange_budget_preset"],"p_draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"p_draw_time": string,"p_gift_day": string,"p_join_by_date": string,"p_name": string,"p_note": string,"p_taking_part": boolean,"p_time_zone": string }; Returns: string
+                           },
+"decline_join_request":
+{ Args: { "p_request": string }; Returns: undefined
                            },
 "delete_wishlist":
 { Args: { "p_wishlist_id": string }; Returns: undefined
@@ -195,11 +271,32 @@ isOneToOne: false
 "get_join_details":
 { Args: { "p_token": string }; Returns: Json
                            },
+"get_join_requests":
+{ Args: { "p_exchange": string }; Returns: {
+              "display_name": string,"request_id": string,"requested_at": string
+            }[]
+                           },
+"get_my_activity":
+{ Args: { "p_before_at"?: string,"p_before_id"?: string,"p_limit"?: number }; Returns: {
+              "created_at": string,"exchange_id": string,"exchange_name": string,"exchange_tint": Database["public"]['Enums']["exchange_tint"],"id": string,"is_unread": boolean,"kind": Database["public"]['Enums']["activity_kind"],"subject_name": string
+            }[]
+                           },
 "get_my_exchange_list":
 { Args: { "p_exchange": string }; Returns: Json
                            },
+"get_participants":
+{ Args: { "p_exchange": string }; Returns: {
+              "display_name": string,"is_me": boolean,"is_organiser": boolean,"member_id": string,"taking_part": boolean
+            }[]
+                           },
+"get_removed_exchange_name":
+{ Args: { "p_exchange": string }; Returns: string
+                           },
 "get_shared_wishlist":
 { Args: { "p_token": string }; Returns: Json
+                           },
+"get_unread_activity_count":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "has_deleted_wishlists":
 { Args: Record<PropertyKey, never>; Returns: boolean
@@ -213,8 +310,22 @@ isOneToOne: false
 "join_exchange":
 { Args: { "p_token": string }; Returns: string
                            },
+"list_my_join_requests":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "exchange_name": string,"exchange_tint": Database["public"]['Enums']["exchange_tint"],"organiser_name": string,"request_id": string,"requested_at": string,"status": Database["public"]['Enums']["join_request_status"]
+            }[]
+                           },
+"mark_all_activity_read":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"remove_member":
+{ Args: { "p_member": string }; Returns: undefined
+                           },
 "remove_wishlist_item":
 { Args: { "p_item_id": string }; Returns: undefined
+                           },
+"request_to_join":
+{ Args: { "p_token": string }; Returns: string
                            },
 "reset_invite_token":
 { Args: { "p_exchange": string }; Returns: string
@@ -230,7 +341,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "exchange_budget_preset": "5k_10k"|"10k_20k"|"20k_50k"|"50k_plus","exchange_draw_mode": "at_join_by"|"organiser_chooses","exchange_member_state": "active"|"left"|"removed","exchange_status": "open"|"joining_closed"|"drawn"|"event_passed"|"complete"|"cancelled","exchange_tint": "clay"|"peach"|"sand"|"mint","wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
+            "activity_kind": "member_joined"|"join_requested","exchange_budget_preset": "5k_10k"|"10k_20k"|"20k_50k"|"50k_plus","exchange_draw_mode": "at_join_by"|"organiser_chooses","exchange_member_state": "active"|"left"|"removed","exchange_status": "open"|"joining_closed"|"drawn"|"event_passed"|"complete"|"cancelled","exchange_tint": "clay"|"peach"|"sand"|"mint","join_request_status": "pending"|"approved"|"declined"|"closed","wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -346,7 +457,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "exchange_budget_preset": ["5k_10k", "10k_20k", "20k_50k", "50k_plus"],"exchange_draw_mode": ["at_join_by", "organiser_chooses"],"exchange_member_state": ["active", "left", "removed"],"exchange_status": ["open", "joining_closed", "drawn", "event_passed", "complete", "cancelled"],"exchange_tint": ["clay", "peach", "sand", "mint"],"wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
+            "activity_kind": ["member_joined", "join_requested"],"exchange_budget_preset": ["5k_10k", "10k_20k", "20k_50k", "50k_plus"],"exchange_draw_mode": ["at_join_by", "organiser_chooses"],"exchange_member_state": ["active", "left", "removed"],"exchange_status": ["open", "joining_closed", "drawn", "event_passed", "complete", "cancelled"],"exchange_tint": ["clay", "peach", "sand", "mint"],"join_request_status": ["pending", "approved", "declined", "closed"],"wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
           }
         }
 } as const

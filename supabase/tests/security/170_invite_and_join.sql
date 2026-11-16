@@ -235,7 +235,7 @@ select is(
 select is(
   pg_temp.val_as(null, format($$(select string_agg(k, ',' order by k collate "C") from jsonb_object_keys(public.get_invite_preview(%L)) k)$$,
     current_setting('test.tok_a'))),
-  'budget_preset,cancelled_at,closed_at,draw_at,draw_mode,exchange_name,gift_day,inviter_name,join_by_at,joined_count,status,tint',
+  'budget_preset,can_ask,cancelled_at,closed_at,draw_at,draw_mode,exchange_name,gift_day,inviter_name,join_by_at,joined_count,status,tint',
   'the preview has exactly these keys and no others');
 
 -- 7-10. What the preview says for an open exchange; the count excludes the organiser, a person who left and
@@ -295,7 +295,7 @@ select is(
 select is(
   pg_temp.val_as(pg_temp.u(3), format($$(select string_agg(k, ',' order by k collate "C") from jsonb_object_keys(public.get_join_details(%L)) k)$$,
     current_setting('test.tok_a'))),
-  'budget_preset,draw_at,draw_mode,exchange_id,exchange_name,gift_day,join_by_at,note,organiser_name,people,status,tint,viewer',
+  'budget_preset,can_ask,draw_at,draw_mode,exchange_id,exchange_name,gift_day,join_by_at,note,organiser_name,people,status,tint,viewer',
   'the join details have exactly these keys');
 select is(
   pg_temp.val_as(pg_temp.u(3), format($$(select string_agg(e->>'name' || ':' || (e->>'is_organiser'), ',') from jsonb_array_elements(public.get_join_details(%L)->'people') e)$$,

@@ -128,6 +128,8 @@ describe("nav helpers", () => {
   });
   it("names the unread count for screen readers", () => {
     expect(navAccessibleName("Activity", 3)).toBe("Activity, 3 unread");
+    // The exact number, not the Chip's "9+" (owner decision 2026-11-15).
+    expect(navAccessibleName("Activity", 12)).toBe("Activity, 12 unread");
     expect(navAccessibleName("Activity", 0)).toBeUndefined();
   });
 });

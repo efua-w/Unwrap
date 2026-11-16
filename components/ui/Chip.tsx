@@ -23,14 +23,18 @@ export function Chip(props: Props) {
     const label = countLabel(props.count);
     if (label === null) return null;
     return (
+      // WHY the number is drawn by CSS (chip-count in globals.css) and not as a text node: the count sits
+      // inside a link whose name carries the exact number, and axe's label-content-name-mismatch reads visible
+      // text nodes even under aria-hidden, so "9+" there would never match "35 unread" (GC-006, open item 90).
+      // Contract: the count chip is silent to screen readers, so its parent must carry the exact count in its accessible name.
       <span
+        data-count={label}
+        aria-hidden="true"
         className={cx(
-          "inline-flex min-w-20 items-center justify-center rounded-full border-2 border-border-inverse bg-surface-brand px-4 text-body-xs-bold text-text-inverse",
+          "chip-count inline-flex min-w-20 items-center justify-center rounded-full border-2 border-border-inverse bg-surface-brand px-4 text-body-xs-bold text-text-inverse",
           props.className,
         )}
-      >
-        {label}
-      </span>
+      />
     );
   }
   return (

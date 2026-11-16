@@ -1,4 +1,4 @@
-// UI copy for the invite preview (S02), the join confirmation (S10) and Invite unavailable (S13).
+// UI copy for the invite preview (S02), the join confirmation (S10), Invite unavailable (S13) and Ask to join.
 // Boards: Entry-Invite-*, Entry-Signup/Login/Verify-invite, Joining-Confirm-*, Joining-Unavailable-*
 // (the boards decide where they differ from the story, owner decision Q9, 2026-11-13). Lines not on a
 // board or in a story are marked "pending" and listed in docs/copy-pending.md. Names go in single
@@ -43,13 +43,13 @@ export function joinedCountLine(joinedCount: number): string {
 export const JOIN_COPY = {
   organisedBy: (name: string) => `Organised by ${name}`,
   whosIn: (count: number) => `Who's in (${count})`,
-  // "Ngozi Eze (organising), Femi Adeyemi and Bisi Lawal."
-  peopleLine: (people: ReadonlyArray<{ name: string; isOrganiser: boolean }>): string => {
-    const labels = people.map((p) => (p.isOrganiser ? `${p.name} (organising)` : p.name));
+  // "Ngozi Eze, Femi Adeyemi and Bisi Lawal." No "(organising)" suffix (owner 2026-11-16).
+  peopleLine: (people: ReadonlyArray<{ name: string }>): string => {
+    const labels = people.map((p) => p.name);
     if (labels.length <= 1) return `${labels.join("")}.`;
     return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}.`;
   },
-  stackLabel: (people: ReadonlyArray<{ name: string; isOrganiser: boolean }>) => {
+  stackLabel: (people: ReadonlyArray<{ name: string }>) => {
     const count = people.length;
     const named = JOIN_COPY.peopleLine(people).replace(/\.$/, "");
     return `${count} ${count === 1 ? "person is" : "people are"} in: ${named}`;
@@ -76,18 +76,40 @@ export const UNAVAILABLE_COPY = {
   title: "This invite can't be used",
   goToUnwrap: "Go to Unwrap",
   incorrect: "We couldn't find an exchange for this link. Check you copied all of it, or ask for it again.",
-  // Board: "{Organiser} closed joining for {exchange} on {day}." The board adds "You can still ask to
-  // be let in. {Organiser} decides." and Ask to join; both are slice 6 and are not shown (no promise
-  // of what is not built).
+  // Board: "{Organiser} closed joining for {exchange} on {day}." The second board line is REQUEST_COPY.stillAsk.
   closed: (who: string, exchange: string, day: string | null) =>
     day ? `${who} closed joining for ${exchange} on ${day}.` : `${who} closed joining for ${exchange}.`,
   cancelled: (who: string, exchange: string, day: string | null) =>
     day ? `${who} cancelled ${exchange} on ${day}.` : `${who} cancelled ${exchange}.`,
-  // Pending (no board, no story): full, approval (owner decision Q2) and removed.
+  // Approved (no board, no story): full.
   full: (exchange: string) => `${exchange} has reached its limit of 100 people.`,
-  approval: (who: string, exchange: string) =>
-    `${who} approves each person who joins ${exchange}. You can't join from this link yet.`,
-  removed: (exchange: string) => `You can't join ${exchange} with this link.`,
+} as const;
+
+// Ask to join (GC-012, slice 6). Boards: Joining-Confirm-approval / -requested, Joining-Unavailable-closed /
+// -asking / -error / -pending / -sent. Lines marked "drafted" have no board once the email and Home
+// promises are dropped (owner decision Q6); they are listed in docs/copy-pending.md.
+export const REQUEST_COPY = {
+  ask: "Ask to join",
+  // Board.
+  approvalLine: (organiser: string) => `${organiser} approves everyone who joins, so this sends a request. Nobody else is told.`,
+  // Board.
+  stillAsk: (organiser: string) => `You can still ask to be let in. ${organiser} decides.`,
+  // Board.
+  failed: "We couldn't send your request. Nothing was sent, so you can try again.",
+  tryAgain: "Try again",
+  // Board heading; the body is the board line without its email sentence.
+  alreadyAsked: "You've already asked",
+  pending: (exchange: string, organiser: string) => `Your request to join ${exchange} is waiting for ${organiser}.`,
+  // Board labels.
+  sent: "Request sent",
+  waitingFor: (organiser: string) => `Waiting for ${organiser}`,
+  // Drafted: the board body promises an email and a Home row, neither built (Q6).
+  sentBody: (organiser: string) => `${organiser} has your request and will let you in.`,
+  // Drafted: the board says "Go to Home"; the button goes to Exchanges (Q6).
+  goToExchanges: "Go to Exchanges",
+  // Drafted: a removed person on the link (owner decision Q5); no names of anyone in the exchange.
+  removed: (exchange: string) =>
+    `You can't join ${exchange} with this link. You can ask to be let in.`,
 } as const;
 
 export type UnavailableFacts = {
@@ -111,11 +133,5 @@ export function unavailableBody(kind: UnavailableKind, facts: UnavailableFacts):
       return UNAVAILABLE_COPY.cancelled(firstName(who), exchange, day);
     case "full":
       return UNAVAILABLE_COPY.full(exchange);
-    case "approval":
-      return UNAVAILABLE_COPY.approval(firstName(who), exchange);
-    case "removed":
-      return UNAVAILABLE_COPY.removed(exchange);
-    case "open":
-      return UNAVAILABLE_COPY.incorrect;
   }
 }

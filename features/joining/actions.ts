@@ -2,7 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getJoinDetails } from "./queries";
-import { NOT_FOUND, REFUSED, refusalFromHint, type JoinRefusal } from "./status";
+import {
+  NOT_FOUND,
+  REFUSED,
+  SIGNED_OUT,
+  refusalFromHint,
+  requestRefusalFromHint,
+  type JoinRefusal,
+  type RequestRefusal,
+} from "./status";
 
 // GC-009 Join exchange. WHY the token and nothing else (plan §6 invariant 8): no exchange id and no user
 // id is accepted. join_exchange reads the caller from the session and the exchange from the token, and
@@ -14,7 +22,6 @@ export type JoinResult =
   | { ok: false; reason: "incorrect" | "signed-out" | "failed" };
 
 const TOKEN = /^[0-9a-f]{32}$/;
-const SIGNED_OUT = "42501";
 
 export async function joinExchange(token: unknown): Promise<JoinResult> {
   if (typeof token !== "string" || !TOKEN.test(token)) return { ok: false, reason: "incorrect" };
@@ -42,4 +49,32 @@ export async function joinExchange(token: unknown): Promise<JoinResult> {
     // Falls through: the person is in, but the page cannot say where; Try again is safe (join is idempotent).
   }
   return { ok: false, reason: "failed" };
+}
+
+// GC-012 Ask to join. WHY the token and nothing else, again (plan §6 invariant 8): request_to_join reads the
+// caller from the session and decides every rule (closed, full, cancelled, member, rate limit) itself.
+// A refusal means the page was stale, so the client re-reads it and shows whatever the database now says.
+// A rate limit (P0429) and any other error look like a failed send: nothing was sent, trying later is safe.
+export type RequestResult =
+  | { ok: true }
+  | { ok: false; reason: "refused"; refusal: RequestRefusal }
+  | { ok: false; reason: "incorrect" | "signed-out" | "failed" };
+
+export async function requestToJoin(token: unknown): Promise<RequestResult> {
+  if (typeof token !== "string" || !TOKEN.test(token)) return { ok: false, reason: "incorrect" };
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, reason: "signed-out" };
+
+  const { data, error } = await supabase.rpc("request_to_join", { p_token: token });
+  if (error) {
+    if (error.code === NOT_FOUND) return { ok: false, reason: "incorrect" };
+    if (error.code === SIGNED_OUT) return { ok: false, reason: "signed-out" };
+    if (error.code === REFUSED) {
+      const refusal = requestRefusalFromHint(error.hint);
+      if (refusal) return { ok: false, reason: "refused", refusal };
+    }
+    return { ok: false, reason: "failed" };
+  }
+  return data === "pending" ? { ok: true } : { ok: false, reason: "failed" };
 }

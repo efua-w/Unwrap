@@ -18,7 +18,7 @@ function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]): 
 
 const STATUSES: readonly InviteStatus[] = ["open", "closed", "cancelled", "full", "approval"];
 const TINTS = ["clay", "peach", "sand", "mint"] as const;
-const VIEWERS: readonly JoinViewer[] = ["member", "can_join", "removed"];
+const VIEWERS: readonly JoinViewer[] = ["member", "can_join", "removed", "requested"];
 const DRAW_MODES = ["at_join_by", "organiser_chooses"] as const;
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -53,6 +53,7 @@ const PREVIEW_KEYS = [
   "cancelled_at",
   "draw_mode",
   "draw_at",
+  "can_ask",
 ] as const;
 
 export function parseInvitePreview(raw: unknown): InvitePreview | null {
@@ -61,7 +62,7 @@ export function parseInvitePreview(raw: unknown): InvitePreview | null {
   const closedAt = nullableInstant(raw.closed_at);
   const cancelledAt = nullableInstant(raw.cancelled_at);
   const drawAt = nullableInstant(raw.draw_at);
-  if (!oneOf(DRAW_MODES, raw.draw_mode) || drawAt === undefined) return null;
+  if (!oneOf(DRAW_MODES, raw.draw_mode) || drawAt === undefined || typeof raw.can_ask !== "boolean") return null;
   if (!oneOf(STATUSES, status) || !nonEmptyString(exchange_name) || !oneOf(TINTS, tint)) return null;
   if (!nonEmptyString(inviter_name) || !isBudgetPreset(budget_preset) || !isInstant(join_by_at)) return null;
   if (typeof gift_day !== "string" || !YMD.test(gift_day)) return null;
@@ -80,6 +81,7 @@ export function parseInvitePreview(raw: unknown): InvitePreview | null {
     cancelledAt,
     drawMode: raw.draw_mode,
     drawAt,
+    canAsk: raw.can_ask,
   };
 }
 
@@ -103,6 +105,7 @@ const JOIN_KEYS = [
   "gift_day",
   "note",
   "people",
+  "can_ask",
 ] as const;
 
 export function parseJoinDetails(raw: unknown): JoinDetails | null {
@@ -114,6 +117,7 @@ export function parseJoinDetails(raw: unknown): JoinDetails | null {
   if (!oneOf(DRAW_MODES, draw_mode) || drawAt === undefined) return null;
   if (typeof gift_day !== "string" || !YMD.test(gift_day)) return null;
   if (note !== null && typeof note !== "string") return null;
+  if (typeof raw.can_ask !== "boolean") return null;
   if (!Array.isArray(people)) return null;
   // WHY: an id only ever arrives for an active member; any other combination is a malformed answer.
   if (exchange_id !== null && (typeof exchange_id !== "string" || !UUID.test(exchange_id))) return null;
@@ -138,5 +142,6 @@ export function parseJoinDetails(raw: unknown): JoinDetails | null {
     giftDay: gift_day,
     note: note === null || note.trim().length === 0 ? null : note,
     people: parsedPeople,
+    canAsk: raw.can_ask,
   };
 }

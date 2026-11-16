@@ -1,3 +1,5 @@
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { Icon } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
 import { yourListSubline } from "@/features/exchange-list/copy";
 import { EXCHANGE_COPY } from "../copy";
@@ -24,7 +26,12 @@ export function YourPart({ mode, exchangeId, list, drawDay }: Props) {
         {copy.yourPart}
       </h2>
       <ul>
-        <ListRow title={copy.yourListTitle} sub={yourListSubline(list, mode)} href={`/exchanges/${exchangeId}/${path}`} />
+        <ListRow
+          title={copy.yourListTitle}
+          sub={yourListSubline(list, mode)}
+          href={`/exchanges/${exchangeId}/${path}`}
+          meta={<Icon icon={CaretRight} className="text-text-muted" />}
+        />
         <ListRow
           title={copy.buyingTitle}
           sub={drawDay ? copy.buyingSub(drawDay) : copy.buyingSubManual}

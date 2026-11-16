@@ -4,7 +4,9 @@ import { InvitePreviewView } from "@/features/joining/components/InvitePreviewVi
 import { InviteUnavailable } from "@/features/joining/components/InviteUnavailable";
 import { INVITE_COPY } from "@/features/joining/copy";
 import { getInvitePreview, getJoinDetails } from "@/features/joining/queries";
-import { unavailableKindFromStatus } from "@/features/joining/status";
+import { decideInviteView } from "@/features/joining/status";
+import { inviteJoinPath } from "@/lib/auth/invite-path";
+import type { JoinViewer } from "@/features/joining/types";
 import { getMyProfile } from "@/lib/auth/session";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 
@@ -33,14 +35,25 @@ export default async function InvitePage({ params }: { params: Promise<{ inviteT
   // WHY only for a signed-in person on a link that resolves: an active member goes to their exchange
   // (GC-002). Only get_join_details returns the exchange id, and only to an active member, so a
   // stranger never learns it. Best effort: if it cannot be read, the preview still shows.
+  let viewer: JoinViewer | null = null;
   if (profile && preview) {
     const details = await getJoinDetails(token).catch(() => null);
     if (details?.viewer === "member" && details.exchangeId) redirect(`/exchanges/${details.exchangeId}`);
+    viewer = details?.viewer ?? null;
   }
 
-  const kind = preview ? unavailableKindFromStatus(preview.status) : "incorrect";
-  if (!preview || kind) {
-    return <InviteUnavailable kind={kind ?? "incorrect"} preview={preview} signedIn={profile !== null} timeZone={timeZone} />;
+  if (!preview) return <InviteUnavailable kind="incorrect" preview={null} signedIn={profile !== null} timeZone={timeZone} />;
+  const decision = decideInviteView({ status: preview.status, viewer, canAsk: preview.canAsk });
+  switch (decision.view) {
+    case "unavailable":
+      return <InviteUnavailable kind={decision.kind} preview={preview} signedIn={profile !== null} timeZone={timeZone} />;
+    case "ask-closed":
+      return <InviteUnavailable kind="closed" preview={preview} signedIn={profile !== null} timeZone={timeZone} askToken={token} />;
+    case "pending":
+    case "ask-removed":
+      // WHY the join page: it holds these two screens, and only a signed-in person can be in either state.
+      redirect(inviteJoinPath(token));
   }
+  // join and ask-confirm: an approval exchange shows the normal preview (GC-012, plan AC-26).
   return <InvitePreviewView preview={preview} token={token} signedIn={profile !== null} timeZone={timeZone} />;
 }

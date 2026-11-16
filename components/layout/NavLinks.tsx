@@ -43,11 +43,10 @@ export function NavLinks({ layout, unreadActivity }: Props) {
               )}
             >
               {/* WHY: the badge is placed from its own box (translate) and the icon box (percent), not a raw offset. */}
-              {/* WHY: in the bottom tabs the label comes first in the DOM and flex-col-reverse puts it below the icon, so the
-                  visible text reads "Activity 3" in both layouts and the aria-label contains it (WCAG 2.5.3). The literal
-                  space keeps the label and the count apart in that text. */}
+              {/* WHY: the count Chip is aria-hidden and the aria-label carries the exact number, so the visible label text
+                  is just the label and WCAG 2.5.3 (label in name) holds. In the bottom tabs the label comes first in the
+                  DOM and flex-col-reverse puts it below the icon. */}
               {bottom ? labelNode : null}
-              {bottom ? " " : null}
               <span className="relative inline-flex">
                 <Icon icon={item.icon} size="lg" weight={active ? "fill" : "regular"} />
                 {unread > 0 && bottom ? (
@@ -57,7 +56,6 @@ export function NavLinks({ layout, unreadActivity }: Props) {
                 ) : null}
               </span>
               {bottom ? null : labelNode}
-              {bottom ? null : " "}
               {unread > 0 && !bottom ? (
                 <span aria-hidden="true" className="ml-auto">
                   <Chip variant="count" count={unread} />

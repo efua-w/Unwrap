@@ -2,7 +2,7 @@
 
 import { Trash } from "@phosphor-icons/react/dist/ssr";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Button } from "@/components/ui/Button";
 import { ListRow } from "@/components/ui/ListRow";
@@ -101,14 +101,16 @@ type Props = {
   working: ReadonlySet<string>;
   onEdit: (item: OwnerWishlistItem) => void;
   onRemove: (item: OwnerWishlistItem) => void;
+  /** Below the rows, such as the "Choose a wishlist instead" link. */
+  footer?: ReactNode;
 };
 
-export function IdeasList({ items, working, onEdit, onRemove }: Props) {
+export function IdeasList({ items, working, onEdit, onRemove, footer }: Props) {
   const { online } = useNetworkStatus();
   return (
     <section aria-labelledby="ideas-heading" className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
-        <h2 id="ideas-heading" className="text-body-base-semibold text-text-default">
+        <h2 id="ideas-heading" className="text-body-lg-semibold text-text-default">
           {ideasHeading(items.length)}
         </h2>
         <p className="text-body-sm-regular text-text-muted">{LIST_COPY.ideasSub}</p>
@@ -136,6 +138,7 @@ export function IdeasList({ items, working, onEdit, onRemove }: Props) {
           />
         ))}
       </ul>
+      {footer ? <div className="pt-8">{footer}</div> : null}
     </section>
   );
 }

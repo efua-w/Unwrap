@@ -61,16 +61,16 @@ describe("source sublines (GC-010 Context D)", () => {
 
 describe("list copy", () => {
   it("writes the budget guide for each audience", () => {
-    expect(budgetGuide("participant", "5k_10k")).toBe(
+    expect(budgetGuide("join", "5k_10k")).toBe(
       "Pick one of your wishlists, or add a few ideas just for this exchange. Gifts here cost ₦5,000 to ₦10,000, so ideas in that range help most.",
     );
-    expect(budgetGuide("organiser", "10k_20k")).toBe(
+    expect(budgetGuide("app", "10k_20k")).toBe(
       "Pick one of your wishlists, or add a few ideas just for this exchange. Everyone spends ₦10,000 to ₦20,000, so ideas in that range help most.",
     );
   });
 
   it("reads the top budget as more than, not Above", () => {
-    expect(budgetGuide("participant", "50k_plus")).toContain("Gifts here cost more than ₦50,000,");
+    expect(budgetGuide("join", "50k_plus")).toContain("Gifts here cost more than ₦50,000,");
     expect(priceHelper("50k_plus")).toBe("Your budget here is more than ₦50,000.");
     expect(priceHelper("10k_20k")).toBe("Your budget here is ₦10,000 to ₦20,000.");
   });

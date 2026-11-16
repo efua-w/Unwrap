@@ -121,6 +121,7 @@ export async function getOrganiserExchange(id: string, viewerId: string): Promis
       peopleCount: people.data.length,
       createdAt: row.createdAt,
       isOpen: state.data === "open",
+      canManagePeople: state.data === "open" || state.data === "joining_closed",
       people: lines,
       myList,
     },

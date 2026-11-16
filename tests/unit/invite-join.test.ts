@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { JOIN_COPY, UNAVAILABLE_COPY, joinedCountLine, unavailableBody } from "../../features/joining/copy.ts";
+import { JOIN_COPY, REQUEST_COPY, UNAVAILABLE_COPY, joinedCountLine, unavailableBody } from "../../features/joining/copy.ts";
 import { parseInvitePreview, parseJoinDetails } from "../../features/joining/parse.ts";
-import { refusalFromHint, unavailableKindForJoin, unavailableKindFromStatus } from "../../features/joining/status.ts";
+import { decideInviteView, refusalFromHint, requestRefusalFromHint } from "../../features/joining/status.ts";
 import { inviteJoinPath, inviteTokenFromNext, isInviteNext } from "../../lib/auth/invite-path.ts";
 import { destinationAfterVerify } from "../../lib/auth/verify-state.ts";
 
@@ -20,6 +20,7 @@ const previewRaw = {
   cancelled_at: null,
   draw_mode: "at_join_by",
   draw_at: "2026-11-27T17:00:00+00:00",
+  can_ask: false,
 };
 
 const joinRaw = {
@@ -39,6 +40,7 @@ const joinRaw = {
     { name: "Ngozi Eze", is_organiser: true },
     { name: "Femi Adeyemi", is_organiser: false },
   ],
+  can_ask: false,
 };
 
 describe("inviteTokenFromNext (GC-003, GC-004: only an exact invite path is an invite)", () => {
@@ -93,7 +95,7 @@ describe("destinationAfterVerify with an invite (owner decision Q1)", () => {
   });
 });
 
-describe("parseInvitePreview (GC-002: exactly the twelve keys, nothing else)", () => {
+describe("parseInvitePreview (GC-002: exactly the thirteen keys, nothing else)", () => {
   it("reads the payload", () => {
     expect(parseInvitePreview(previewRaw)).toEqual({
       status: "open",
@@ -108,7 +110,18 @@ describe("parseInvitePreview (GC-002: exactly the twelve keys, nothing else)", (
       cancelledAt: null,
       drawMode: "at_join_by",
       drawAt: "2026-11-27T17:00:00+00:00",
+      canAsk: false,
     });
+  });
+  it("reads can_ask true on a closed payload and refuses a non-boolean", () => {
+    expect(parseInvitePreview({ ...previewRaw, status: "closed", closed_at: "2026-11-02T10:00:00Z", can_ask: true })?.canAsk).toBe(true);
+    expect(parseInvitePreview({ ...previewRaw, can_ask: "yes" })).toBeNull();
+    expect(parseInvitePreview({ ...previewRaw, can_ask: null })).toBeNull();
+  });
+  it("refuses a payload without can_ask (the old twelve keys)", () => {
+    const rest: Record<string, unknown> = { ...previewRaw };
+    delete rest.can_ask;
+    expect(parseInvitePreview(rest)).toBeNull();
   });
   it("reads an organiser-draws payload", () => {
     const p = parseInvitePreview({ ...previewRaw, draw_mode: "organiser_chooses", draw_at: null });
@@ -168,6 +181,17 @@ describe("parseJoinDetails (GC-009: names only, an id only for a member)", () =>
     expect(parsed?.drawAt).toBeNull();
     expect(parsed?.note).toBeNull();
   });
+  it("reads every viewer, including a pending request, and can_ask", () => {
+    for (const viewer of ["can_join", "removed", "requested"]) expect(parseJoinDetails({ ...joinRaw, viewer })?.viewer).toBe(viewer);
+    expect(parseJoinDetails({ ...joinRaw, can_ask: true })?.canAsk).toBe(true);
+    expect(parseJoinDetails({ ...joinRaw, viewer: "requested" })?.exchangeId).toBeNull();
+  });
+  it("refuses a payload without can_ask or with a non-boolean one", () => {
+    const rest: Record<string, unknown> = { ...joinRaw };
+    delete rest.can_ask;
+    expect(parseJoinDetails(rest)).toBeNull();
+    expect(parseJoinDetails({ ...joinRaw, can_ask: 1 })).toBeNull();
+  });
   it("refuses an id for a non-member and no id for a member", () => {
     expect(parseJoinDetails({ ...joinRaw, exchange_id: "0b2a8b0e-3c1f-4c7b-9a43-0d2f6a1e7b11" })).toBeNull();
     expect(parseJoinDetails({ ...joinRaw, viewer: "member" })).toBeNull();
@@ -194,20 +218,54 @@ describe("status mapping (GC-012)", () => {
     expect(refusalFromHint(null)).toBeNull();
     expect(refusalFromHint(undefined)).toBeNull();
   });
-  it("shows the preview only for an open invite", () => {
-    expect(unavailableKindFromStatus("open")).toBeNull();
-    expect(unavailableKindFromStatus("closed")).toBe("closed");
-    expect(unavailableKindFromStatus("approval")).toBe("approval");
+  it("maps a request refusal hint, and ignores anything else", () => {
+    for (const hint of ["member", "cancelled", "closed", "full", "can_join"]) expect(requestRefusalFromHint(hint)).toBe(hint);
+    expect(requestRefusalFromHint("removed")).toBeNull();
+    expect(requestRefusalFromHint("approval")).toBeNull();
+    expect(requestRefusalFromHint(null)).toBeNull();
+    expect(requestRefusalFromHint(undefined)).toBeNull();
   });
-  it("decides the join page", () => {
-    const base = parseJoinDetails(joinRaw);
-    expect(base).not.toBeNull();
-    if (!base) return;
-    expect(unavailableKindForJoin(null)).toBe("incorrect");
-    expect(unavailableKindForJoin(base)).toBeNull();
-    expect(unavailableKindForJoin({ ...base, status: "full" })).toBe("full");
-    expect(unavailableKindForJoin({ ...base, viewer: "removed" })).toBe("removed");
-    expect(unavailableKindForJoin({ ...base, viewer: "removed", status: "closed" })).toBe("removed");
+});
+
+describe("decideInviteView (GC-002, GC-009, GC-012)", () => {
+  const v = (status: "open" | "closed" | "cancelled" | "full" | "approval", viewer: "member" | "can_join" | "removed" | "requested" | null, canAsk: boolean) =>
+    decideInviteView({ status, viewer, canAsk });
+
+  it("joins an open invite", () => {
+    expect(v("open", "can_join", false)).toEqual({ view: "join" });
+    expect(v("open", null, false)).toEqual({ view: "join" });
+  });
+  it("asks on an approval exchange, and never lets the person join directly", () => {
+    expect(v("approval", "can_join", true)).toEqual({ view: "ask-confirm" });
+    expect(v("approval", null, true)).toEqual({ view: "ask-confirm" });
+  });
+  it("asks after joining closed when a request is allowed, and is S13 when it is not", () => {
+    expect(v("closed", "can_join", true)).toEqual({ view: "ask-closed" });
+    expect(v("closed", null, true)).toEqual({ view: "ask-closed" });
+    expect(v("closed", "can_join", false)).toEqual({ view: "unavailable", kind: "closed" });
+  });
+  it("shows a removed person Ask to join while asking is allowed, otherwise S13", () => {
+    expect(v("open", "removed", true)).toEqual({ view: "ask-removed" });
+    expect(v("approval", "removed", true)).toEqual({ view: "ask-removed" });
+    expect(v("closed", "removed", true)).toEqual({ view: "ask-removed" });
+    expect(v("closed", "removed", false)).toEqual({ view: "unavailable", kind: "closed" });
+    expect(v("open", "removed", false)).toEqual({ view: "unavailable", kind: "incorrect" });
+  });
+  it("never offers Ask when cancelled or full", () => {
+    for (const viewer of ["can_join", "removed", null] as const) {
+      expect(v("cancelled", viewer, true)).toEqual({ view: "unavailable", kind: "cancelled" });
+      expect(v("full", viewer, true)).toEqual({ view: "unavailable", kind: "full" });
+    }
+  });
+  it("says pending when the viewer already asked, whatever can_ask says", () => {
+    for (const status of ["open", "approval", "closed"] as const) {
+      expect(v(status, "requested", true)).toEqual({ view: "pending" });
+      expect(v(status, "requested", false)).toEqual({ view: "pending" });
+    }
+  });
+  it("sends a member on to the exchange first", () => {
+    expect(v("closed", "member", true)).toEqual({ view: "member" });
+    expect(v("approval", "member", false)).toEqual({ view: "member" });
   });
 });
 
@@ -223,9 +281,9 @@ describe("copy", () => {
       { name: "Femi Adeyemi", isOrganiser: false },
       { name: "Bisi Lawal", isOrganiser: false },
     ];
-    expect(JOIN_COPY.peopleLine(people)).toBe("Ngozi Eze (organising), Femi Adeyemi and Bisi Lawal.");
-    expect(JOIN_COPY.stackLabel(people)).toBe("3 people are in: Ngozi Eze (organising), Femi Adeyemi and Bisi Lawal");
-    expect(JOIN_COPY.stackLabel(people.slice(0, 1))).toBe("1 person is in: Ngozi Eze (organising)");
+    expect(JOIN_COPY.peopleLine(people)).toBe("Ngozi Eze, Femi Adeyemi and Bisi Lawal.");
+    expect(JOIN_COPY.stackLabel(people)).toBe("3 people are in: Ngozi Eze, Femi Adeyemi and Bisi Lawal");
+    expect(JOIN_COPY.stackLabel(people.slice(0, 1))).toBe("1 person is in: Ngozi Eze");
   });
   it("writes each unavailable line, with the day for closed and cancelled", () => {
     const facts = { who: "Dayo Ade", exchangeName: "Cousins' Christmas 2026", day: "Mon 2 Nov" };
@@ -237,10 +295,22 @@ describe("copy", () => {
   it("falls back to the incorrect line when the facts are missing", () => {
     expect(unavailableBody("closed", { who: null, exchangeName: null, day: null })).toBe(UNAVAILABLE_COPY.incorrect);
   });
-  it("never offers Ask to join, which is slice 6", () => {
-    for (const kind of ["closed", "cancelled", "full", "approval", "removed"] as const) {
-      const body = unavailableBody(kind, { who: "Dayo", exchangeName: "X", day: "Mon 2 Nov" });
-      expect(body).not.toMatch(/ask to/i);
-    }
+  it("writes the Ask to join lines as the boards do", () => {
+    expect(REQUEST_COPY.approvalLine("Ngozi")).toBe("Ngozi approves everyone who joins, so this sends a request. Nobody else is told.");
+    expect(REQUEST_COPY.stillAsk("Dayo")).toBe("You can still ask to be let in. Dayo decides.");
+    expect(REQUEST_COPY.failed).toBe("We couldn't send your request. Nothing was sent, so you can try again.");
+    expect(REQUEST_COPY.pending("'Cousins' Christmas 2026'", "Dayo")).toBe("Your request to join 'Cousins' Christmas 2026' is waiting for Dayo.");
+    expect(REQUEST_COPY.waitingFor("Ngozi")).toBe("Waiting for Ngozi");
+  });
+  it("promises no email and no Home row anywhere in the request copy (owner decision Q6)", () => {
+    const lines = [
+      REQUEST_COPY.approvalLine("Ngozi"),
+      REQUEST_COPY.stillAsk("Ngozi"),
+      REQUEST_COPY.pending("X", "Ngozi"),
+      REQUEST_COPY.sentBody("Ngozi"),
+      REQUEST_COPY.removed("X"),
+      REQUEST_COPY.goToExchanges,
+    ];
+    for (const line of lines) expect(line).not.toMatch(/email|home/i);
   });
 });

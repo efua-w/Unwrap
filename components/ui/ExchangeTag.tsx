@@ -1,7 +1,8 @@
 import { cx } from "./cx";
 
 export type ExchangeTint = "clay" | "peach" | "sand" | "mint";
-export type ExchangeTagSize = "row" | "header";
+// "sm" is the 24 tag beside the exchange name in a page header (boards My-List-*, UwAvatar size 24).
+export type ExchangeTagSize = "sm" | "row" | "header";
 
 // WHY literal class names: Tailwind only generates classes it can see whole in the source.
 const TINT_CLASS: Record<ExchangeTint, string> = {
@@ -12,8 +13,9 @@ const TINT_CLASS: Record<ExchangeTint, string> = {
 };
 
 const SIZE_CLASS: Record<ExchangeTagSize, string> = {
-  row: "size-40 text-body-base-bold",
-  header: "size-48 text-body-xl-bold",
+  sm: "size-24 rounded-md text-body-sm-bold",
+  row: "size-40 rounded-lg text-body-base-bold",
+  header: "size-48 rounded-lg text-body-xl-bold",
 };
 
 const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
@@ -30,7 +32,7 @@ export function ExchangeTag({ name, tint, size = "row", className }: { name: str
     <span
       aria-hidden
       className={cx(
-        "inline-flex shrink-0 items-center justify-center rounded-lg font-heading text-text-default",
+        "inline-flex shrink-0 items-center justify-center font-heading text-text-default",
         TINT_CLASS[tint],
         SIZE_CLASS[size],
         className,

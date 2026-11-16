@@ -27,9 +27,12 @@ export type InvitePreview = {
   drawMode: "at_join_by" | "organiser_chooses";
   /** ISO instant; null when the organiser draws. */
   drawAt: string | null;
+  /** Whether a person who cannot just join may send a request now (GC-012). */
+  canAsk: boolean;
 };
 
-export type JoinViewer = "member" | "can_join" | "removed";
+/** "requested": the viewer has a pending request (GC-012). */
+export type JoinViewer = "member" | "can_join" | "removed" | "requested";
 
 export type JoinPerson = { name: string; isOrganiser: boolean };
 
@@ -49,7 +52,10 @@ export type JoinDetails = {
   giftDay: string;
   note: string | null;
   people: JoinPerson[];
+  /** Whether this viewer may send a request now (GC-012). */
+  canAsk: boolean;
 };
 
 /** Why an invite page shows "This invite can't be used" (S13). */
-export type UnavailableKind = "incorrect" | InviteStatus | "removed";
+// WHY no "approval" or "removed": slice 6 turned both into a request (GC-012, owner decision Q5).
+export type UnavailableKind = "incorrect" | "closed" | "cancelled" | "full";

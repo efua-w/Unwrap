@@ -8,12 +8,12 @@ export function peopleIn(takingPart: boolean, memberCount: number): number {
   return takingPart ? memberCount : Math.max(0, memberCount - 1);
 }
 
-// "Ngozi Eze (organising), Femi Adeyemi, Bisi Lawal and you." The viewer reads "you", or "You
-// (organising)" first when they organise. WHY the viewer is placed last otherwise: the board does.
+// "Ngozi Eze, Femi Adeyemi, Bisi Lawal and you." The viewer reads "you", or "You" first when they
+// organise. WHY no "(organising)" suffix: the boards drop it (owner 2026-11-16). WHY the viewer is placed last otherwise: the board does.
 export function peopleSentence(people: readonly PersonLine[]): string {
-  const others = people.filter((p) => !p.isMe).map((p) => (p.isOrganiser ? `${p.name} (organising)` : p.name));
+  const others = people.filter((p) => !p.isMe).map((p) => p.name);
   const me = people.find((p) => p.isMe);
-  const labels = me ? (me.isOrganiser ? [`You (organising)`, ...others] : [...others, "you"]) : others;
+  const labels = me ? (me.isOrganiser ? ["You", ...others] : [...others, "you"]) : others;
   if (labels.length <= 1) return `${labels.join("")}.`;
   return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}.`;
 }

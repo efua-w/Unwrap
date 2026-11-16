@@ -13,7 +13,12 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { listMyExchanges } from "@/features/exchanges/queries";
 import type { ExchangeListItem } from "@/features/exchanges/types";
+import type { MyPendingRequest } from "@/features/participants/types";
 import { peopleIn, joinedToday } from "@/features/exchanges/people";
+import { lastJoinDay } from "@/features/exchanges/timeline";
+import { firstName } from "@/features/joining/copy";
+import { JoinRequestBlock } from "@/features/participants/components/JoinRequestBlock";
+import { getJoinRequests, listMyPendingRequests } from "@/features/participants/queries";
 import { HowItWorks } from "@/features/onboarding/HowItWorks";
 import { requireProfile } from "@/lib/auth/session";
 import { formatDay } from "@/lib/dates/format";
@@ -22,8 +27,8 @@ import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 type SearchParams = Promise<{ view?: string | string[] }>;
 
 // S08 Exchanges (GC-008). Boards: Exchanges-first, -started, -active, -joined, -pastempty, -loading, -error,
-// -offline (m and d). Slices 4 and 5: exchanges the person organises or has joined; pending and closed-request
-// rows and the personal action arrive with slices 6 to 10.
+// -offline (m and d). Slices 4 to 6: exchanges the person organises or has joined, the organiser's request
+// blocks and the asker's pending rows; the closed-request row and the personal action arrive with slices 7 to 10.
 export default async function ExchangesPage({ searchParams }: { searchParams: SearchParams }) {
   const { view } = await searchParams;
   const past = view === "past";
@@ -88,8 +93,15 @@ function rowSub(item: ExchangeListItem, timeZone: string): string {
 async function ExchangesContent({ viewerId, past }: { viewerId: string; past: boolean }) {
   const copy = EXCHANGE_COPY.list;
   let items: ExchangeListItem[];
+  let myRequests: MyPendingRequest[];
+  let waiting: Map<string, string[]>;
   try {
-    items = await listMyExchanges(viewerId);
+    [items, myRequests] = await Promise.all([listMyExchanges(viewerId), past ? [] : listMyPendingRequests()]);
+    // WHY organiser's active exchanges only (GCO-006): the database gives anyone else an empty list, and a past
+    // exchange has nothing left to decide.
+    const organised = past ? [] : items.filter((item) => item.isOrganiser && !item.isPast);
+    const lists = await Promise.all(organised.map((item) => getJoinRequests(item.id)));
+    waiting = new Map(organised.map((item, i) => [item.id, (lists[i] ?? []).map((r) => r.name)]));
   } catch {
     return (
       <>
@@ -100,7 +112,8 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
   }
 
   // Board Exchanges-first: no tabs until there is something to switch between.
-  if (items.length === 0 && !past) {
+  // WHY pending requests count as content (Q17): a person whose only exchange is a request is not a first-timer.
+  if (items.length === 0 && myRequests.length === 0 && !past) {
     return (
       <div className="flex flex-col gap-24">
         <HowItWorks headingId="how">
@@ -125,12 +138,41 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
 
   // Dates in the viewer's own zone (product rules).
   const timeZone = await readViewerTimeZone();
-  // GCO-004 B: the newest exchange where the organiser is still the only one in leads with its invite link.
-  const block = past ? undefined : shown.find((item) => item.isOrganiser && item.peopleCount === 1);
+  // GCO-006 / Q17: an exchange with people waiting leads with its request block, and that wins over "Only you
+  // so far" for the same exchange. GCO-004 B: the newest exchange where the organiser is still the only one in
+  // leads with its invite link. At most two blocks (story GC-008), requests first.
+  const requestItems = shown.filter((item) => (waiting.get(item.id)?.length ?? 0) > 0);
+  const now = new Date();
+  // WHY the join-by check: once joining has closed nobody can use the link, so the block would ask for
+  // something impossible. Hidden, not replaced; the exchange page shows "Joining has closed" (owner
+  // request 2026-11-15, GCO-004).
+  const aloneItem = past
+    ? undefined
+    : shown.find(
+        (item) => item.isOrganiser && item.peopleCount === 1 && !requestItems.includes(item) && new Date(item.joinByAt) > now,
+      );
+  const blocks = [
+    ...requestItems.map((item) => ({ kind: "requests" as const, item })),
+    ...(aloneItem ? [{ kind: "alone" as const, item: aloneItem }] : []),
+  ].slice(0, 2);
   return (
     <>
       <Tabs past={past} />
-      {block ? <ExchangeBlock item={block} timeZone={timeZone} /> : null}
+      {blocks.map(({ kind, item }) =>
+        kind === "alone" ? (
+          <ExchangeBlock key={`alone-${item.id}`} item={item} timeZone={timeZone} />
+        ) : (
+          <JoinRequestBlock
+            key={`requests-${item.id}`}
+            exchangeId={item.id}
+            names={waiting.get(item.id) ?? []}
+            lastJoinDay={lastJoinDay(item, timeZone)}
+            // WHY the join-by instant: the list has no status, and joining is open exactly until it.
+            joiningOpen={new Date(item.joinByAt) > now}
+            exchange={{ name: item.name, tint: item.tint }}
+          />
+        ),
+      )}
       <ul aria-label={copy.title} className="flex flex-col">
         {shown.map((item, index) => (
           <ListRow
@@ -142,11 +184,21 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
             divider={index > 0}
           />
         ))}
+        {/* GC-008 Q7: requests still waiting. Not links: there is nothing to open until the organiser decides. */}
+        {myRequests.map((request, index) => (
+          <ListRow
+            key={request.requestId}
+            leading={<ExchangeTag name={request.exchangeName} tint={request.exchangeTint} />}
+            title={request.exchangeName}
+            sub={copy.rowRequestSent(firstName(request.organiserName))}
+            divider={shown.length + index > 0}
+          />
+        ))}
       </ul>
       {past ? null : (
         <div>
           {/* GC-008: primary, unless an organiser block above already shows a primary button. */}
-          <Button href="/exchanges/new" icon={Plus} variant={block ? "secondary" : "primary"} fullWidth className="md:w-auto">
+          <Button href="/exchanges/new" icon={Plus} variant={blocks.length > 0 ? "secondary" : "primary"} fullWidth className="md:w-auto">
             {copy.start}
           </Button>
         </div>

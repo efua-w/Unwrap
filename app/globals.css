@@ -38,3 +38,7 @@ html.scroll-lock {
     opacity: 0;
   }
 }
+
+.chip-count::after {
+  content: attr(data-count);
+}

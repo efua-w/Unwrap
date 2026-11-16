@@ -7,7 +7,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { MoneyField } from "@/components/ui/MoneyField";
-import { RadioGroup, type RadioOption } from "@/components/ui/RadioGroup";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Sheet } from "@/components/ui/Sheet";
 import { nairaInputFromKobo } from "@/lib/money/naira";
 import {
@@ -46,7 +46,7 @@ const COPY = {
   cancel: "Cancel",
 };
 
-const PRIORITY_OPTIONS: readonly RadioOption<ItemPriority>[] = [
+const PRIORITY_OPTIONS: readonly { value: ItemPriority; label: string }[] = [
   { value: "most_wanted", label: PRIORITY_LABEL.most_wanted },
   { value: "nice_to_have", label: PRIORITY_LABEL.nice_to_have },
 ];
@@ -193,10 +193,10 @@ export function ItemSheet({ open, onClose, actions, signedOutNext, item, onSaved
           value={values.price}
           onChange={(event) => set("price", event.target.value)}
         />
-        <RadioGroup
+        <SegmentedTabs
+          kind="choice"
           legend={COPY.priorityLegend}
           name="priority"
-          variant="segmented"
           options={PRIORITY_OPTIONS}
           value={priority}
           onChange={setPriority}

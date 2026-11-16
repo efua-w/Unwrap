@@ -54,6 +54,8 @@ export type OrganiserExchange = Schedule & {
   createdAt: string;
   /** Calculated status (open, joining_closed, ...). Only "open" has a link worth sharing. */
   isOpen: boolean;
+  /** Open or joining closed: the only states where people can still be approved or removed (GCO-007). */
+  canManagePeople: boolean;
   people: PersonLine[];
   /** Null when the organiser is just organising. */
   myList: OwnListSummary | null;
