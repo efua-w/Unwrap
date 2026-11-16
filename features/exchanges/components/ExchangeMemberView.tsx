@@ -1,10 +1,10 @@
-import { ExchangeTag } from "@/components/ui/ExchangeTag";
 import { DetailRows } from "@/features/joining/components/DetailRows";
 import { firstName, JOIN_COPY } from "@/features/joining/copy";
 import { formatDay, formatDayTime, formatTime, formatYmdDay, zoneShortName } from "@/lib/dates/format";
 import { budgetLabel } from "@/lib/money/budget";
 import { EXCHANGE_COPY } from "../copy";
 import type { MemberExchange } from "../types";
+import { ExchangeDetailHeader } from "./ExchangeDetailHeader";
 import { PeopleSection } from "./PeopleSection";
 import { YourPart } from "./YourPart";
 
@@ -28,18 +28,14 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
 
   return (
     <div className="flex flex-col gap-32 md:max-w-reading-max">
-      <header className="flex flex-col items-start gap-12">
-        <ExchangeTag name={exchange.name} tint={exchange.tint} size="header" />
-        <div className="flex min-w-0 flex-col gap-4">
-          <h1 className="break-words text-heading-2">{exchange.name}</h1>
-          <p className="text-body-base-regular text-text-default">
-            {drawDay ? copy.namesDrawnOn(drawDay) : copy.namesDrawnWhenReady(organiserFirst)}
-          </p>
-          <p className="text-body-sm-regular text-text-muted">
-            {copy.organisedBy(exchange.organiserName)} · {copy.spends(budgetLabel(exchange.budget))}
-          </p>
-        </div>
-      </header>
+      <ExchangeDetailHeader name={exchange.name} tint={exchange.tint}>
+        <p className="text-body-base-regular text-text-default">
+          {drawDay ? copy.namesDrawnOn(drawDay) : copy.namesDrawnWhenReady(organiserFirst)}
+        </p>
+        <p className="text-body-sm-regular text-text-muted">
+          {copy.organisedBy(exchange.organiserName)} · {copy.spends(budgetLabel(exchange.budget))}
+        </p>
+      </ExchangeDetailHeader>
 
       {hasList ? (
         <section aria-labelledby="set-heading" className="flex flex-col gap-8">
