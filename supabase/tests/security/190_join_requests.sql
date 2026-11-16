@@ -3,7 +3,7 @@
 -- Covers AC-2, 4, 5, 6, 12-21, 26-31, 41, 42: join_requests has RLS and no client grants (a direct read or write is
 -- refused with 42501, not zero rows); request_to_join takes a token only and obeys the "who may ask" rules (hints
 -- member, cancelled, closed, full, can_join; idempotent 'pending'; 20 an hour per person; sets onboarded_at);
--- the organiser alone reads requests and participants (names and times, no email, no ids of people) and alone
+-- the organiser alone reads requests and participants (names and times; emails since organiser-emails, see 210; no ids of people) and alone
 -- approves, declines and removes; approve and decline are final; removal keeps the row and cuts every read;
 -- previews and join details gain can_ask (and 'requested'); nothing here writes an event for approve, decline or
 -- remove (Q11); no function takes a user id.
@@ -414,7 +414,8 @@ end $fx$;
 -- 32-35. get_join_requests: names and times only, pending, oldest first, for the organiser only (AC-12, AC-42).
 select is(
   (select proargnames::text from pg_proc where oid = 'public.get_join_requests(uuid)'::regprocedure),
-  '{p_exchange,request_id,display_name,requested_at}', 'get_join_requests returns the request id, a name and a time only');
+  '{p_exchange,request_id,display_name,requested_at,email}',
+  'get_join_requests returns the request id, a name, a time and an email only (email: organiser-emails, see 210)');
 select is(
   pg_temp.val_as(pg_temp.u(1), format($$(select string_agg(display_name, '|' order by requested_at) from public.get_join_requests(%L))$$, current_setting('test.ex_p')))
   || '/' || pg_temp.val_as(pg_temp.u(1), format($$(select string_agg(display_name, '|') from public.get_join_requests(%L))$$, current_setting('test.ex_a')))
@@ -424,9 +425,9 @@ select is(
   pg_temp.val_as(pg_temp.u(1), format($$(select string_agg(display_name, '|') from public.get_join_requests(%L))$$, current_setting('test.ex_p'))),
   'Bola|Chi', 'the order of the list is oldest request first');
 select ok(
-  (select r not like '%@%' and r not like '%b0000000-0000-4000-8000-%' and r not like '%onboarded%'
+  (select r not like '%b0000000-0000-4000-8000-%' and r not like '%onboarded%' and r not like '%user_id%'
    from (select pg_temp.val_as(pg_temp.u(1), format($$(select jsonb_agg(to_jsonb(g)) from public.get_join_requests(%L) g)$$, current_setting('test.ex_p'))) as r) s),
-  'the request list carries no email and no person id (AC-41)');
+  'the request list carries no person id (the email is the organiser''s since organiser-emails, see 210)');
 select is(
   pg_temp.try_as(pg_temp.u(5), format('select * from public.get_join_requests(%L)', current_setting('test.ex_p')))
   || '/' || pg_temp.try_as(pg_temp.u(6), format('select * from public.get_join_requests(%L)', current_setting('test.ex_p')))
@@ -632,8 +633,8 @@ select is(
 -- 68-71. get_participants: the organiser's list of active members (S30), names and flags only (AC-12, AC-17).
 select is(
   (select proargnames::text from pg_proc where oid = 'public.get_participants(uuid)'::regprocedure),
-  '{p_exchange,member_id,display_name,is_me,is_organiser,taking_part}',
-  'get_participants returns a member id, a name and flags only (no email, avatar or list status)');
+  '{p_exchange,member_id,display_name,is_me,is_organiser,taking_part,email,has_wishlist}',
+  'get_participants returns a member id, a name, flags, an email and a has_wishlist yes/no only (see 210; no avatar or person id)');
 select is(
   pg_temp.val_as(pg_temp.u(1), format($$(select string_agg(format('%%s:%%s:%%s:%%s', display_name, is_organiser::text, is_me::text, taking_part::text), '|')
     from public.get_participants(%L))$$, current_setting('test.ex_p'))),
@@ -649,9 +650,9 @@ select is(
   'ok:0/ok:0/ok:0/ok:0/ok:0/err:42501',
   'a member, a removed person, an outsider and another organiser see no participants; a visitor is refused');
 select ok(
-  (select r not like '%@%' and r not like '%user_id%' and r not like '%b0000000-0000-4000-8000-%'
+  (select r not like '%user_id%' and r not like '%b0000000-0000-4000-8000-%'
    from (select pg_temp.val_as(pg_temp.u(1), format($$(select jsonb_agg(to_jsonb(g)) from public.get_participants(%L) g)$$, current_setting('test.ex_p'))) as r) s),
-  'the participant list carries no email and no person id (AC-41)');
+  'the participant list carries no person id (the email is the organiser''s since organiser-emails, see 210)');
 
 -- 72-76. remove_member: organiser only; never the organiser's own row; not an inactive row; not after the event.
 do $fx$ begin

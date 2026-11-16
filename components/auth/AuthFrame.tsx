@@ -30,7 +30,7 @@ export function AuthFrame({ title, intro, eyebrow, headerAction, backHref, banne
       <OfflineBanner />
       {backHref ? (
         <>
-          <Header variant="back" back={{ label: "Go back", href: backHref }} />
+          <Header variant="back" back={{ label: "Back", href: backHref }} />
           <header className="min-h-48 items-center px-40 pt-32 max-md:hidden md:flex">
             <p className="font-heading text-heading-4">Unwrap</p>
           </header>
@@ -49,7 +49,7 @@ export function AuthFrame({ title, intro, eyebrow, headerAction, backHref, banne
         <form method="post" noValidate onSubmit={onSubmit} className="flex w-full flex-1 flex-col md:max-w-dialog md:flex-none md:gap-32">
           {backHref ? (
             <div className="max-md:hidden">
-              <BackButton back={{ label: "Go back", href: backHref }} />
+              <BackButton back={{ label: "Back", href: backHref }} />
             </div>
           ) : null}
           <div className="flex flex-1 flex-col gap-32 px-20 pb-24 pt-16 md:flex-none md:p-0">

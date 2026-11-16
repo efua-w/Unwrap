@@ -31,7 +31,7 @@ export const LIST_COPY = {
   chooseDifferent: "Choose a different wishlist",
   addItems: "Add items instead",
   skip: "Skip for now",
-  back: "Go back",
+  back: "Back",
   done: "Done",
   addAnother: "Add another item",
   tryAgain: "Try again",

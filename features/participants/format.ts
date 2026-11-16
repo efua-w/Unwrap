@@ -5,7 +5,7 @@ import { PARTICIPANTS_COPY } from "./copy";
 
 // Pure helpers for Participants and the request blocks (GCO-007, GCO-006).
 
-// "Asked today at 8:12 am" or "Asked Thu 29 Oct, 8:12 am", in the viewer's own zone (product rules).
+// "Today at 8:12 am" or "Thu 29 Oct, 8:12 am", in the viewer's own zone (product rules).
 export function askedLabel(requestedAt: string, now: Date, timeZone: string): string {
   const at = new Date(requestedAt);
   const time = formatTime(at, timeZone);
@@ -29,4 +29,20 @@ export function waitingNames(displayNames: readonly string[]): string {
 function joinAnd(names: readonly string[]): string {
   if (names.length <= 1) return names.join("");
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+// Sub line of a request row: "{email} · Today at 8:12 am" (board Org-People-fewreq).
+export function requestSubline(email: string, asked: string): string {
+  return [email, asked].join(PARTICIPANTS_COPY.sep);
+}
+
+// Sub line of a person row: "{email} · Wishlist added", the organiser's own row (no email) reads the status
+// alone, and a person approved in this visit gets "Joined just now" between (boards Org-People-default, -fewapproved).
+export function memberSubline(p: { email: string | null; hasWishlist: boolean; justJoined?: boolean }): string {
+  const copy = PARTICIPANTS_COPY;
+  const parts: string[] = [];
+  if (p.email) parts.push(p.email);
+  if (p.justJoined) parts.push(copy.joinedJustNow);
+  parts.push(p.hasWishlist ? copy.hasWishlist : copy.noWishlist);
+  return parts.join(copy.sep);
 }

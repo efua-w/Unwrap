@@ -63,6 +63,8 @@ export const JOIN_COPY = {
     wishlist: "Add a wishlist, or a few ideas, so your giver has something to go on.",
     buy: (budget: string) => `Buy one gift for the person you draw, within ${budget}.`,
     bring: "Bring your gift on the day.",
+    // Part 1 board Joining-Confirm-*: the organiser can see your address (owner decision 2026-11-15).
+    email: (organiserFirstName: string) => `${organiserFirstName}, the organiser, can see your email address.`,
   },
   joiningAs: "Joining as",
   join: "Join exchange",

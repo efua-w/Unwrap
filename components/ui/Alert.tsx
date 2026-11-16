@@ -17,7 +17,7 @@ type VariantStyle = {
 const VARIANTS: Record<AlertVariant, VariantStyle> = {
   offline: { box: "bg-surface-pending-subtle", icon: WifiSlash, iconClass: "text-text-pending", role: undefined },
   error: { box: "bg-surface-error-subtle", icon: WarningCircle, iconClass: "text-text-error", role: "alert" },
-  privacy: { box: "bg-surface-subtle", icon: Lock, iconClass: "text-text-muted", role: undefined },
+  privacy: { box: "", icon: Lock, iconClass: "text-text-muted", role: undefined },
 };
 
 type Props = {
@@ -32,8 +32,14 @@ type Props = {
 export function Alert({ variant, title, children, action, className }: Props) {
   const v = VARIANTS[variant];
   return (
-    <div role={v.role} className={cx("flex items-start gap-12 rounded-xl p-16", v.box, className)}>
-      <Icon icon={v.icon} weight={variant === "error" ? "fill" : "regular"} className={cx("mt-2", v.iconClass)} />
+    // WHY privacy has no box: board UwAlert kind "privacy" is a bare line with a 16px lock, no background, padding or radius.
+    <div role={v.role} className={cx("flex items-start", variant === "privacy" ? "gap-8" : "gap-12 rounded-xl p-16", v.box, className)}>
+      <Icon
+        icon={v.icon}
+        size={variant === "privacy" ? "sm" : "md"}
+        weight={variant === "error" ? "fill" : "regular"}
+        className={cx("mt-2", v.iconClass)}
+      />
       <div className={cx("flex min-w-0 flex-1 flex-col gap-4", variant === "privacy" ? "text-text-muted" : "text-text-default")}>
         {title ? <p className="text-body-base-semibold">{title}</p> : null}
         <div className="text-body-sm-regular">{children}</div>

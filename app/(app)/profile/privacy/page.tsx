@@ -19,7 +19,7 @@ export default async function PrivacyPage() {
     <AppShell
       profile={{ name: profile.displayName }}
       hideTabs
-      back={{ label: "Go back", href: "/profile" }}
+      back={{ label: "Back", href: "/profile" }}
     >
       <div className="flex flex-col gap-32 md:max-w-dialog">
         <header className="flex flex-col gap-8">

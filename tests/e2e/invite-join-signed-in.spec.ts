@@ -524,12 +524,12 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await signIn(context, page, joiner, `/exchanges/${exchange.id}/list`);
         await page.waitForLoadState("networkidle");
 
-        // Header: no "You've joined" card, the h1, the exchange name, Go back, no Skip.
+        // Header: no "You've joined" card, the h1, the exchange name, Back, no Skip.
         await expect(page.getByRole("heading", { level: 1, name: "Your list for this exchange" })).toBeVisible();
         await expect(page.getByText("You've joined")).toHaveCount(0);
         await expect(page.getByText("Church choir Kris Kringle", { exact: true })).toBeVisible();
         await expect(page.getByText("Everyone spends ₦5,000 to ₦10,000")).toBeVisible();
-        await expect(page.getByRole("link", { name: "Go back" }).first()).toBeVisible();
+        await expect(page.getByRole("link", { name: "Back", exact: true }).first()).toBeVisible();
         await expect(page.getByText("Skip for now")).toHaveCount(0);
         await expectNoAxeViolations(page);
         await page.screenshot({ path: `test-results/screenshots/list-participant-${width}.png`, fullPage: true });

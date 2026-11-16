@@ -52,7 +52,7 @@ const SHAPE: Record<ButtonVariant, string> = {
   destructive: PILL,
   text: PILL,
   "destructive-text": PILL,
-  link: "min-h-touch-target rounded-lg gap-8 text-body-base-semibold",
+  link: "min-h-touch-target rounded-lg gap-8 text-body-sm-semibold",
   icon: "size-touch-target rounded-full",
 };
 

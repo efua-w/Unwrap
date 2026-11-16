@@ -9,12 +9,19 @@ export const PARTICIPANTS_COPY = {
   subtitle: (exchange: string, n: number) => `${exchange} · ${n} ${n === 1 ? "person" : "people"} taking part`,
   subtitleAlone: (exchange: string) => `${exchange} · Only you so far`,
   wantsTitle: (n: number) => `Wants to join (${n})`,
-  askedToday: (time: string) => `Asked today at ${time}`,
-  askedOn: (day: string, time: string) => `Asked ${day}, ${time}`,
+  askedToday: (time: string) => `Today at ${time}`,
+  // pending: the board only shows today; an earlier day reads "{day}, {time}".
+  askedOn: (day: string, time: string) => `${day}, ${time}`,
   approve: "Approve",
   decline: "Decline",
-  // pending: heading of the one people list (owner Q13).
-  takingTitle: (n: number) => `Taking part (${n})`,
+  // Boards Org-People-*: the people split by wishlist (owner 2026-11-16). No Nudge until a later slice.
+  needTitle: (n: number) => `Still need a wishlist (${n})`,
+  readyTitle: (n: number) => `Ready (${n})`,
+  hasWishlist: "Wishlist added",
+  noWishlist: "No wishlist yet",
+  // Board fewapproved: shown until the page is reloaded.
+  joinedJustNow: "Joined just now",
+  sep: " · ",
   you: "(you)",
   remove: "Remove…",
   privacy: "Nobody can see who drew whom, not even you.",
@@ -24,6 +31,12 @@ export const PARTICIPANTS_COPY = {
   // pending: the alone card once joining has closed (no link to share).
   aloneBodyClosed: "Names need at least 3 people to draw.",
   aloneAction: "Invite people",
+  // Boards Org-People-few and -fewreq. The 1-person line is on the boards; the plural title and body are pending.
+  fewTitle: (n: number) => (n === 1 ? "1 more person needed" : `${n} more people needed`),
+  fewBody: (day: string) => `Names need at least 3 people to draw. People can join until ${day}.`,
+  fewBodyClosed: "Names need at least 3 people to draw.",
+  fewReqBody: (first: string, day: string) => `Approve ${first} and you'll have the 3 people needed to draw. People can join until ${day}.`,
+  fewReqBodyClosed: (first: string) => `Approve ${first}.`,
   // S31 Org-Remove-before / -busy / -done. Q14: the board's email sentence is dropped.
   removeTitle: (first: string, exchange: string) => `Remove ${first} from ${exchange}?`,
   // pending: body without the email sentence; "Their wishlist stays theirs." is kept (owner Q14).
@@ -35,6 +48,8 @@ export const PARTICIPANTS_COPY = {
   // Owner Q14: the board's "They've been emailed." is dropped (no email is sent yet).
   approvedToast: (first: string) => `${first} is in.`,
   loadError: (exchange: string) => `We couldn't load the people in ${exchange}. Nothing has changed.`,
+  // pending: the error board's subtitle when the count could not be read: the exchange's name alone.
+  errorSubtitle: (exchange: string) => exchange,
   // pending: when the exchange itself could not be read, so there is no name to show.
   loadErrorUnnamed: "We couldn't load the people in this exchange. Nothing has changed.",
   // pending: failures and refusals of Approve, Decline and Remove (no board).
