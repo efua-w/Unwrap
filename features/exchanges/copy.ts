@@ -84,7 +84,8 @@ export const EXCHANGE_COPY = {
     // "Edit exchange" action wait for the edit feature (copy-pending).
     closedMeta: "Joining has closed",
     closedTitle: "The join-by date has passed",
-    closedBody: "The invite link no longer works, so this exchange can't be shared.",
+    // Owner Q16 (2026-11-14): joining after the join-by day is by request only (pending wording).
+    closedBody: "New people can only ask to join now.",
     inviteBody: (day: string) => `People can join until ${day}. Names need at least 3 people to draw.`,
     inviteLinkLabel: "Invite link",
     nextTitle: "What happens next",
@@ -101,6 +102,7 @@ export const EXCHANGE_COPY = {
     justOrganising: "You're just organising.",
     people: "People",
     peopleCount: (n: number) => `People (${n})`,
+    seeAll: "See all",
     organisedBy: (name: string) => `Organised by ${name}`,
     namesDrawnOn: (day: string) => `Names are drawn on ${day}.`,
     // pending: the organiser-draws variants of the lines around it (no board).
@@ -160,6 +162,9 @@ export const EXCHANGE_COPY = {
     blockBody: (day: string, time: string) => `Share the invite link so people can join by ${day}. Names are drawn at ${time} that day.`,
     // pending: the Exchanges block body when the organiser draws names themselves.
     blockBodyManual: (day: string) => `Share the invite link so people can join by ${day}. You draw names when you're ready.`,
+    // GC-008 pending request row (story line "Request sent. Waiting for {organiser}."): not a link, and the
+    // words carry the pending meaning.
+    rowRequestSent: (organiserFirst: string) => `Request sent. Waiting for ${organiserFirst}.`,
     rowOnlyYouTaking: "You created this. Only you so far.",
     rowOnlyYouOrganising: "You're just organising. Only you so far.",
     // Header line of the organiser's page once people have joined (owner Q14, 2026-11-13).

@@ -24,18 +24,20 @@ type Props = Target & {
   divider?: boolean;
   /** Lets the parent find the row's main target, such as to move focus after a removal. */
   rowId?: string;
+  /** Regular instead of semibold title: a row already seen (board UwListItem kind "activity", read). */
+  quiet?: boolean;
 };
 
 // Plan §4 "ListRow": the whole row is one target (a link, or a button that opens a sheet), and a
 // trailing action is a separate sibling target (CLAUDE.md: a button can't contain a button).
 // `external` opens a shop link in a new tab. WHY nofollow ugc: the link is whatever a stranger typed
 // (GC-023), so it must not pass on trust or leak the shared page's address.
-export function ListRow({ title, leading, sub, note, meta, action, divider = false, rowId, ...target }: Props) {
+export function ListRow({ title, leading, sub, note, meta, action, divider = false, rowId, quiet = false, ...target }: Props) {
   const body = (
     <>
       {leading}
       <span className="flex min-w-0 flex-1 flex-col gap-2">
-        <span className="break-words text-body-base-semibold text-text-default">{title}</span>
+        <span className={cx("break-words text-text-default", quiet ? "text-body-base-regular" : "text-body-base-semibold")}>{title}</span>
         {sub ? <span className="line-clamp-2 text-body-sm-regular text-text-muted">{sub}</span> : null}
         {note ? <span className="line-clamp-2 break-words text-body-sm-regular text-text-secondary">{note}</span> : null}
       </span>

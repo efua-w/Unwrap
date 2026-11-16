@@ -278,6 +278,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-006 · Home
 
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** slice 6 does not build the pending and closed join-request rows on Home (open item 56). A person's own pending request shows as a row on Exchanges instead (GC-008, Q7); the closed-by-draw row and Dismiss come with slice 10.
+
 **Updated in v1.1:** adds pending and closed join-request states, the photo prompt, reminder copy, the organiser-only case and the desktop banner.
 
 **Updated 2026-11-04 (Tobechukwu Olih), slice 1:** only the new-user (first-time) state is built: the date line in the viewer's own time zone, "Welcome, {name}.", the three steps with Start an exchange and Make a wishlist, and the invite line. Those two buttons link to routes later slices build. The other states arrive with the slices that create the data.
@@ -322,6 +324,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-007 · Activity
 
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** built as `/activity` (S09) with the two events slice 6 writes, both for the organiser only: "{Name} joined {exchange}." (second line: the time) and "{Name} asked to join {exchange}." (second line: "{time} · Approve or decline"). Approve, decline and remove write no event (Q11), and no event names a giver and a recipient. Rows are grouped by day in the viewer's own zone ("Today", "Yesterday", "Thu 29 Oct"); an unread dot comes with a hidden "Unread" label. The top line reads "{n} unread" or "No unread activity". Mark all as read is the only thing that marks events read (Q12): opening a row goes to the exchange page and marks nothing. Thirty rows load first, then "Load older activity". Empty state "You're all caught up." / "When something happens in your exchanges, it'll show here."; error "We couldn't load your activity. Nothing you've done is lost."; offline disables Mark all as read and Load older. The Activity tab shows the unread count on every signed-in page ("9+" above nine, and the link's name says the same, "Activity, 9+ unread"); a count that can't be read shows no badge. The badge updates when a page loads, not live (not built). "Choose which emails you get" waits for slice 7.
+
 **Updated in v1.1:** adds event types for reminders, re-draws, changed people, hand-over and reopened joining.
 
 **As Participant, I want to** see a timeline of what happened in my exchanges, **so that** I can catch up and act on changes.
@@ -362,6 +366,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - Empty: "You're all caught up." / "When something happens in your exchanges, it'll show here."
 
 ### GC-008 · Exchanges: List
+
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** a request the person has sent and the organiser has not decided shows as a row "{Exchange}" / "Request sent. Waiting for {organiser first name}.", with the exchange tag and no link (nothing to open yet; no email or Home promise, Q6). When the organiser declines, the row goes without a message (Q8). An organiser with people waiting sees the "Needs you now" request block first, which wins over "Only you so far" for the same exchange (Q17); at most two blocks show. Home rows for requests (open item 56) and the closed-by-draw row with Dismiss (slice 10) are not built.
 
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** Exchanges lists joined exchanges as well as the ones the person organises (slice 5). Member rows: "You joined today. Names are drawn {date}." (board Exchanges-joined); a person who joined earlier reads "You're in. Names are drawn {date}."; organiser-draws exchanges say "Names are drawn when the organiser is ready." (members) or "You draw names when you're ready." (organiser). An organiser's row with people in reads "You created this. {N} people in. Names are drawn {date}." and, when only organising, "You're just organising. {N} people in. Names are drawn {date}."; this replaces the slice 4 line "{N} people in." until readiness counts arrive with slice 8. Pending, request and closed-request rows stay with slices 6 to 10.
 
@@ -405,6 +411,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 ## Joining
 
 ### GC-009 · Joining: Confirm
+
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** on an exchange that needs approval the same confirmation shows, with Ask to join instead of Join exchange and "{Organiser} approves everyone who joins, so this sends a request. Nobody else is told." `join_exchange` still refuses these exchanges; only the explicit Ask to join sends a request (Q3), and it sets Profile setup as done like Join (Q10). The next screen is "Waiting for {Organiser}" / "{Organiser} has your request and decides." with the join-by row and **Go to Exchanges** (to Exchanges, not Home); it makes no email or Home promise (Q6). Ask to join is limited to 20 requests an hour per person (Q9).
 
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/i/[inviteToken]/join`. Shows what you're agreeing to, the organiser, faces and names of people already in, budget, join-by, names-drawn moment (or "When {first name} is ready" for organiser-draws), gift day, the organiser's note, and "Joining as {name}" with the person's own email only. Only `join_exchange(token)` creates a membership: one active membership per person, idempotent, the 100-person limit counts every active row including the organiser (Q5), a person who left can rejoin, a removed person is refused, and an approval-required exchange admits nobody directly until slice 6 (Q2). Join exchange goes to the attach page (`/exchanges/[id]/list?from=join`); a refusal re-renders as Invite unavailable; a failed attempt keeps everything and offers Try again. A person without Profile setup may join (Q1). Not now goes to Home.
 
@@ -523,6 +531,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - "There's nothing else to do until names are drawn."
 
 ### GC-012 · Joining: Invite unavailable
+
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** Ask to join is built. After the join-by moment the closed state reads "{Organiser} closed joining for '{exchange}' on {day}." and "You can still ask to be let in. {Organiser} decides." with Ask to join, until the gift day, the draw, a cancellation or 100 people (Q4). A signed-out visitor goes through Sign up or Log in and returns to the request. A removed person who opens the link never joins directly: "You can't join '{exchange}' with this link. You can ask to be let in. {Organiser} decides.", with no names of anyone in the exchange (Q5). A second Ask shows "You've already asked" / "Your request to join '{exchange}' is waiting for {Organiser}." A failed send shows "We couldn't send your request. Nothing was sent, so you can try again." with Try again; offline disables Ask to join. A declined person may ask again (Q8).
 
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as the Invite unavailable state on `/i/[inviteToken]` and `/join` (S13): "This invite can't be used" with a reason line for a wrong or reset link, closed joining ("{Organiser} closed joining for '{exchange}' on {day}."), cancelled, full (100 people), approval-required (neutral line, Q2) and removed; "Go to Unwrap" goes to Home when signed in. "You can still ask to be let in" and Ask to join arrive with slice 6. The status is 200 and the page is not indexed (Q10). Reasons are read from the public preview only, so no private data is shown.
 
@@ -1116,6 +1126,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-029 · System: Unavailable & offline
 
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** the removed-person variant is built (Q15): a person the organiser removed who opens the exchange link sees "You're no longer in {exchange}" / "Your wishlist is still yours to use." with Back to Home. Only that person gets the exchange name back; everyone else still sees "This exchange isn't available to you" with no data.
+
 **Updated in v1.1:** adds the removed-person variant.
 
 **As Participant, I want to** get a clear message when something is gone or I'm offline, **so that** I can get back somewhere useful.
@@ -1276,6 +1288,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 ### GCO-003 · Start exchange: Rules & review
 
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** an exchange that requires approval admits nobody from its link directly: the link's preview is the normal one, the join confirmation offers Ask to join, and the organiser decides each request (GCO-007, Q3). The joining-closed card reads "New people can only ask to join now." (Q16).
+
 **Updated 2026-11-09 (Tobechukwu Olih):** "Are you taking part?" starts on "Yes, I'm in" and "Who can join?" on "Anyone with the link". In the Review, "Names drawn" reads "When you're ready" when the organiser draws. If starting fails, "We couldn't start the exchange. Everything you entered is still here, so you can try again." shows and every input is kept; Start exchange is disabled offline.
 
 **As Organiser, I want to** decide whether I take part and who can join, then check everything, **so that** nothing goes out wrong.
@@ -1352,6 +1366,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 ### GCO-005 · Invite people
 
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** on an exchange that requires approval the Invite people sheet adds "You approve each person before they're in." and a waiting note, "{First} is waiting for you to let them in." for one person or "{n} people are waiting for you to let them in." for several. Invite by email still arrives with slice 7. Participants also opens this sheet from "Invite more people".
+
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** Invite people is built as a sheet from Organiser tools: "People can join until {date}.", the link, Share to WhatsApp, Copy link, Done and Reset link…. Reset link asks "Reset the invite link?" ("The old link stops working straight away. Anyone who hasn't joined yet needs the new one. People already in aren't affected.", Reset link / Keep link); on success the toast reads "Link reset. The old link no longer works." and the new link replaces the old one on screen. Only the organiser can reset it (Q6), and a cancelled or complete exchange refuses. Invite by email, the approval line and "waiting for you to let them in" are not built (slices 6 and 7).
 
 **Updated 2026-11-03 (Tobechukwu Olih):** QR code dropped from v1.
@@ -1382,6 +1398,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 - "People can join until Fri 2 Oct."
 
 ### GCO-006 · Track readiness
+
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** the "Needs you now" request block is built on the exchange page and on Exchanges: "{Name} wants to join." / "Approve or decline {first}'s request. People can join until {day}." / **Review request**; for several, "{n} people want to join." with the first names and **Review {n} requests**; after the join-by day the body says "Joining closed on {day}." instead (Q16). The action goes to Participants. The request block comes first, then the invite section or the closed card (Q17). The readiness split ("Still need a wishlist", "Ready"), Nudge and "Join request would make 3" belong to slice 8 (Q18).
 
 **Updated in v1.1:** covers the organiser who isn't taking part; Hand over organising joins the tools; the event step shows its time.
 
@@ -1414,6 +1432,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 - "Emeka, Tolu and Ada haven't added theirs."
 
 ### GCO-007 · Manage participants
+
+**Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** built before the draw as `/exchanges/[id]/participants` (S30, S31), organiser only; a member or an outsider gets "isn't available" and a signed-out visitor goes to Log in. "Wants to join ({n})" lists each request with the name and "Asked today at {time}" or "Asked {day}, {time}", with Approve and Decline. Approve shows the toast "{first} is in." (the board's email sentence is dropped, Q14); Decline shows nothing and the row goes. "Taking part ({n})" is one list with no "Invited by" and no readiness (Q13). Remove… asks "Remove {first} from {exchange}?" / "{first} will lose access to this exchange. Their wishlist stays theirs." with Remove {first} and Keep, then the toast "{first} was removed from {exchange}." The organiser's own row has no Remove, and removal works only while the exchange is open or joining has closed. A removed person loses every read of the exchange and may ask to be let back in. The page never shows an email, who gives to whom, or list status ("Nobody can see who drew whom, not even you."), and Approve, Decline and Remove are disabled offline. Emails for removal, approval and requests wait for slice 7 (Q14).
 
 **Updated in v1.1:** removed people are emailed; removal after the draw uses the blind repairs; adds reopening joining when only 2 are left.
 

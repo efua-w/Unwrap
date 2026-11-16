@@ -17,7 +17,9 @@ export function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-// Screen readers hear the count; sighted users see the Chip.
+// Screen readers hear the exact count; sighted users see the capped Chip ("9+").
+// WHY the exact number (owner decision 2026-11-15, open item 90): the Chip is aria-hidden in NavLinks, so the
+// visible label text is only the label and WCAG 2.5.3 (label in name) holds. GC-006.
 export function navAccessibleName(label: string, unread: number): string | undefined {
   return unread > 0 ? `${label}, ${unread} unread` : undefined;
 }

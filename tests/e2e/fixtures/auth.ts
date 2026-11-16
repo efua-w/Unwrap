@@ -86,6 +86,16 @@ export async function deleteTestUser(email: string): Promise<void> {
   // exchanges, whoever owns them), then the user's own lists, then the exchanges.
   const { data: owned } = await db.from("exchanges").select("id").eq("organiser_id", user.id);
   const exchangeIds = (owned ?? []).map((e: { id: string }) => e.id);
+  // Slice 6: activity events and join requests point at exchanges and users with no cascade, so they go
+  // before both. Events the user reads or is the subject of, and everything in exchanges they organised.
+  // Before the slice 6 migrations are applied these deletes just fail.
+  await db.from("activity_events").delete().eq("user_id", user.id);
+  await db.from("activity_events").delete().eq("subject_user_id", user.id);
+  await db.from("join_requests").delete().eq("user_id", user.id);
+  if (exchangeIds.length > 0) {
+    await db.from("activity_events").delete().in("exchange_id", exchangeIds);
+    await db.from("join_requests").delete().in("exchange_id", exchangeIds);
+  }
   if (exchangeIds.length > 0) await db.from("exchange_members").delete().in("exchange_id", exchangeIds);
   await db.from("exchange_members").delete().eq("user_id", user.id);
   if (exchangeIds.length > 0) {

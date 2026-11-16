@@ -1,0 +1,72 @@
+// UI copy for Participants (S30, S31), the request blocks (GCO-006) and the invite sheet's approval lines.
+// Sources: boards Org-People-*, Org-Remove-*, Exchange-Detail-obefore, Org-Invite-default (Part 2 folder wins)
+// and the owner decisions of 2026-11-14 (docs/tasks/slice-6.md, Q13, Q14, Q16). Lines marked "pending" are
+// not on a board or in a story and are listed in docs/copy-pending.md for approval.
+
+export const PARTICIPANTS_COPY = {
+  back: "Back",
+  title: "Participants",
+  subtitle: (exchange: string, n: number) => `${exchange} · ${n} ${n === 1 ? "person" : "people"} taking part`,
+  subtitleAlone: (exchange: string) => `${exchange} · Only you so far`,
+  wantsTitle: (n: number) => `Wants to join (${n})`,
+  askedToday: (time: string) => `Asked today at ${time}`,
+  askedOn: (day: string, time: string) => `Asked ${day}, ${time}`,
+  approve: "Approve",
+  decline: "Decline",
+  // pending: heading of the one people list (owner Q13).
+  takingTitle: (n: number) => `Taking part (${n})`,
+  you: "(you)",
+  remove: "Remove…",
+  privacy: "Nobody can see who drew whom, not even you.",
+  inviteMore: "Invite more people",
+  aloneTitle: "Nobody has joined yet",
+  aloneBody: (day: string) => `Names need at least 3 people to draw. Share the invite link so people can join by ${day}.`,
+  // pending: the alone card once joining has closed (no link to share).
+  aloneBodyClosed: "Names need at least 3 people to draw.",
+  aloneAction: "Invite people",
+  // S31 Org-Remove-before / -busy / -done. Q14: the board's email sentence is dropped.
+  removeTitle: (first: string, exchange: string) => `Remove ${first} from ${exchange}?`,
+  // pending: body without the email sentence; "Their wishlist stays theirs." is kept (owner Q14).
+  removeBody: (first: string) => `${first} will lose access to this exchange. Their wishlist stays theirs.`,
+  removeConfirm: (first: string) => `Remove ${first}`,
+  removeKeep: "Keep",
+  removeOffline: "You're offline. You can remove someone once you're back online.",
+  removedToast: (first: string, exchange: string) => `${first} was removed from ${exchange}.`,
+  // Owner Q14: the board's "They've been emailed." is dropped (no email is sent yet).
+  approvedToast: (first: string) => `${first} is in.`,
+  loadError: (exchange: string) => `We couldn't load the people in ${exchange}. Nothing has changed.`,
+  // pending: when the exchange itself could not be read, so there is no name to show.
+  loadErrorUnnamed: "We couldn't load the people in this exchange. Nothing has changed.",
+  // pending: failures and refusals of Approve, Decline and Remove (no board).
+  failed: "We couldn't do that. Nothing has changed, so you can try again.",
+  stale: "That has already been dealt with. The list is up to date now.",
+  full: (exchange: string) => `${exchange} is full, so nobody else can be let in.`,
+  ended: "Joining has ended for this exchange, so this can't be changed.",
+  // Owner Q15 and board Acc-NA-removed.
+  removedTitle: (exchange: string) => `You're no longer in ${exchange}`,
+  removedBody: "Your wishlist is still yours to use.",
+  removedAction: "Back to Home",
+} as const;
+
+// Request blocks (board Exchange-Detail-obefore; owner Q16 drafted the variants after join-by and for several).
+export const REQUEST_BLOCK_COPY = {
+  meta: "Needs you now",
+  one: (name: string) => `${name} wants to join.`,
+  oneBody: (first: string, day: string) => `Approve or decline ${first}'s request. People can join until ${day}.`,
+  // pending: once the join-by day has passed, the "until" sentence would be wrong.
+  oneBodyClosed: (first: string, day: string) => `Approve or decline ${first}'s request. Joining closed on ${day}.`,
+  many: (n: number) => `${n} people want to join.`,
+  // pending: body of the several-requests block (the story gives "{A, B and C} are waiting for you to approve or decline them. …").
+  manyBody: (names: string, day: string) => `${names} are waiting for you to approve or decline them. People can join until ${day}.`,
+  manyBodyClosed: (names: string, day: string) => `${names} are waiting for you to approve or decline them. Joining closed on ${day}.`,
+  reviewOne: "Review request",
+  reviewMany: (n: number) => `Review ${n} requests`,
+} as const;
+
+// Invite people sheet on an approval exchange (board Org-Invite-default).
+export const INVITE_APPROVAL_COPY = {
+  approval: "You approve each person before they're in.",
+  waitingOne: (first: string) => `${first} is waiting for you to let them in.`,
+  // pending: the waiting note for several people.
+  waitingMany: (n: number) => `${n} people are waiting for you to let them in.`,
+} as const;

@@ -8,13 +8,15 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { getMemberExchange, getOrganiserExchange } from "@/features/exchanges/queries";
+import { RemovedFromExchange } from "@/features/participants/components/RemovedFromExchange";
+import { getJoinRequests, getRemovedExchangeName } from "@/features/participants/queries";
 import { requireProfile } from "@/lib/auth/session";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 import { buildInviteUrl } from "@/lib/site-url";
 
 // S14 Exchange detail before the draw (GC-013, GCO-004): the organiser's page (boards Exchange-Detail-started,
-// -ostarted, -oattached, -oideas, -copied, -loading, -error, -offline) and the participant's (Exchange-Detail-before,
-// -nolist); S47 Acc-NA-exchange. Back goes to Exchanges (owner decision 2026-11-03: in-app Back goes to the parent
+// -ostarted, -oattached, -oideas, -copied, -loading, -error, -offline, Exchange-Detail-obefore) and the participant's (Exchange-Detail-before,
+// -nolist); S47 Acc-NA-exchange, Acc-NA-removed (GC-029). Back goes to Exchanges (owner decision 2026-11-03: in-app Back goes to the parent
 // page). The draw and later states arrive with slices 10 to 16.
 export default async function ExchangePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,11 +47,17 @@ async function DetailContent({ id, viewerId }: { id: string; viewerId: string })
   const copy = EXCHANGE_COPY.detail;
   let detail;
   let member = null;
+  let removedFrom: string | null = null;
+  let waitingNames: string[] = [];
   let inviteUrl: string | null = null;
   try {
     detail = await getOrganiserExchange(id, viewerId);
     // WHY only when not the organiser: a member's page has no token and no organiser tools (GC-013, AC-24).
     if (!detail) member = await getMemberExchange(id, viewerId);
+    // WHY (owner Q15): only a person the organiser removed gets the name back; everyone else is "not available".
+    if (!detail && !member) removedFrom = await getRemovedExchangeName(id);
+    // WHY organiser only: the database answers a member with an empty list, and a member's page never asks (AC-42).
+    if (detail) waitingNames = (await getJoinRequests(id)).map((r) => r.name);
     // WHY here: the link is built on the server from SITE_URL and the token, and goes only to the
     // organiser's invite section. A closed exchange has no link worth sharing.
     if (detail?.exchange.isOpen) inviteUrl = await buildInviteUrl(detail.inviteToken);
@@ -59,10 +67,10 @@ async function DetailContent({ id, viewerId }: { id: string; viewerId: string })
 
   // S47 / GC-029: a missing, cancelled or someone else's exchange all get this same state, which
   // never names the exchange or confirms it exists. No exchange data is in the page.
-  if (!detail && !member) return <NotAvailable />;
+  if (!detail && !member) return removedFrom ? <RemovedFromExchange exchangeName={removedFrom} /> : <NotAvailable />;
 
   const timeZone = await readViewerTimeZone();
   if (member) return <ExchangeMemberView exchange={member} timeZone={timeZone} />;
   if (!detail) return <NotAvailable />;
-  return <ExchangeJustStarted exchange={detail.exchange} inviteUrl={inviteUrl} timeZone={timeZone} />;
+  return <ExchangeJustStarted exchange={detail.exchange} inviteUrl={inviteUrl} timeZone={timeZone} waitingNames={waitingNames} />;
 }

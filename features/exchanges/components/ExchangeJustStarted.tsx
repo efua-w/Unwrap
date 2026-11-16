@@ -7,6 +7,7 @@ import { EXCHANGE_COPY } from "../copy";
 import { peopleIn } from "../people";
 import { lastJoinDay, timelineSteps } from "../timeline";
 import type { OrganiserExchange } from "../types";
+import { JoinRequestBlock } from "@/features/participants/components/JoinRequestBlock";
 import { InviteSection } from "./InviteSection";
 import { JoiningClosedCard } from "./JoiningClosedCard";
 import { OrganiserTools } from "./OrganiserTools";
@@ -19,6 +20,8 @@ type Props = {
   inviteUrl: string | null;
   /** The viewer's own zone. */
   timeZone: string;
+  /** Names of people waiting to be let in, oldest first. Organiser-only (GCO-007). */
+  waitingNames: readonly string[];
 };
 
 // S14 Exchange-Detail-started (GC-013, GCO-004) with the owner's decisions of 2026-11-09: header
@@ -26,7 +29,7 @@ type Props = {
 // next", and no control whose feature is not built yet (Invite by email, Edit, Draw, Cancel). Slice 5
 // adds Your part (S49 row), People and Organiser tools > Invite people (boards Exchange-Detail-oattached,
 // -oideas, -ostarted, Org-People-default; owner Q14).
-export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
+export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingNames }: Props) {
   const copy = EXCHANGE_COPY.detail;
   // WHY others, not the count: "alone" is about people other than the viewer, who may only be organising.
   const others = exchange.people.filter((p) => !p.isMe);
@@ -49,6 +52,17 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
           </p>
         </div>
       </header>
+
+      {/* WHY first (owner Q17): a person waiting is the thing that needs the organiser now, ahead of the invite
+          link or the closed card. */}
+      {waitingNames.length > 0 ? (
+        <JoinRequestBlock
+          exchangeId={exchange.id}
+          names={waitingNames}
+          lastJoinDay={lastJoinDay(exchange, timeZone)}
+          joiningOpen={exchange.isOpen}
+        />
+      ) : null}
 
       {inviteUrl ? (
         <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
@@ -82,6 +96,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
         people={exchange.takingPart ? exchange.people : others}
         alone={alone}
         count={peopleIn(exchange.takingPart, exchange.peopleCount)}
+        seeAllHref={`/exchanges/${exchange.id}/participants`}
       />
 
       {inviteUrl ? (
@@ -90,6 +105,8 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone }: Props) {
           exchangeName={exchange.name}
           lastJoinDay={lastJoinDay(exchange, timeZone)}
           inviteUrl={inviteUrl}
+          approvalRequired={exchange.approvalRequired}
+          waitingNames={waitingNames}
         />
       ) : null}
     </div>
