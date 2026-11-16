@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { LIST_COPY } from "@/features/exchange-list/copy";
 import { ListContent } from "@/features/exchange-list/components/ListContent";
 import { ListSkeleton } from "@/features/exchange-list/components/ListSkeleton";
 import { InviteFrame } from "@/features/joining/components/InviteFrame";
@@ -29,7 +30,7 @@ export default async function ListPage({
   );
   if (fromJoin) return <InviteFrame>{content}</InviteFrame>;
   return (
-    <AppShell profile={{ name: profile.displayName }} back={{ label: "Back", href: `/exchanges/${encodeURIComponent(id)}` }}>
+    <AppShell profile={{ name: profile.displayName }} back={{ label: LIST_COPY.back, href: `/exchanges/${encodeURIComponent(id)}` }}>
       {content}
     </AppShell>
   );

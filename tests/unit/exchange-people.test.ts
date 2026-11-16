@@ -10,14 +10,14 @@ const meOrg: PersonLine = { name: "Amaka Obi", isOrganiser: true, isMe: true };
 
 describe("People section (GC-013)", () => {
   it("names the organiser, then the others, then 'you'", () => {
-    expect(peopleSentence([org, femi, me])).toBe("Ngozi Eze (organising), Femi Adeyemi and you.");
-    expect(peopleSentence([org, me])).toBe("Ngozi Eze (organising) and you.");
+    expect(peopleSentence([org, femi, me])).toBe("Ngozi Eze, Femi Adeyemi and you.");
+    expect(peopleSentence([org, me])).toBe("Ngozi Eze and you.");
   });
   it("puts an organising viewer first", () => {
-    expect(peopleSentence([meOrg, femi])).toBe("You (organising) and Femi Adeyemi.");
+    expect(peopleSentence([meOrg, femi])).toBe("You and Femi Adeyemi.");
   });
   it("labels the stack with a count", () => {
-    expect(peopleStackLabel([org, me])).toBe("2 people: Ngozi Eze (organising) and you.");
+    expect(peopleStackLabel([org, me])).toBe("2 people: Ngozi Eze and you.");
   });
   it("counts only people taking part", () => {
     expect(peopleIn(true, 4)).toBe(4);

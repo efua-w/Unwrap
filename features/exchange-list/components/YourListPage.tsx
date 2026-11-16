@@ -9,11 +9,33 @@ import { cx } from "@/components/ui/cx";
 import { ExchangeTag, type ExchangeTint } from "@/components/ui/ExchangeTag";
 import { ListRow } from "@/components/ui/ListRow";
 import { useToast } from "@/components/ui/Toast";
+import { removeWishlistItem } from "@/features/wishlists/actions";
 import { ItemSheet, type ItemSheetActions } from "@/features/wishlists/components/ItemSheet";
 import { WISHLIST_COPY } from "@/features/wishlists/copy";
 import type { BudgetPreset } from "@/lib/money/budget";
-import { addIdeaItem, attachWishlistToExchange, updateIdeaItem, startExchangeIdeas } from "../actions";
-import { addedToast, attachFailed, budgetGuide, LIST_COPY, priceHelper, savedToast } from "../copy";
+import {
+  addIdeaItem,
+  attachWishlistToExchange,
+  startExchangeIdeas,
+  updateIdeaItem,
+  type AddIdeaResult,
+  type AttachResult,
+  type IdeasResult,
+} from "../actions";
+import {
+  addedDetachedToast,
+  addedToast,
+  attachFailed,
+  budgetGuide,
+  itemSheetAttachedNote,
+  LIST_COPY,
+  priceHelper,
+  reattachedToast,
+  restoredToast,
+  savedToast,
+  switchedToast,
+  switchFailed,
+} from "../copy";
 import type { ListMode, MyExchangeList, MyIdeas } from "../types";
 import { IdeasList, useIdeaRows } from "./IdeasList";
 import { WishlistPickerSheet, type UseOutcome } from "./WishlistPickerSheet";
@@ -27,21 +49,23 @@ type Props = {
   ideas: MyIdeas;
   /** The row for an attached wishlist or kept list ("6 items · updated Sat 31 Oct"). */
   current: { title: string; sub: string } | null;
-  /** Whether the person has any personal wishlist at all (the no-wishlists state). */
-  hasWishlists: boolean;
+  /** How many personal wishlists the person has (none: the no-wishlists state; one: nothing to switch to). */
+  wishlistCount: number;
   /** The attached personal list, so the picker does not preselect it. */
   currentWishlistId: string | null;
   timeZone: string;
 };
 
-type Failed = { id: string; name: string };
+type Failed = { kind: "attach"; id: string; name: string } | { kind: "switch"; name: string; old: string };
+type Previous = { id: string; name: string };
 
 // GC-010 / S11 and GCO-004 / S49: one page for participants and for an organiser who takes part. Boards:
-// Joining-Attach-* (participant) and Org-List-* (organiser, which supersedes where both exist). The
-// organiser has no Skip and goes back to the exchange page; a participant who came from Join skips to
-// You're in. WHY the server decides which list is attached: this page only asks the database to attach
-// (attach_wishlist, use_exchange_ideas) and shows what get_my_exchange_list answered, so a refused
-// attach shows as failed and nothing on screen claims a change that did not happen.
+// My-List-* (participant, in-app) and Org-List-* (organiser), which share one layout; Joining-Attach-* for
+// the from-Join page, which keeps its own header, copy and navigation (`toJoined`). WHY the server decides
+// which list is attached: this page only asks the database to attach (attach_wishlist,
+// use_exchange_ideas) and shows what get_my_exchange_list answered, so a refused attach shows as failed
+// and nothing on screen claims a change that did not happen. The in-app page stays put after a change and
+// shows a toast with Undo (owner 2026-11-16); Undo calls the same attach, detach and restore actions.
 export function YourListPage({
   mode,
   fromJoin,
@@ -49,7 +73,7 @@ export function YourListPage({
   myList,
   ideas,
   current,
-  hasWishlists,
+  wishlistCount,
   currentWishlistId,
   timeZone,
 }: Props) {
@@ -64,8 +88,10 @@ export function YourListPage({
 
   const [ideasListId, setIdeasListId] = useState(ideas.listId);
   const [sessions, setSessions] = useState({ picker: 0, item: 0 });
-  const [picker, setPicker] = useState(false);
-  const [itemSheet, setItemSheet] = useState<{ open: boolean; item?: MyIdeas["items"][number] }>({ open: false });
+  const [picker, setPicker] = useState<{ open: boolean; note?: string }>({ open: false });
+  const [itemSheet, setItemSheet] = useState<{ open: boolean; item?: MyIdeas["items"][number]; note?: string }>({
+    open: false,
+  });
   const [failed, setFailed] = useState<Failed | null>(null);
   const [busy, setBusy] = useState<"ideas" | "retry" | null>(null);
 
@@ -83,28 +109,75 @@ export function YourListPage({
       : ideasAttached && rows.shown.length > 0
         ? "ideas"
         : "choose";
+  // The wishlist an Undo can put back: only a live personal list, never a kept one.
+  const attachedList: Previous | null =
+    screen === "current" && currentWishlistId && current ? { id: currentWishlistId, name: current.title } : null;
+  const noLists = wishlistCount === 0;
+  // WHY attachedList and not just screen: "current" also covers a kept list (GC-030), where the one wishlist the
+  // person has is not attached and must stay choosable.
+  const onlyOneList = !toJoined && attachedList !== null && wishlistCount === 1;
+  // WHY: board My-List-picker and -itemfilled disable every page button while a sheet is open or a change
+  // is in flight; offline disables them as well (the shell's banner says so).
+  const locked = !online || picker.open || itemSheet.open || busy !== null;
 
-  // Where the person goes once their list is set. Participants who came from Join see You're in; everyone
-  // else goes back to the exchange page, which shows the toast (GCO-004 S49 update).
-  function finish(message: string) {
-    if (toJoined) {
-      router.push(`${exchangePath}/joined`);
-      return;
-    }
+  // Where the person goes once their list is set on the from-Join page: You're in.
+  function finishJoin() {
+    router.push(`${exchangePath}/joined`);
+  }
+
+  // Where Done goes: You're in from Join, otherwise back to the exchange page, which shows the toast (GCO-004 S49 update).
+  function done(message: string) {
+    if (toJoined) return finishJoin();
     toast.show({ message });
     router.push(exchangePath);
   }
 
-  async function attach(id: string): Promise<UseOutcome> {
+  // Undo runs the same actions as the change it undoes. WHY a failed Undo says so with Try again: the toast
+  // must not claim a change that the database refused.
+  async function undo(run: () => Promise<AttachResult | IdeasResult>) {
+    let ok = false;
+    try {
+      const result = await run();
+      if (!result.ok && result.reason === "signed-out") return signedOut();
+      ok = result.ok;
+    } catch {
+      reportNetworkError();
+    }
+    if (!ok) {
+      toast.show({ message: WISHLIST_COPY.rollback, action: { label: WISHLIST_COPY.retry, onAction: () => undo(run) }, above: "actions" });
+    }
+  }
+
+  const reattach = (list: Previous) => () => attachWishlistToExchange(exchange.id, list.id);
+
+  async function attach(id: string, name: string): Promise<UseOutcome> {
     try {
       const result = await attachWishlistToExchange(exchange.id, id);
       if (result.ok) {
-        finish(LIST_COPY.toastAttached);
+        if (toJoined) {
+          finishJoin();
+          return "navigating";
+        }
+        if (screen === "current" && attachedList) {
+          toast.show({
+            message: switchedToast(name),
+            action: { label: WISHLIST_COPY.undo, onAction: () => void undo(reattach(attachedList)) },
+            above: "actions",
+          });
+        } else if (screen === "ideas") {
+          toast.show({
+            message: reattachedToast(name),
+            action: { label: WISHLIST_COPY.undo, onAction: () => void undo(() => startExchangeIdeas(exchange.id)) },
+            above: "actions",
+          });
+        } else {
+          toast.show({ message: LIST_COPY.toastAttached, above: "actions" });
+        }
         return "ok";
       }
       if (result.reason === "signed-out") {
         signedOut();
-        return "ok";
+        return "navigating";
       }
       return result.reason === "not-found" ? "gone" : "failed";
     } catch {
@@ -114,17 +187,20 @@ export function YourListPage({
   }
 
   async function retry() {
-    if (!failed || busy) return;
+    if (failed?.kind !== "attach" || busy) return;
     setBusy("retry");
-    const outcome = await attach(failed.id);
-    // "ok" means the page is moving on; anything else leaves the line in place, nothing changed.
-    if (outcome !== "ok") setBusy(null);
+    const outcome = await attach(failed.id, failed.name);
+    if (outcome === "ok") setFailed(null);
+    // "navigating" means the page is moving on; anything else leaves the line in place, nothing changed.
+    if (outcome !== "navigating") setBusy(null);
   }
 
-  // "Add items instead": make or bring back my ideas for this exchange, then open the Add an item sheet
-  // when there is nothing yet to show. WHY a separate call from the item insert: see startExchangeIdeas.
+  // "Add items instead". With items kept from before, they come straight back. Otherwise the Add an item
+  // sheet opens, and nothing changes until an item is saved. WHY the ideas list is made when the item is
+  // saved, not before: Cancel must leave a wishlist attached (boards My-List-itemempty, -emptyitem).
   async function startIdeas() {
-    if (busy || !online) return;
+    if (locked) return;
+    if (ideas.items.length === 0) return openItemSheet();
     setBusy("ideas");
     let listId: string | null = null;
     try {
@@ -136,30 +212,51 @@ export function YourListPage({
     }
     setBusy(null);
     if (!listId) {
-      toast.show({ message: WISHLIST_COPY.saveFailed, action: { label: WISHLIST_COPY.retry, onAction: startIdeas } });
+      toast.show({ message: WISHLIST_COPY.saveFailed, action: { label: WISHLIST_COPY.retry, onAction: startIdeas }, above: "actions" });
       return;
     }
     setIdeasListId(listId);
-    if (ideas.items.length === 0) openItemSheet();
+    if (attachedList) {
+      toast.show({
+        message: restoredToast(ideas.items.length, attachedList.name),
+        action: { label: WISHLIST_COPY.undo, onAction: () => void undo(reattach(attachedList)) },
+        above: "actions",
+      });
+    }
   }
 
   function openItemSheet(item?: MyIdeas["items"][number]) {
     setSessions((s) => ({ ...s, item: s.item + 1 }));
-    setItemSheet({ open: true, item });
+    // WHY the note is fixed when the sheet opens: saving attaches the ideas, which changes the screen under it.
+    const note = toJoined ? LIST_COPY.itemSheetNote : attachedList && !item ? itemSheetAttachedNote(attachedList.name) : undefined;
+    setItemSheet({ open: true, item, note });
   }
 
   function openPicker() {
     setFailed(null);
     setSessions((s) => ({ ...s, picker: s.picker + 1 }));
-    setPicker(true);
+    setPicker({ open: true, note: !toJoined && screen === "ideas" ? LIST_COPY.ideasPickerNote : undefined });
   }
 
-  // Remembers the id the last add returned, so the toast's Undo can take that one item back.
-  const lastAdded = useRef<string | null>(null);
+  // Remembers the id the last add returned, and what it displaced, so the toast's Undo can undo both.
+  const lastAdded = useRef<{ id: string; listId: string; displaced: Previous | null } | null>(null);
   const itemActions: ItemSheetActions = {
-    add: async (input) => {
-      const result = await addIdeaItem(exchange.id, ideasListId, input);
-      lastAdded.current = result.ok ? result.id : null;
+    add: async (input): Promise<AddIdeaResult> => {
+      lastAdded.current = null;
+      let listId = ideasListId;
+      const displaced = attachedList;
+      if (screen !== "ideas" || !listId) {
+        const started = await startExchangeIdeas(exchange.id);
+        if (!started.ok) {
+          return { ok: false, reason: started.reason === "signed-out" || started.reason === "not-found" ? started.reason : "failed" };
+        }
+        listId = started.listId;
+        setIdeasListId(listId);
+      }
+      const result = await addIdeaItem(exchange.id, listId, input);
+      if (result.ok) lastAdded.current = { id: result.id, listId, displaced };
+      // WHY: starting the ideas took the wishlist off; a refused item must not leave that done.
+      else if (displaced && result.reason !== "invalid") await attachWishlistToExchange(exchange.id, displaced.id).catch(() => null);
       return result;
     },
     update: (itemId, input) => updateIdeaItem(exchange.id, itemId, input),
@@ -168,63 +265,118 @@ export function YourListPage({
   function onItemSaved(name: string, savedMode: "added" | "saved") {
     setItemSheet({ open: false });
     if (savedMode === "saved") {
-      toast.show({ message: savedToast(name) });
+      toast.show({ message: savedToast(name), above: "actions" });
       return;
     }
-    const itemId = lastAdded.current;
+    const added = lastAdded.current;
+    if (added?.displaced) {
+      const { id, listId, displaced } = added;
+      // WHY: a retry after the remove succeeded must only attach; the item is already gone, so removing again says not-found.
+      let removedItem = false;
+      toast.show({
+        message: addedDetachedToast(name, displaced.name),
+        action: {
+          label: WISHLIST_COPY.undo,
+          onAction: () =>
+            void undo(async (): Promise<AttachResult> => {
+              if (!removedItem) {
+                const removed = await removeWishlistItem(listId, id);
+                if (!removed.ok) return { ok: false, reason: removed.reason === "signed-out" ? "signed-out" : "failed" };
+                removedItem = true;
+              }
+              return attachWishlistToExchange(exchange.id, displaced.id);
+            }),
+        },
+        above: "actions",
+      });
+      return;
+    }
     toast.show({
       message: addedToast(name),
-      action: itemId
+      action: added
         ? {
             label: WISHLIST_COPY.undo,
             onAction: () => {
-              const added = rows.shown.find((row) => row.id === itemId);
-              if (added) void rows.remove(added);
+              const row = rows.shown.find((r) => r.id === added.id);
+              if (row) void rows.remove(row);
             },
           }
         : undefined,
+      above: "actions",
     });
   }
 
-  const noLists = !hasWishlists;
-  // WHY pinned only on the standalone participant page: the organiser's page sits above the tab bar.
-  const pinned = toJoined;
+  const intro =
+    toJoined || screen === "choose"
+      ? budgetGuide(toJoined ? "join" : "app", exchange.budget)
+      : screen === "current"
+        ? LIST_COPY.currentIntro
+        : LIST_COPY.ideasIntro;
+
+  // Buttons share one wrapping row on desktop, auto width (boards My-List-*-d).
+  const wide = "md:w-auto";
 
   return (
-    <div className="flex flex-1 flex-col gap-32">
-      {organiser ? null : (
-        <div className="flex items-center gap-12 rounded-2xl bg-surface-subtle p-16">
-          <ExchangeTag name={exchange.name} tint={exchange.tint} size="header" />
-          <p className="flex min-w-0 flex-col">
-            <span className="text-body-sm-regular text-text-muted">{LIST_COPY.youJoined}</span>
-            <span className="break-words text-body-base-semibold">{exchange.name}</span>
-          </p>
-        </div>
+    <div className="flex flex-1 flex-col gap-32 md:max-w-dialog">
+      {toJoined ? (
+        <>
+          <div className="flex items-center gap-12 rounded-2xl bg-surface-subtle p-16">
+            <ExchangeTag name={exchange.name} tint={exchange.tint} size="header" />
+            <p className="flex min-w-0 flex-col">
+              <span className="text-body-sm-regular text-text-muted">{LIST_COPY.youJoined}</span>
+              <span className="break-words text-body-base-semibold">{exchange.name}</span>
+            </p>
+          </div>
+          <header className="flex flex-col gap-8">
+            <h1 className="text-heading-2">{LIST_COPY.participantTitle}</h1>
+            <p className="text-body-base-regular text-text-secondary">{intro}</p>
+          </header>
+        </>
+      ) : (
+        <>
+          <header className="flex flex-col gap-8">
+            <h1 className="text-heading-2">{LIST_COPY.organiserTitle}</h1>
+            <p className="flex items-center gap-12">
+              <ExchangeTag name={exchange.name} tint={exchange.tint} size="sm" />
+              <span className="min-w-0 break-words text-body-base-semibold text-text-secondary">{exchange.name}</span>
+            </p>
+          </header>
+          <p className="text-body-base-regular text-text-secondary">{intro}</p>
+        </>
       )}
 
-      <header className="flex flex-col gap-8">
-        <h1 className="text-heading-2">{organiser ? LIST_COPY.organiserTitle : LIST_COPY.participantTitle}</h1>
-        {organiser ? <p className="break-words text-body-base-regular text-text-secondary">{exchange.name}</p> : null}
-        <p className="text-body-base-regular text-text-secondary">
-          {screen === "current" && organiser ? LIST_COPY.currentIntro : budgetGuide(mode, exchange.budget)}
-        </p>
-      </header>
-
       {screen === "ideas" ? (
-        <IdeasList items={rows.shown} working={rows.working} onEdit={openItemSheet} onRemove={rows.remove} />
+        <IdeasList
+          items={rows.shown}
+          working={rows.working}
+          onEdit={openItemSheet}
+          onRemove={rows.remove}
+          footer={
+            toJoined ? null : (
+              <Button variant="link" disabled={locked} aria-haspopup="dialog" onClick={openPicker}>
+                {LIST_COPY.chooseInstead}
+              </Button>
+            )
+          }
+        />
       ) : null}
 
       {screen === "current" && current ? (
         <section aria-labelledby="current-heading" className="flex flex-col gap-4">
-          {organiser ? null : (
+          {toJoined ? (
             <>
               <h2 id="current-heading" className="text-body-base-semibold text-text-default">
                 {LIST_COPY.organiserTitle}
               </h2>
               <p className="text-body-sm-regular text-text-muted">{LIST_COPY.currentIntro}</p>
             </>
+          ) : (
+            <div className="flex min-h-touch-target items-center">
+              <h2 id="current-heading" className="text-body-lg-semibold">
+                {LIST_COPY.attachedHeading}
+              </h2>
+            </div>
           )}
-          {organiser ? <h2 id="current-heading" className="sr-only">{LIST_COPY.organiserTitle}</h2> : null}
           <ul>
             <ListRow title={current.title} sub={current.sub} />
           </ul>
@@ -235,7 +387,17 @@ export function YourListPage({
         <p className="text-body-base-regular text-text-secondary">{LIST_COPY.noLists}</p>
       ) : null}
 
-      {failed ? (
+      {onlyOneList ? (
+        <div className="flex flex-wrap items-center gap-x-8">
+          <p className="text-body-sm-regular text-text-muted">{LIST_COPY.onlyOne}</p>
+          <Button variant="link" href="/wishlists">
+            {LIST_COPY.goToWishlists}
+          </Button>
+        </div>
+      ) : null}
+
+      {failed?.kind === "switch" ? <Alert variant="error">{switchFailed(failed.name, failed.old)}</Alert> : null}
+      {failed?.kind === "attach" ? (
         <Alert
           variant="error"
           action={
@@ -253,56 +415,79 @@ export function YourListPage({
       <div
         ref={actionsRef}
         className={cx(
-          "flex flex-col gap-8",
-          pinned
+          "flex flex-col gap-8 md:flex-row md:flex-wrap md:items-center md:gap-x-16",
+          toJoined
             ? "sticky bottom-0 -mx-20 mt-auto bg-surface-default px-20 pb-24 pt-12 md:static md:mx-0 md:p-0"
-            : "mt-auto",
+            : // WHY above the tab bar: boards My-List-*-m pin the bar there on every screen.
+              "sticky -mx-20 mt-auto bg-surface-default px-20 pb-16 pt-12 max-md:bottom-control-lg md:static md:mx-0 md:mt-0 md:p-0",
         )}
       >
         {screen === "ideas" ? (
           <>
-            <Button fullWidth onClick={() => finish(LIST_COPY.toastReady)}>
+            <Button fullWidth className={wide} disabled={locked} onClick={() => done(LIST_COPY.toastReady)}>
               {LIST_COPY.done}
             </Button>
-            <Button variant="secondary" fullWidth disabled={!online} aria-haspopup="dialog" onClick={() => openItemSheet()}>
+            <Button variant="secondary" fullWidth className={wide} disabled={locked} aria-haspopup="dialog" onClick={() => openItemSheet()}>
               {LIST_COPY.addAnother}
             </Button>
           </>
         ) : screen === "current" ? (
           <>
-            <Button variant="secondary" fullWidth disabled={!online} aria-haspopup="dialog" onClick={openPicker}>
-              {LIST_COPY.chooseDifferent}
-            </Button>
-            {/* WHY only with ideas kept: switching back must never leave an empty list in place of the wishlist. */}
-            {ideas.items.length > 0 ? (
-              <Button variant="secondary" fullWidth busy={busy === "ideas"} disabled={!online} onClick={startIdeas}>
-                {LIST_COPY.addItems}
-              </Button>
-            ) : null}
-          </>
-        ) : (
-          <>
             <Button
-              variant={noLists ? "secondary" : "primary"}
+              variant="secondary"
               fullWidth
-              disabled={!online || noLists}
+              className={wide}
+              disabled={locked || onlyOneList}
               aria-haspopup="dialog"
               onClick={openPicker}
             >
-              {LIST_COPY.choose}
+              {LIST_COPY.chooseDifferent}
             </Button>
             <Button
-              variant={noLists ? "primary" : "secondary"}
+              variant={toJoined ? "secondary" : "text"}
               fullWidth
+              className={wide}
               busy={busy === "ideas"}
-              disabled={!online}
+              disabled={locked}
               aria-haspopup="dialog"
               onClick={startIdeas}
             >
               {LIST_COPY.addItems}
             </Button>
+          </>
+        ) : (
+          <>
+            {/* WHY Add items first with no wishlists: it is the only thing that can be done (board My-List-emptynolists). */}
+            {noLists ? (
+              <Button fullWidth className={wide} busy={busy === "ideas"} disabled={locked} aria-haspopup="dialog" onClick={startIdeas}>
+                {LIST_COPY.addItems}
+              </Button>
+            ) : null}
+            <Button
+              variant={noLists ? "secondary" : "primary"}
+              fullWidth
+              className={wide}
+              disabled={locked || noLists}
+              aria-haspopup="dialog"
+              onClick={openPicker}
+            >
+              {LIST_COPY.choose}
+            </Button>
+            {noLists ? null : (
+              <Button
+                variant="secondary"
+                fullWidth
+                className={wide}
+                busy={busy === "ideas"}
+                disabled={locked}
+                aria-haspopup="dialog"
+                onClick={startIdeas}
+              >
+                {LIST_COPY.addItems}
+              </Button>
+            )}
             {toJoined ? (
-              <Button variant="text" fullWidth disabled={!online} href={`${exchangePath}/joined`}>
+              <Button variant="text" fullWidth className={wide} disabled={locked} href={`${exchangePath}/joined`}>
                 {LIST_COPY.skip}
               </Button>
             ) : null}
@@ -312,12 +497,15 @@ export function YourListPage({
 
       <WishlistPickerSheet
         key={`picker-${sessions.picker}`}
-        open={picker}
-        onClose={() => setPicker(false)}
+        open={picker.open}
+        onClose={() => setPicker((p) => ({ ...p, open: false }))}
         timeZone={timeZone}
         currentId={currentWishlistId}
-        onUse={(id) => attach(id)}
-        onFailed={(id, name) => setFailed({ id, name })}
+        note={picker.note}
+        onUse={attach}
+        onFailed={(id, name) =>
+          setFailed(attachedList && !toJoined ? { kind: "switch", name, old: attachedList.name } : { kind: "attach", id, name })
+        }
       />
       <ItemSheet
         key={`item-${sessions.item}`}
@@ -327,7 +515,7 @@ export function YourListPage({
         signedOutNext={ownPath}
         item={itemSheet.item}
         onSaved={onItemSaved}
-        description={LIST_COPY.itemSheetNote}
+        description={itemSheet.note}
         priceHelper={priceHelper(exchange.budget)}
       />
     </div>

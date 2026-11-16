@@ -11,18 +11,27 @@ import type { ListMode, ListSource } from "./types";
 const q = (name: string) => `'${name}'`;
 
 export const LIST_COPY = {
+  // Only the from-Join page (Joining-Attach-*) has these two; the in-app page has none (My-List-* boards).
   youJoined: "You've joined",
   participantTitle: "Tell your giver what you'd like",
   organiserTitle: "Your list for this exchange",
   pickIntro: "Pick one of your wishlists, or add a few ideas just for this exchange.",
   privacy: "Only your giver will see it, and only after names are drawn.",
   currentIntro: "Your giver will see it after the draw. You can change it until then.",
+  ideasIntro: "Your giver will see these after the draw. You can change them until then.",
+  attachedHeading: "Attached wishlist",
+  onlyOne: "This is your only wishlist, so there's nothing to switch to yet.",
+  goToWishlists: "Go to Wishlists",
+  chooseInstead: "Choose a wishlist instead",
+  // Sheet notes (boards My-List-ideaspicker, My-List-itemempty).
+  ideasPickerNote:
+    "Choosing a wishlist takes your items off this exchange. We'll keep them, so Add items instead brings them back.",
   noLists: "You don't have any wishlists yet, so add a few items instead.",
   choose: "Choose a wishlist",
   chooseDifferent: "Choose a different wishlist",
   addItems: "Add items instead",
   skip: "Skip for now",
-  back: "Back",
+  back: "Go back",
   done: "Done",
   addAnother: "Add another item",
   tryAgain: "Try again",
@@ -35,7 +44,8 @@ export const LIST_COPY = {
   // Ideas.
   ideasSub: "Only for this exchange",
   itemSheetNote: "Only the person who draws your name will see it. It won't be added to your wishlists.",
-  // Toasts on the exchange page (GCO-004 S49 update, 2026-11-09).
+  // Toasts. The join flow navigates on and the exchange page shows them (GCO-004 S49 update, 2026-11-09);
+  // the in-app page keeps them on the page (owner 2026-11-16, boards My-List-*).
   toastAttached: "Wishlist attached. Your giver will see it after the draw.",
   toastReady: "Your list is ready. Your giver will see it after the draw.",
   // Failure: the approved load-error line of the exchange page, reused (S14 Exchange-Detail-error).
@@ -44,22 +54,34 @@ export const LIST_COPY = {
 
 export const ideasHeading = (count: number) => `Your list for this exchange (${count})`;
 export const addedToast = (name: string) => `Added ${q(name)}.`;
+export const switchedToast = (list: string) => `Switched to ${q(list)}.`;
+export const reattachedToast = (list: string) => `Attached ${q(list)}. We've kept your items for later.`;
+export const addedDetachedToast = (item: string, list: string) =>
+  `Added ${q(item)}. ${q(list)} is no longer attached.`;
+// Board Org-List-ideasrestored (the in-app page's "Add items instead" with items kept).
+export const restoredToast = (count: number, list: string) =>
+  `${count === 1 ? "Your item is back" : `Your ${count} items are back`}. ${q(list)} is no longer attached.`;
+export const switchFailed = (list: string, old: string) =>
+  `We couldn't switch to ${q(list)}. ${q(old)} is still attached, so you can try again.`;
+// Item sheet note while a wishlist is attached (board My-List-itemempty).
+export const itemSheetAttachedNote = (list: string) =>
+  `Adding items takes ${q(list)} off this exchange. The wishlist itself won't change, and you can attach it again until the draw.`;
 export const removedToast = (name: string) => `Removed ${q(name)}.`;
 export const attachFailed = (name: string) =>
   `We couldn't attach ${q(name)}. Nothing has changed, so you can try again.`;
 export const listGone = (name: string) => `${q(name)} was just deleted, so we refreshed your wishlists.`;
 export const removeLabel = (name: string) => `Remove ${name}`;
 
-// "Gifts here cost ₦5,000 to ₦10,000, so ideas in that range help most." (participant board) and
-// "Everyone spends ₦10,000 to ₦20,000, ..." (organiser board). WHY the top preset reads "more than":
+// "Gifts here cost ₦5,000 to ₦10,000, so ideas in that range help most." (Joining-Attach-*, the join flow
+// only) and "Everyone spends ₦10,000 to ₦20,000, ..." (Org-List-* and My-List-*). WHY the top preset reads "more than":
 // budgetLabel gives "Above ₦50,000", which does not follow "cost" or "spends". Pending (copy-pending).
 export function budgetPhrase(budget: BudgetPreset): string {
   return budgetLabel(budget).replace(/^Above /, "more than ");
 }
 
-export function budgetGuide(mode: ListMode, budget: BudgetPreset): string {
+export function budgetGuide(wording: "join" | "app", budget: BudgetPreset): string {
   const phrase = budgetPhrase(budget);
-  const head = mode === "organiser" ? `Everyone spends ${phrase}` : `Gifts here cost ${phrase}`;
+  const head = wording === "join" ? `Gifts here cost ${phrase}` : `Everyone spends ${phrase}`;
   return `${LIST_COPY.pickIntro} ${head}, so ideas in that range help most.`;
 }
 

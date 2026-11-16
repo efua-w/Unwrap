@@ -14,7 +14,8 @@ import { listPickerWishlists } from "../actions";
 import { LIST_COPY, listGone } from "../copy";
 import type { OwnerWishlistSummary } from "../types";
 
-export type UseOutcome = "ok" | "failed" | "gone";
+// "ok": attached, and the page stays (the sheet closes). "navigating": the page is moving on (Join flow, sign-in).
+export type UseOutcome = "ok" | "navigating" | "failed" | "gone";
 
 type Props = {
   open: boolean;
@@ -23,8 +24,10 @@ type Props = {
   timeZone: string;
   /** The list attached now, if any: not preselected, so "Choose a different wishlist" offers another. */
   currentId: string | null;
-  /** Attaches the chosen list. "ok" means the page is moving on, so the sheet stays busy. */
-  onUse: (id: string) => Promise<UseOutcome>;
+  /** Attaches the chosen list. "navigating" means the page is moving on, so the sheet stays busy. */
+  onUse: (id: string, name: string) => Promise<UseOutcome>;
+  /** A line above the privacy note, such as what choosing a list does to the items kept here. */
+  note?: string;
   /** The attach failed and nothing changed: the page shows the retry line. */
   onFailed: (id: string, name: string) => void;
 };
@@ -35,7 +38,7 @@ type Phase = { kind: "loading" } | { kind: "error" } | { kind: "ready"; wishlist
 // Org-List-picker, -pickercurrent, -pickerloading, -attaching. WHY the lists are read when it opens: a
 // list deleted in another tab is then not offered, and a deletion that lands while the sheet is open is
 // caught by the attach itself ("gone"). The parent remounts this (a new `key`) for each opening.
-export function WishlistPickerSheet({ open, onClose, timeZone, currentId, onUse, onFailed }: Props) {
+export function WishlistPickerSheet({ open, onClose, timeZone, currentId, onUse, onFailed, note: sheetNote }: Props) {
   const { online } = useNetworkStatus();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [value, setValue] = useState("");
@@ -93,8 +96,13 @@ export function WishlistPickerSheet({ open, onClose, timeZone, currentId, onUse,
     const chosen = phase.wishlists.find((w) => w.id === value);
     if (!chosen) return;
     setBusy(true);
-    const outcome = await onUse(chosen.id);
-    if (outcome === "ok") return;
+    const outcome = await onUse(chosen.id, chosen.name);
+    if (outcome === "navigating") return;
+    if (outcome === "ok") {
+      setBusy(false);
+      onClose();
+      return;
+    }
     if (outcome === "gone") {
       const fresh = await read();
       setBusy(false);
@@ -167,6 +175,7 @@ export function WishlistPickerSheet({ open, onClose, timeZone, currentId, onUse,
             disabled={busy}
           />
         )}
+        {sheetNote ? <p className="text-body-sm-regular text-text-secondary">{sheetNote}</p> : null}
         {note ? (
           <p role="status" className="rounded-xl bg-surface-subtle px-16 py-12 text-body-sm-regular text-text-secondary">
             {note}

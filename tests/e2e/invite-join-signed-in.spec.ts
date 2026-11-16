@@ -316,7 +316,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await expect(page.getByText(`${formatDayTime(new Date(JOIN_AT), ZONE)}`).first()).toBeVisible();
           await expect(page.getByText("Times are in your time zone (WAT).")).toBeVisible();
           await expect(page.getByRole("heading", { name: "People (2)" })).toBeVisible();
-          await expect(page.getByText("Ngozi (organising) and you.")).toBeVisible();
+          await expect(page.getByText("Ngozi and you.")).toBeVisible();
           await expect(page.getByRole("heading", { name: "From Ngozi" })).toBeVisible();
           await expect(page.getByText("Gifts after the carol service.")).toBeVisible();
           // AC-24: no link, no organiser tools, no Leave, no Not available.
@@ -400,8 +400,11 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await page.getByRole("button", { name: "Choose a wishlist" }).click();
           await picker.getByText("My Christmas wishlist", { exact: true }).click();
           await picker.getByRole("button", { name: "Use this wishlist" }).click();
-          await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}$`), { timeout: 30_000 });
-          await expect(toast(page)).toContainText("Wishlist attached. Your giver will see it after the draw.");
+          // The in-app page stays put and shows the toast (owner 2026-11-16, boards My-List-*).
+          await expect(toast(page)).toContainText("Wishlist attached. Your giver will see it after the draw.", { timeout: 30_000 });
+          await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list$`));
+          await expect(page.getByRole("heading", { name: "Attached wishlist" })).toBeVisible();
+          await page.goto(`/exchanges/${exchange.id}`);
           await expect(page.getByText("From 'My Christmas wishlist'. 2 items. You can change it until the draw.")).toBeVisible();
           await expect(page.getByRole("heading", { name: "You're all set" })).toBeVisible();
           expect((await memberRow(exchange.id, joiner.id))[0]?.attached_wishlist_id).not.toBeNull();
@@ -433,7 +436,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await page.reload();
         await expect(page.getByText("3 people in.", { exact: true })).toBeVisible();
         await expect(page.getByRole("heading", { name: "People (3)" })).toBeVisible();
-        await expect(page.getByText("You (organising), Femi and Bisi.")).toBeVisible();
+        await expect(page.getByText("You, Femi and Bisi.")).toBeVisible();
         await expect(page.getByText("Nothing yet. Add one so your giver has ideas.")).toBeVisible();
         for (const hidden of ["Edit details", "Draw names now…", "Cancel exchange…", "Exclusions", "Invite by email"]) {
           await expect(page.getByText(hidden)).toHaveCount(0);
@@ -509,6 +512,97 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await page.screenshot({ path: `test-results/screenshots/exchanges-organiser-${width}.png`, fullPage: true });
       });
 
+      test("participant in-app list: header, buttons, switch and add with Undo on the page, only one wishlist (GC-009, GC-010)", async ({ context, page }) => {
+        test.setTimeout(240_000);
+        const organiser = await newPerson("Ngozi");
+        const exchange = await seedExchange(organiser, "Church choir Kris Kringle");
+        const joiner = await newPerson("Bisi");
+        await addMember(exchange.id, joiner);
+        const christmas = await seedWishlist(joiner, "My Christmas wishlist", ["Ankara tote bag", "Novel"]);
+        const attachedId = async () => (await memberRow(exchange.id, joiner.id))[0]?.attached_wishlist_id;
+
+        await signIn(context, page, joiner, `/exchanges/${exchange.id}/list`);
+        await page.waitForLoadState("networkidle");
+
+        // Header: no "You've joined" card, the h1, the exchange name, Go back, no Skip.
+        await expect(page.getByRole("heading", { level: 1, name: "Your list for this exchange" })).toBeVisible();
+        await expect(page.getByText("You've joined")).toHaveCount(0);
+        await expect(page.getByText("Church choir Kris Kringle", { exact: true })).toBeVisible();
+        await expect(page.getByText("Everyone spends ₦5,000 to ₦10,000")).toBeVisible();
+        await expect(page.getByRole("link", { name: "Go back" }).first()).toBeVisible();
+        await expect(page.getByText("Skip for now")).toHaveCount(0);
+        await expectNoAxeViolations(page);
+        await page.screenshot({ path: `test-results/screenshots/list-participant-${width}.png`, fullPage: true });
+
+        // Attach from the empty page: a plain toast on the page, no Undo.
+        await page.getByRole("button", { name: "Choose a wishlist" }).click();
+        const picker = page.getByRole("dialog", { name: "Choose a wishlist" });
+        await picker.getByText("My Christmas wishlist", { exact: true }).click();
+        await picker.getByRole("button", { name: "Use this wishlist" }).click();
+        await expect(toast(page)).toContainText("Wishlist attached. Your giver will see it after the draw.", { timeout: 30_000 });
+        await expect(toast(page).getByRole("button", { name: "Undo" })).toHaveCount(0);
+        await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list$`));
+        await expect(page.getByRole("heading", { name: "Attached wishlist" })).toBeVisible();
+        await expect(page.getByText("Your giver will see it after the draw. You can change it until then.")).toBeVisible();
+
+        // Only one wishlist: switching is disabled, and the row points to Wishlists.
+        await expect(page.getByRole("button", { name: "Choose a different wishlist" })).toBeDisabled();
+        await expect(page.getByText("This is your only wishlist, so there's nothing to switch to yet.")).toBeVisible();
+        await expect(page.getByRole("link", { name: "Go to Wishlists" })).toHaveAttribute("href", "/wishlists");
+        await expect(page.getByRole("button", { name: "Add items instead" })).toBeEnabled();
+
+        // A second wishlist: switch, with Undo on the page.
+        const birthday = await seedWishlist(joiner, "Birthday list", ["Mug"]);
+        await page.reload();
+        await page.waitForLoadState("networkidle");
+        await expect(page.getByText("This is your only wishlist")).toHaveCount(0);
+        await page.getByRole("button", { name: "Choose a different wishlist" }).click();
+        await picker.getByText("Birthday list", { exact: true }).click();
+        await picker.getByRole("button", { name: "Use this wishlist" }).click();
+        await expect(toast(page)).toContainText("Switched to 'Birthday list'.", { timeout: 30_000 });
+        await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list$`));
+        expect(await attachedId()).toBe(birthday);
+        await toast(page).getByRole("button", { name: "Undo" }).click();
+        await expect.poll(attachedId, { timeout: 30_000 }).toBe(christmas);
+
+        // Add an item while a wishlist is attached: the note, then the toast with Undo, still on the page.
+        await page.getByRole("button", { name: "Add items instead" }).click();
+        const sheet = page.getByRole("dialog", { name: "Add an item" });
+        await expect(sheet.getByText("Adding items takes 'My Christmas wishlist' off this exchange.")).toBeVisible();
+        await sheet.getByLabel("What is it?").fill("Ankara tote bag");
+        await sheet.getByRole("button", { name: "Add to list" }).click();
+        await expect(toast(page)).toContainText("Added 'Ankara tote bag'. 'My Christmas wishlist' is no longer attached.", { timeout: 30_000 });
+        await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list$`));
+        await expect(page.getByRole("heading", { name: "Your list for this exchange (1)" })).toBeVisible();
+        await expect(page.getByText("Your giver will see these after the draw. You can change them until then.")).toBeVisible();
+        await expect(page.getByRole("button", { name: "Choose a wishlist instead" })).toBeVisible();
+        await toast(page).getByRole("button", { name: "Undo" }).click();
+        await expect.poll(attachedId, { timeout: 30_000 }).toBe(christmas);
+        await expect(page.getByRole("heading", { name: "Attached wishlist" })).toBeVisible();
+      });
+
+      test("kept list with exactly one wishlist: switching stays enabled and no only-one row (GC-030, R1-1)", async ({ context, page }) => {
+        test.setTimeout(180_000);
+        const organiser = await newPerson("Ngozi");
+        const exchange = await seedExchange(organiser, "Church choir Kris Kringle");
+        const joiner = await newPerson("Bisi");
+        await addMember(exchange.id, joiner);
+        // The attached list is deleted afterwards, so its items are kept for the giver; one live wishlist is left.
+        const old = await seedWishlist(joiner, "Old list", ["Mug"]);
+        await seedWishlist(joiner, "My Christmas wishlist", ["Novel"]);
+        const db = adminClient();
+        const attached = await db.from("exchange_members").update({ attached_wishlist_id: old }).eq("exchange_id", exchange.id).eq("user_id", joiner.id);
+        if (attached.error) throw new Error(`attach failed: ${attached.error.message}`);
+        const deleted = await db.from("wishlists").update({ deleted_at: new Date().toISOString() }).eq("id", old);
+        if (deleted.error) throw new Error(`soft delete failed: ${deleted.error.message}`);
+
+        await signIn(context, page, joiner, `/exchanges/${exchange.id}/list`);
+        await page.waitForLoadState("networkidle");
+        await expect(page.getByRole("heading", { name: "Attached wishlist" })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Choose a different wishlist" })).toBeEnabled();
+        await expect(page.getByText("This is your only wishlist")).toHaveCount(0);
+      });
+
       test("organiser S49: attach a wishlist, switch to ideas and back; just organising has no row", async ({ context, page }) => {
         test.setTimeout(240_000);
         const organiser = await newPerson("Ngozi");
@@ -540,8 +634,9 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const picker = page.getByRole("dialog", { name: "Choose a wishlist" });
         await picker.getByText("My Christmas wishlist", { exact: true }).click();
         await picker.getByRole("button", { name: "Use this wishlist" }).click();
-        await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}$`), { timeout: 30_000 });
-        await expect(toast(page)).toContainText("Wishlist attached. Your giver will see it after the draw.");
+        await expect(toast(page)).toContainText("Wishlist attached. Your giver will see it after the draw.", { timeout: 30_000 });
+        await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/my-list$`));
+        await page.goto(`/exchanges/${exchange.id}`);
         await expect(page.getByText("From 'My Christmas wishlist'. 2 items. You can change it until the draw.")).toBeVisible();
 
         // Switch to the ideas kept for this exchange, then back to the wishlist.
@@ -550,6 +645,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expectNoAxeViolations(page);
         await page.getByRole("button", { name: "Add items instead" }).click();
         await expect(page.getByRole("heading", { name: "Your list for this exchange (1)" })).toBeVisible();
+        await expect(toast(page)).toContainText("Your item is back. 'My Christmas wishlist' is no longer attached.");
         await page.getByRole("button", { name: "Done" }).click();
         await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}$`), { timeout: 30_000 });
         await expect(page.getByText("Only for this exchange. 1 item. You can change it until the draw.")).toBeVisible();
@@ -677,12 +773,18 @@ for (const { name: width, viewport } of VIEWPORTS) {
           const page = await removedContext.newPage();
           await signIn(removedContext, page, removed, `/i/${exchange.token}/join`);
           await expect(page.getByRole("heading", { name: CANT_USE })).toBeVisible();
-          await expect(page.getByText("You can't join 'Family Christmas 2026' with this link.")).toBeVisible();
+          // GC-012 (Q5): a removed person never joins from the link; the page only offers a request.
+          await expect(page.getByText("You can't join 'Family Christmas 2026' with this link. You can ask to be let in.")).toBeVisible();
+          await expect(page.getByRole("button", { name: "Join exchange" })).toHaveCount(0);
+          await expect(page.getByRole("button", { name: "Ask to join" })).toBeVisible();
           await expectNoAxeViolations(page);
           const rows = await memberRow(exchange.id, removed.id);
           expect(rows.map((r) => r.state)).toEqual(["removed"]);
+          // Owner Q15 (Acc-NA-removed): the removed person's own page says so, with the name and nothing else.
           await page.goto(`/exchanges/${exchange.id}`);
-          await expect(page.getByRole("heading", { level: 1, name: NOT_AVAILABLE })).toBeVisible();
+          await expect(page.getByRole("heading", { level: 1, name: "You're no longer in Family Christmas 2026" })).toBeVisible();
+          await expect(page.getByText("Your wishlist is still yours to use.")).toBeVisible();
+          await expect(page.getByRole("link", { name: "Back to Home" })).toBeVisible();
         } finally {
           await removedContext.close();
         }

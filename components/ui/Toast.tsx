@@ -10,6 +10,8 @@ export const TOAST_WITH_ACTION_MS = 8000;
 export type ToastOptions = {
   message: string;
   action?: { label: string; onAction: () => void };
+  /** A page with a pinned action bar: mobile lifts the toast above it, desktop puts it bottom-left (boards My-List-*). */
+  above?: "actions";
 };
 
 type ToastState = ToastOptions & { id: number };
@@ -123,7 +125,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         popover="manual"
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-16 bottom-80 top-auto z-20 m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit md:inset-x-auto md:right-24 md:bottom-24 md:w-toast-max"
+        className={`pointer-events-none fixed inset-x-16 bottom-80 top-auto z-20 m-0 flex h-auto w-auto justify-center overflow-visible border-0 bg-transparent p-0 text-inherit md:inset-x-auto md:w-toast-max ${
+          // WHY: 120 clears a two-button action bar (132) above the tab bar. Desktop: the content column's left edge (sidebar + 80).
+          toast?.above === "actions" ? "max-md:pb-120 md:left-sidebar-max md:ml-80 md:bottom-32" : "md:right-24 md:bottom-24"
+        }`}
       >
         {toast ? (
           <div

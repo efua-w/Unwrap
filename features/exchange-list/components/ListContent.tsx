@@ -54,7 +54,7 @@ export async function ListContent({
       myList={myList}
       ideas={ideas}
       current={currentRow(myList, attached ? formatUpdated(new Date(attached.updatedAt), new Date(), timeZone) : null)}
-      hasWishlists={lists.length > 0}
+      wishlistCount={lists.length}
       currentWishlistId={myList.source === "wishlist" ? myList.wishlistId : null}
       timeZone={timeZone}
     />
