@@ -262,10 +262,10 @@ export function RadioGroupDemo() {
           { value: "link", label: "Anyone with the link", hint: "Hint text for the second option." },
         ]}
       />
-      <RadioGroup
+      <SegmentedTabs
+        kind="choice"
         legend="How much do you want it?"
         name="demo-want"
-        variant="segmented"
         value={want}
         onChange={setWant}
         options={[
