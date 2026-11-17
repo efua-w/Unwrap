@@ -110,3 +110,17 @@ export async function addRequest(exchangeId: string, person: Person) {
   const { error } = await adminClient().from("join_requests").insert({ exchange_id: exchangeId, user_id: person.id });
   if (error) throw new Error(`addRequest failed: ${error.message}`);
 }
+
+// A member whose list is attached, so Participants reads "Wishlist added" (an empty real wishlist counts). WHY
+// direct inserts: the attach flow is covered by its own specs; deleteTestUser removes the list with its owner.
+export async function attachWishlist(exchangeId: string, person: Person) {
+  const db = adminClient();
+  const list = await db.from("wishlists").insert({ owner_id: person.id, name: "Wishes" }).select("id").single();
+  if (list.error || !list.data) throw new Error(`attachWishlist failed: ${list.error?.message}`);
+  const { error } = await db
+    .from("exchange_members")
+    .update({ attached_wishlist_id: list.data.id })
+    .eq("exchange_id", exchangeId)
+    .eq("user_id", person.id);
+  if (error) throw new Error(`attachWishlist attach failed: ${error.message}`);
+}

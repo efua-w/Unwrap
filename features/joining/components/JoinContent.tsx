@@ -102,6 +102,7 @@ export function JoinContent({
           <li>{JOIN_COPY.agreeing.wishlist}</li>
           <li>{JOIN_COPY.agreeing.buy(budget)}</li>
           <li>{JOIN_COPY.agreeing.bring}</li>
+          <li>{JOIN_COPY.agreeing.email(organiser)}</li>
         </ul>
         <Alert variant="privacy">{INVITE_COPY.privacy(organiser)}</Alert>
       </section>

@@ -273,7 +273,7 @@ isOneToOne: false
                            },
 "get_join_requests":
 { Args: { "p_exchange": string }; Returns: {
-              "display_name": string,"request_id": string,"requested_at": string
+              "display_name": string,"email": string,"request_id": string,"requested_at": string
             }[]
                            },
 "get_my_activity":
@@ -286,7 +286,7 @@ isOneToOne: false
                            },
 "get_participants":
 { Args: { "p_exchange": string }; Returns: {
-              "display_name": string,"is_me": boolean,"is_organiser": boolean,"member_id": string,"taking_part": boolean
+              "display_name": string,"email": string,"has_wishlist": boolean,"is_me": boolean,"is_organiser": boolean,"member_id": string,"taking_part": boolean
             }[]
                            },
 "get_removed_exchange_name":

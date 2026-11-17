@@ -5,6 +5,7 @@ import {
   ZONE,
   addMember,
   addRequest,
+  attachWishlist,
   closeJoining,
   memberStates,
   people,
@@ -15,7 +16,7 @@ import {
 import { VIEWPORTS } from "./viewports";
 import { formatDay } from "../../lib/dates/format";
 
-// Slice 6, signed in (GC-012, GCO-003, GCO-005, GCO-006, GCO-007, GC-008, GC-029): Ask to join, the request
+// Slice 6, signed in (GC-012, GCO-003, GCO-005, GCO-006, GCO-007, GC-008, GC-029) and organiser-emails (2026-11-16): Ask to join, the request
 // blocks, Participants (Approve, Decline, Remove), the removed person's page, access and secrecy probes, and
 // offline. Needs the slice 6 migrations applied. Runs in the single-worker "signed-in" project, all three
 // widths in turn; the browser runs in Africa/Lagos so day labels are predictable.
@@ -104,6 +105,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           const page = asker.page;
           // AC-1: the join confirmation with Ask to join; nothing is created before the tap.
           await expect(page.getByRole("heading", { name: "What you're agreeing to" })).toBeVisible();
+          await expect(page.getByText("Ngozi, the organiser, can see your email address.")).toBeVisible();
           await expect(page.getByText("Ngozi approves everyone who joins, so this sends a request. Nobody else is told.")).toBeVisible();
           await expect(page.getByRole("button", { name: "Join exchange" })).toHaveCount(0);
           await expectNoAxeViolations(page);
@@ -160,18 +162,30 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await expect(hostPage.getByRole("heading", { level: 1, name: "Participants" })).toBeVisible();
           await expect(hostPage.getByText("Approval swap · Only you so far")).toBeVisible();
           await expect(hostPage.getByRole("heading", { name: "Wants to join (1)" })).toBeVisible();
-          await expect(hostPage.getByText("Asked today at")).toBeVisible();
-          await expect(hostPage.getByText("Nobody can see who drew whom, not even you.")).toBeVisible();
+          // Organiser emails (owner decision 2026-11-15): the request row reads "{email} · Today at {time}".
+          await expect(hostPage.getByText(`${chidi.email} · Today at`)).toBeVisible();
+          await expect(hostPage.getByRole("button", { name: "Approve Chidi" })).toBeVisible();
+          await expect(hostPage.getByRole("button", { name: "Decline Chidi" })).toBeVisible();
+          // Board Org-People-alone: no privacy line while nobody else has joined.
+          await expect(hostPage.getByText("Nobody can see who drew whom, not even you.")).toHaveCount(0);
           await expectNoAxeViolations(hostPage);
           await shot(hostPage, "participants-request", width);
 
           await hostPage.getByRole("button", { name: "Approve Chidi" }).click();
           await expect(toast(hostPage)).toContainText("Chidi is in.");
           await expect(hostPage.getByRole("heading", { name: /Wants to join/ })).toHaveCount(0);
-          await expect(hostPage.getByRole("heading", { name: "Taking part (2)" })).toBeVisible();
+          await expect(hostPage.getByRole("heading", { name: "Still need a wishlist (2)" })).toBeVisible();
           await expect(hostPage.getByText("Ngozi (you)")).toBeVisible();
+          // "Joined just now" until reload, between the address and the status; and the "1 more person needed" card.
+          await expect(hostPage.getByText(`${chidi.email} · Joined just now · No wishlist yet`)).toBeVisible();
+          await expect(hostPage.getByRole("heading", { name: "1 more person needed" })).toBeVisible();
+          await expect(hostPage.getByRole("button", { name: "Invite more people" })).toHaveCount(0);
+          await expect(hostPage.getByText("Nobody can see who drew whom, not even you.")).toBeVisible();
           await expectNoAxeViolations(hostPage);
           await shot(hostPage, "participants-approved", width);
+          await hostPage.reload();
+          await expect(hostPage.getByText(`${chidi.email} · No wishlist yet`)).toBeVisible();
+          await expect(hostPage.getByText("Joined just now")).toHaveCount(0);
           expect(await requestStatuses(exchange.id, chidi.id)).toEqual(["approved"]);
           expect(await memberStates(exchange.id, chidi.id)).toEqual(["active"]);
 
@@ -268,12 +282,14 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const exchange = await seedExchange(organiser, "Approval swap", { approval: true });
         await addMember(exchange.id, femi);
         await addMember(exchange.id, bisi);
+        await attachWishlist(exchange.id, bisi);
 
         const host = await signedIn(browser, viewport, organiser, `/exchanges/${exchange.id}/participants`);
         const removed = await signedIn(browser, viewport, femi, `/exchanges/${exchange.id}`);
         try {
           const page = host.page;
-          await expect(page.getByRole("heading", { name: "Taking part (3)" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Still need a wishlist (2)" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Ready (1)" })).toBeVisible();
           await expect(page.getByText("Approval swap · 3 people taking part")).toBeVisible();
           // The organiser's own row has no Remove.
           await expect(page.getByRole("button", { name: /^Remove… / })).toHaveCount(2);
@@ -295,7 +311,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await open.click();
           await confirm.getByRole("button", { name: "Remove Femi" }).click();
           await expect(toast(page)).toContainText("Femi was removed from Approval swap.");
-          await expect(page.getByRole("heading", { name: "Taking part (2)" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Still need a wishlist (1)" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "1 more person needed" })).toBeVisible();
           await expect(page.getByRole("button", { name: "Remove… Femi" })).toHaveCount(0);
           await shot(page, "participants-removed", width);
           expect(await memberStates(exchange.id, femi.id)).toEqual(["removed"]);
@@ -384,10 +401,12 @@ for (const { name: width, viewport } of VIEWPORTS) {
         test.setTimeout(240_000);
         const organiser = await seed.newPerson("Ngozi");
         const member = await seed.newPerson("Femi");
+        const otherMember = await seed.newPerson("Bisi");
         const outsider = await seed.newPerson("Tolu");
         const chidi = await seed.newPerson("Chidi");
         const exchange = await seedExchange(organiser, "Approval swap", { approval: true });
         await addMember(exchange.id, member);
+        await addMember(exchange.id, otherMember);
         await addRequest(exchange.id, chidi);
         const path = `/exchanges/${exchange.id}/participants`;
 
@@ -405,11 +424,15 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await asMember.page.goto(path);
           await expect(asMember.page.getByRole("heading", { level: 1, name: NOT_AVAILABLE })).toBeVisible();
           await expectNoAxeViolations(asMember.page);
-          // AC-42: the member's exchange page and Participants carry no request data and no one else's email.
+          // AC-42 and organiser-emails: the member's exchange page and Participants carry no request data and no
+          // other person's address (HTML and the RSC payload), though the organiser now sees them.
           for (const route of [path, `/exchanges/${exchange.id}`]) {
-            const html = await (await asMember.context.request.get(route)).text();
-            for (const secret of ["Chidi", "Needs you now", "wants to join", "Wants to join", chidi.email, chidi.id, organiser.email]) {
-              expect(html, `${route} must not contain ${secret}`).not.toContain(secret);
+            for (const headers of [undefined, { RSC: "1" }]) {
+              const html = await (await asMember.context.request.get(route, { headers })).text();
+              const label = `${route}${headers ? " (rsc)" : ""}`;
+              for (const secret of ["Chidi", "Needs you now", "wants to join", "Wants to join", chidi.email, chidi.id, organiser.email, otherMember.email, otherMember.id]) {
+                expect(html, `${label} must not contain ${secret}`).not.toContain(secret);
+              }
             }
           }
           await asMember.page.goto(`/exchanges/${exchange.id}`);
@@ -424,42 +447,118 @@ for (const { name: width, viewport } of VIEWPORTS) {
         try {
           await asOutsider.page.goto(path);
           await expect(asOutsider.page.getByRole("heading", { level: 1, name: NOT_AVAILABLE })).toBeVisible();
-          const html = await (await asOutsider.context.request.get(path)).text();
-          for (const secret of ["Approval swap", "Chidi", "Ngozi", exchange.token]) expect(html).not.toContain(secret);
+          for (const headers of [undefined, { RSC: "1" }]) {
+            const html = await (await asOutsider.context.request.get(path, { headers })).text();
+            for (const secret of ["Approval swap", "Chidi", "Ngozi", exchange.token, organiser.email, member.email, otherMember.email, chidi.email]) {
+              expect(html, `outsider ${headers ? "rsc" : "html"} must not contain ${secret}`).not.toContain(secret);
+            }
+          }
         } finally {
           await asOutsider.context.close();
         }
       });
 
-      test("secrecy: the organiser's Participants page and its data payload carry names only, never an email or a user id", async ({ browser }) => {
+      test("organiser emails: the organiser sees member and requester addresses; the exchange page and Exchanges carry none", async ({ browser }) => {
         test.setTimeout(240_000);
         const organiser = await seed.newPerson("Ngozi");
         const femi = await seed.newPerson("Femi");
+        const bisi = await seed.newPerson("Bisi");
         const chidi = await seed.newPerson("Chidi");
         const exchange = await seedExchange(organiser, "Approval swap", { approval: true });
         await addMember(exchange.id, femi);
+        await addMember(exchange.id, bisi);
+        await attachWishlist(exchange.id, femi);
         await addRequest(exchange.id, chidi);
 
         const host = await signedIn(browser, viewport, organiser, `/exchanges/${exchange.id}/participants`);
         try {
+          const { page, context } = host;
           const path = `/exchanges/${exchange.id}/participants`;
-          const html = await (await host.context.request.get(path)).text();
+          // A requirement change (owner decision 2026-11-15), not a weakening: this test used to assert the
+          // organiser's page held no address. The member and outsider checks in the access test stay.
+          await expect(page.getByRole("heading", { level: 1, name: "Participants" })).toBeVisible();
+          await expect(page.getByText(`${chidi.email} · Today at`)).toBeVisible();
+          await expect(page.getByText(`${femi.email} · Wishlist added`)).toBeVisible();
+          await expect(page.getByText(`${bisi.email} · No wishlist yet`)).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Still need a wishlist (2)" })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "Ready (1)" })).toBeVisible();
+          // Sub lines wrap: nothing runs past the screen, whatever the address length.
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          expect(overflow).toBeLessThanOrEqual(0);
+          // The organiser's own row shows the status alone (owner Q2).
+          const own = page.getByRole("listitem").filter({ hasText: "Ngozi (you)" });
+          await expect(own).toContainText("No wishlist yet");
+          await expect(own).not.toContainText("@");
+          await expectNoAxeViolations(page);
+          await shot(page, "participants-emails", width);
+
+          const html = await (await context.request.get(path)).text();
           // WHY RSC: the flight payload is what the client actually receives for props.
-          const rsc = await (await host.context.request.get(path, { headers: { RSC: "1" } })).text();
+          const rsc = await (await context.request.get(path, { headers: { RSC: "1" } })).text();
           // WHY a fresh load: after sign-in the page still holds the Verify screen's flight data (its own email field).
-          await host.page.goto(path);
-          await host.page.waitForLoadState("networkidle");
-          const dom = await host.page.content();
+          await page.goto(path);
+          await page.waitForLoadState("networkidle");
+          const dom = await page.content();
           for (const [label, body] of [["html", html], ["rsc", rsc], ["dom", dom]] as const) {
-            for (const person of [organiser, femi, chidi]) {
-              expect(body, `${label} must not contain ${person.first}'s email`).not.toContain(person.email);
+            for (const person of [femi, bisi, chidi]) {
+              expect(body, `${label} holds ${person.first}'s address for the organiser`).toContain(person.email);
+            }
+            // The organiser's own row has no address, and no user id reaches the page.
+            expect(body, `${label} must not contain the organiser's own address`).not.toContain(organiser.email);
+            for (const person of [organiser, femi, bisi, chidi]) {
               expect(body, `${label} must not contain ${person.first}'s user id`).not.toContain(person.id);
             }
           }
-          expect(html).toContain("Chidi");
-          expect(html).toContain("Femi");
-          // No pairs, list status or readiness on the page (AC-17).
-          for (const word of ["list status", "gives to", "drew you", "No list yet"]) expect(dom).not.toContain(word);
+          // No pairs on the page (AC-17).
+          for (const word of ["gives to", "drew you"]) expect(dom).not.toContain(word);
+
+          // The exchange page and Exchanges are names only.
+          for (const route of [`/exchanges/${exchange.id}`, "/exchanges"]) {
+            for (const headers of [undefined, { RSC: "1" }]) {
+              const body = await (await context.request.get(route, { headers })).text();
+              expect(body, `${route} must name the request`).toContain("Chidi");
+              for (const person of [femi, bisi, chidi]) {
+                expect(body, `${route}${headers ? " (rsc)" : ""} must not contain ${person.first}'s address`).not.toContain(person.email);
+              }
+            }
+          }
+        } finally {
+          await host.context.close();
+        }
+      });
+
+      test("alone and few: the alone card has no privacy line or invite button; two people show the 'more needed' card", async ({ browser }) => {
+        test.setTimeout(240_000);
+        const organiser = await seed.newPerson("Ngozi");
+        const femi = await seed.newPerson("Femi");
+        const exchange = await seedExchange(organiser, "Approval swap", { approval: true });
+
+        const host = await signedIn(browser, viewport, organiser, `/exchanges/${exchange.id}/participants`);
+        try {
+          const { page } = host;
+          await expect(page.getByRole("heading", { name: "Nobody has joined yet" })).toBeVisible();
+          await expect(page.getByText("Nobody can see who drew whom, not even you.")).toHaveCount(0);
+          await expect(page.getByRole("button", { name: "Invite more people" })).toHaveCount(0);
+          await expectNoAxeViolations(page);
+          await shot(page, "participants-alone", width);
+
+          await addMember(exchange.id, femi);
+          await page.reload();
+          await expect(page.getByRole("heading", { name: "1 more person needed" })).toBeVisible();
+          await expect(page.getByText(/^Names need at least 3 people to draw\. People can join until/)).toBeVisible();
+          await expect(page.getByRole("button", { name: "Invite people" })).toBeVisible();
+          await expect(page.getByRole("button", { name: "Invite more people" })).toHaveCount(0);
+          await expect(page.getByText("Nobody can see who drew whom, not even you.")).toBeVisible();
+          await expectNoAxeViolations(page);
+          await shot(page, "participants-few", width);
+
+          // With a third person the card goes and "Invite more people" (with its plus icon) takes its place.
+          const bisi = await seed.newPerson("Bisi");
+          await addMember(exchange.id, bisi);
+          await page.reload();
+          await expect(page.getByRole("heading", { name: /more person needed|more people needed/ })).toHaveCount(0);
+          await expect(page.getByRole("button", { name: "Invite more people" })).toBeVisible();
+          await shot(page, "participants-default-three", width);
         } finally {
           await host.context.close();
         }

@@ -225,7 +225,7 @@ Do not claim something works without verification.
 These come from the user stories and are easy to break by accident:
 
 - **Pair secrecy.** No one learns who gives to whom except a giver seeing their own person. The organiser never sees pairs, including when fixing pairs or re-drawing. Activity events and emails never name a giver/recipient pair.
-- The organiser never sees participants' email addresses.
+- The organiser can see the email address of the people in their own exchange and of people waiting to join, on Participants only (owner decision 2026-11-15). Nobody else sees an address: no member sees another member's, and no activity event, email or other screen carries one. The organiser's own row has none. An address never reveals who gives to whom.
 - Every date and time shows in the viewer's own time zone.
 - Mobile-first; desktop uses a left sidebar for the four sections.
 - Auth is passwordless (6-digit email code); no social sign-in, no phone or SMS login in v1.

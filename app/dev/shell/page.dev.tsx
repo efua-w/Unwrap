@@ -10,7 +10,7 @@ export default async function ShellGallery({ searchParams }: { searchParams: Sea
       profile={{ name: "Ada Okafor" }}
       unreadActivity={Number(unread ?? "3")}
       hideTabs={tabs === "0"}
-      back={back ? { label: "Go back", href: "/dev/shell" } : undefined}
+      back={back ? { label: "Back", href: "/dev/shell" } : undefined}
     >
       <h1 className="text-heading-2">App shell</h1>
       <p className="text-body-base-regular text-text-secondary">

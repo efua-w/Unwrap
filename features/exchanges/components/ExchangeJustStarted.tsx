@@ -1,4 +1,3 @@
-import { ExchangeTag } from "@/components/ui/ExchangeTag";
 import { LocalDateTime } from "@/components/ui/LocalDateTime";
 import { Timeline } from "@/components/ui/Timeline";
 import { formatDay, zoneShortName } from "@/lib/dates/format";
@@ -8,6 +7,7 @@ import { peopleIn } from "../people";
 import { lastJoinDay, timelineSteps } from "../timeline";
 import type { OrganiserExchange } from "../types";
 import { JoinRequestBlock } from "@/features/participants/components/JoinRequestBlock";
+import { ExchangeDetailHeader } from "./ExchangeDetailHeader";
 import { InviteSection } from "./InviteSection";
 import { JoiningClosedCard } from "./JoiningClosedCard";
 import { OrganiserTools } from "./OrganiserTools";
@@ -38,20 +38,15 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
     exchange.drawMode === "at_join_by" && exchange.drawAt ? formatDay(new Date(exchange.drawAt), timeZone) : null;
   return (
     <div className="flex flex-col gap-32 md:max-w-reading-max">
-      {/* Boards Exchange-Detail-ostarted -m/-d: the tag sits above the title, all left-aligned. */}
-      <header className="flex flex-col items-start gap-12">
-        <ExchangeTag name={exchange.name} tint={exchange.tint} size="header" />
-        <div className="flex min-w-0 flex-col gap-4">
-          <h1 className="break-words text-heading-2">{exchange.name}</h1>
-          <p className="text-body-base-regular text-text-default">
-            {alone ? copy.onlyYou : EXCHANGE_COPY.list.rowPeople(peopleIn(exchange.takingPart, exchange.peopleCount))}
-          </p>
-          <p className="text-body-sm-regular text-text-muted">
-            Created by you on <LocalDateTime value={exchange.createdAt} timeZone={timeZone} /> ·{" "}
-            {copy.spends(budgetLabel(exchange.budget))}
-          </p>
-        </div>
-      </header>
+      <ExchangeDetailHeader name={exchange.name} tint={exchange.tint}>
+        <p className="text-body-base-regular text-text-default">
+          {alone ? copy.onlyYou : EXCHANGE_COPY.list.rowPeople(peopleIn(exchange.takingPart, exchange.peopleCount))}
+        </p>
+        <p className="text-body-sm-regular text-text-muted">
+          Created by you on <LocalDateTime value={exchange.createdAt} timeZone={timeZone} /> ·{" "}
+          {copy.spends(budgetLabel(exchange.budget))}
+        </p>
+      </ExchangeDetailHeader>
 
       {/* WHY first (owner Q17): a person waiting is the thing that needs the organiser now, ahead of the invite
           link or the closed card. */}
