@@ -88,10 +88,13 @@ select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000111',
   $$update public.user_settings set default_wishlist_visibility = 'public' where user_id = 'b0000000-0000-4000-8000-000000000111'$$),
   'err:22P02', 'a value outside the enum is refused');
 
--- 9. The notification toggles still have no update grant (they arrive in slice 7).
+-- 9. The notification toggles are writable by their owner since slice 7 (owner decision Q3 2026-11-17); another
+-- person's row still changes nothing.
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000111',
-  $$update public.user_settings set notify_names_drawn = false where user_id = 'b0000000-0000-4000-8000-000000000111'$$),
-  'err:42501', 'the new grant did not open the notification toggles');
+  $$update public.user_settings set notify_names_drawn = false where user_id = 'b0000000-0000-4000-8000-000000000111'$$)
+  || '/' || pg_temp.try_as('b0000000-0000-4000-8000-000000000111',
+  $$update public.user_settings set notify_names_drawn = false where user_id = 'b0000000-0000-4000-8000-000000000112'$$),
+  'ok:1/ok:0', 'a user can write their own notification toggles, not another user''s');
 
 -- 10. Back to Private works too.
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000111',

@@ -92,6 +92,9 @@ export async function deleteTestUser(email: string): Promise<void> {
   await db.from("activity_events").delete().eq("user_id", user.id);
   await db.from("activity_events").delete().eq("subject_user_id", user.id);
   await db.from("join_requests").delete().eq("user_id", user.id);
+  // Slice 7 (migration email_outbox_details): queued emails and email invites cascade with the profile and the
+  // exchange, so deleting those below clears them; no role can delete outbox rows directly. Without that
+  // migration applied, this cleanup leaves users behind.
   if (exchangeIds.length > 0) {
     await db.from("activity_events").delete().in("exchange_id", exchangeIds);
     await db.from("join_requests").delete().in("exchange_id", exchangeIds);

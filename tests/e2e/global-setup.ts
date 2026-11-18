@@ -16,6 +16,7 @@ export default async function globalSetup(): Promise<void> {
     "/home",
     "/welcome",
     "/profile",
+    "/profile/notifications",
     "/wishlists",
     "/wishlists/00000000-0000-4000-8000-000000000000",
     "/exchanges",

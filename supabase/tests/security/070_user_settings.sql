@@ -90,10 +90,11 @@ select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000011',
   'err:22023',
   'a time zone name over 64 characters is refused');
 
--- 14-17. Column grants: only timezone is writable by the app in this slice (the toggles arrive in slice 7).
+-- 14-17. Column grants: timezone and the four toggles (slice 7, owner decision Q3 2026-11-17) are writable by the
+-- owner of the row; user_id is not, and nobody inserts or deletes.
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000011',
   $$update public.user_settings set notify_names_drawn = false where user_id = 'b0000000-0000-4000-8000-000000000011'$$),
-  'err:42501', 'a user cannot write notification toggles yet');
+  'ok:1', 'a user can write their own notification toggles');
 select is(pg_temp.try_as('b0000000-0000-4000-8000-000000000011',
   $$update public.user_settings set user_id = 'b0000000-0000-4000-8000-000000000019' where user_id = 'b0000000-0000-4000-8000-000000000011'$$),
   'err:42501', 'a user cannot change user_id');

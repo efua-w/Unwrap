@@ -286,7 +286,7 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
         onClose={() => setRemoveOpen(false)}
         variant="destructive"
         title={removing ? copy.removeTitle(firstName(removing.name), exchangeName) : ""}
-        description={removing ? copy.removeBody(firstName(removing.name)) : undefined}
+        description={removing ? copy.removeBody(firstName(removing.name), removing.email) : undefined}
         busy={removeBusy}
         footer={
           <>

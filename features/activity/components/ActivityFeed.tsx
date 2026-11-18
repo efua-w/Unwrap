@@ -133,9 +133,9 @@ export function ActivityFeed({ initialItems, initialCursor, unreadCount }: Props
           </section>
         ))}
       </div>
-      {cursor ? (
-        <div className="flex flex-col items-start gap-8">
-          {loadingOlder ? (
+      <div className="flex flex-col items-start gap-8">
+        {cursor ? (
+          loadingOlder ? (
             <p role="status" className="flex min-h-touch-target items-center gap-8 text-body-sm-regular text-text-muted">
               <Spinner />
               {copy.olderBusy}
@@ -144,9 +144,13 @@ export function ActivityFeed({ initialItems, initialCursor, unreadCount }: Props
             <Button variant="secondary" onClick={older} disabled={!online}>
               {copy.older}
             </Button>
-          )}
-        </div>
-      ) : null}
+          )
+        ) : null}
+        {/* GC-026: the way into Notifications, under the list on both widths (boards Activity-default-m and -d). */}
+        <Button variant="link" href="/profile/notifications">
+          {copy.chooseEmails}
+        </Button>
+      </div>
     </div>
   );
 }
