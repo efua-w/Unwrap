@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -10,9 +10,9 @@ import { requestToJoin } from "../actions";
 import { JOIN_COPY, REQUEST_COPY, UNAVAILABLE_COPY } from "../copy";
 import { InviteFrame } from "./InviteFrame";
 
-// Ask to join (GC-012, GCO-003). Boards: Joining-Confirm-approval / -requested, Joining-Unavailable-closed /
+// Ask to join (GC-012, GCO-003). Boards: Join-Exchange-approval, Joining-Confirm-requested, Joining-Unavailable-closed /
 // -asking / -error / -sent. Three ways in:
-//   confirm  an approval exchange: the join confirmation with Ask to join (children = JoinContent)
+//   confirm  an approval exchange: the one invite screen with Ask to join (children = JoinContent)
 //   closed   joining closed, a request is allowed: S13 plus Ask to join
 //   removed  a removed person (owner decision Q5): S13-style, no names of anyone in the exchange
 // The token is the only input to the action (plan §6 invariant 8). A refusal re-reads the page, whose
@@ -26,6 +26,7 @@ export function AskToJoin({
   organiserFirstName,
   body,
   sentRows,
+  autoStart = false,
   children,
 }: {
   token: string;
@@ -36,6 +37,8 @@ export function AskToJoin({
   body?: string;
   /** Server-rendered rows for the sent state (the join-by date), confirm only. */
   sentRows?: ReactNode;
+  /** Join-one-screen: send the request once on arrival (confirm only; see JoinForm). */
+  autoStart?: boolean;
   children?: ReactNode;
 }) {
   const router = useRouter();
@@ -43,6 +46,7 @@ export function AskToJoin({
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [sent, setSent] = useState(false);
+  const started = useRef(false);
 
   async function ask() {
     if (busy || !online) return;
@@ -65,6 +69,13 @@ export function AskToJoin({
     }
     setBusy(false);
   }
+
+  useEffect(() => {
+    if (!autoStart || started.current) return;
+    started.current = true;
+    void ask();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once on arrival; ask reads the latest state it needs
+  }, [autoStart]);
 
   if (sent) {
     return (

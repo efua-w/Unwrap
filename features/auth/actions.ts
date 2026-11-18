@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { accountStatusFrom, type AccountStatus } from "@/lib/auth/account-status";
 import { normaliseDisplayName } from "@/lib/auth/display-name";
 import { isPlausibleEmail, normaliseEmail } from "@/lib/auth/email";
+import { inviteTokenFromNext } from "@/lib/auth/invite-path";
+import { writeJoinIntent } from "@/lib/auth/join-intent-cookie";
 import { clearVerifyCookie, writeVerifyCookie } from "@/lib/auth/verify-cookie";
 import { sanitizeNext } from "@/lib/auth/next-path";
 import { destinationAfterVerify, parseVerifyState, type VerifyState } from "@/lib/auth/verify-state";
@@ -76,6 +78,10 @@ export async function finishSignIn(input: unknown): Promise<void> {
   await clearVerifyCookie();
   const flow = raw.flow === "login" ? "login" : "signup";
   const next = typeof raw.next === "string" ? sanitizeNext(raw.next) : undefined;
+  // WHY here and only here (R-2): a real sign-in that started from an invite is the one moment that proves
+  // the person meant to join; /i/<token>/join does nothing automatic without it.
+  const inviteToken = inviteTokenFromNext(next);
+  if (inviteToken) await writeJoinIntent(inviteToken);
   redirect(destinationAfterVerify({ flow, next }));
 }
 

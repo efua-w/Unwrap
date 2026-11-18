@@ -31,7 +31,11 @@ const CLOSED_DAY = (days: number) => formatDay(new Date(Date.now() - days * 86_4
 async function signedIn(browser: Browser, viewport: { width: number; height: number }, person: Person, next: string) {
   const context = await browser.newContext({ viewport, timezoneId: ZONE });
   const page = await context.newPage();
-  await signInThroughVerify(context, page, person.email, { next });
+  // WHY an invite `next` is opened after signing in to Home (join-one-screen): signing in FROM an invite is the
+  // path that joins or asks automatically; these specs click the one screen's own button.
+  const isInvite = next.startsWith("/i/");
+  await signInThroughVerify(context, page, person.email, { next: isInvite ? "/home" : next });
+  if (isInvite) await page.goto(next);
   return { context, page };
 }
 
@@ -69,7 +73,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await page.goto(`/i/${approval.token}`);
           await expect(page.getByRole("heading", { level: 1, name: "Approval swap" })).toBeVisible();
           await expect(page.getByText("Ngozi invited you")).toBeVisible();
-          await expect(page.getByRole("link", { name: "Join this exchange" })).toBeVisible();
+          await expect(page.getByRole("link", { name: "Join exchange" })).toBeVisible();
           await expect(page.getByText("Ask to join")).toHaveCount(0);
           await expect(page.getByText("approves everyone")).toHaveCount(0);
           await expectNoAxeViolations(page);
@@ -80,7 +84,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await expect(page.getByRole("heading", { level: 1, name: CANT_USE })).toBeVisible();
           await expect(page.getByText(`Ngozi closed joining for 'Closed swap' on ${CLOSED_DAY(2)}.`)).toBeVisible();
           await expect(page.getByText("You can still ask to be let in. Ngozi decides.")).toBeVisible();
-          await expect(page.getByRole("link", { name: "Join this exchange" })).toHaveCount(0);
+          await expect(page.getByRole("link", { name: "Join exchange" })).toHaveCount(0);
           await expectNoAxeViolations(page);
           await shot(page, "invite-closed-ask-signedout", width);
           await page.getByRole("link", { name: "Ask to join" }).click();
@@ -99,12 +103,14 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const chidi = await seed.newPerson("Chidi");
         const exchange = await seedExchange(organiser, "Approval swap", { approval: true });
 
-        const asker = await signedIn(browser, viewport, chidi, `/i/${exchange.token}/join`);
+        const asker = await signedIn(browser, viewport, chidi, `/i/${exchange.token}`);
         const host = await signedIn(browser, viewport, organiser, `/exchanges/${exchange.id}`);
         try {
           const page = asker.page;
-          // AC-1: the join confirmation with Ask to join; nothing is created before the tap.
-          await expect(page.getByRole("heading", { name: "What you're agreeing to" })).toBeVisible();
+          // AC-1: the one invite screen with Ask to join, in place; nothing is created before the tap.
+          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}$`));
+          await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
+          await expect(page.getByText("Joining as")).toBeVisible();
           await expect(page.getByText("Ngozi, the organiser, can see your email address.")).toBeVisible();
           await expect(page.getByText("Ngozi approves everyone who joins, so this sends a request. Nobody else is told.")).toBeVisible();
           await expect(page.getByRole("button", { name: "Join exchange" })).toHaveCount(0);
@@ -135,7 +141,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
 
           // AC-6: opening the link again says so, and offers no second Ask.
           await page.goto(`/i/${exchange.token}`);
-          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}/join$`));
+          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}$`));
           await expect(page.getByRole("heading", { level: 1, name: "You've already asked" })).toBeVisible();
           await expect(page.getByText("Your request to join 'Approval swap' is waiting for Ngozi.")).toBeVisible();
           await expect(page.getByRole("button", { name: "Ask to join" })).toHaveCount(0);
@@ -226,7 +232,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           // Q8: nothing is said to the requester; the row simply goes.
           await asker.page.goto("/exchanges");
           await expect(asker.page.getByText("Request sent. Waiting for Ngozi.")).toHaveCount(0);
-          await asker.page.goto(`/i/${exchange.token}/join`);
+          await asker.page.goto(`/i/${exchange.token}`);
           await expect(asker.page.getByRole("button", { name: "Ask to join" })).toBeVisible();
           await asker.page.getByRole("button", { name: "Ask to join" }).click();
           await expect(asker.page.getByRole("heading", { level: 1, name: "Waiting for Ngozi" })).toBeVisible();
@@ -244,7 +250,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const exchange = await seedExchange(organiser, "Closed swap");
         await closeJoining(exchange.id);
 
-        const asker = await signedIn(browser, viewport, chidi, `/i/${exchange.token}/join`);
+        const asker = await signedIn(browser, viewport, chidi, `/i/${exchange.token}`);
         const host = await signedIn(browser, viewport, organiser, `/exchanges/${exchange.id}`);
         try {
           const page = asker.page;
@@ -331,7 +337,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
 
           // The invite link offers only a request.
           await gone.goto(`/i/${exchange.token}`);
-          await expect(gone).toHaveURL(new RegExp(`/i/${exchange.token}/join$`));
+          await expect(gone).toHaveURL(new RegExp(`/i/${exchange.token}$`));
           await expect(gone.getByText("You can't join 'Approval swap' with this link. You can ask to be let in.")).toBeVisible();
           await expect(gone.getByRole("button", { name: "Join exchange" })).toHaveCount(0);
           await expectNoAxeViolations(gone);

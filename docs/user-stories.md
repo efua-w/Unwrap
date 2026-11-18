@@ -21,6 +21,7 @@ Each decision below is rewritten into the stories it affects, which carry an **U
 | Organiser's own list (2026-11-09) | S49 "Your list for this exchange" is its own page. An organiser taking part reaches it from S14 › Your part. They attach a whole wishlist or add ideas just for this exchange. Boards Org-List-* and Exchange-Detail-oattached / -oideas. | GC-010, GCO-004 |
 | Creation limits (2026-11-13) | Each person can start at most 10 exchanges, 30 wishlists and 300 items in an hour. Past that the action fails with the normal save error, and works again once the hour has passed. Decided by Tobechukwu Olih. | GCO-001, GC-019, GC-021 |
 | Organiser sees emails (2026-11-16) | Organisers can see the email address of the people in their own exchange and of people waiting to join, on Participants only. This reverses "The organiser never sees participants' email addresses". Pair secrecy and asymmetric visibility are unchanged: an address never says who gives to whom, and no member sees another person's address. The organiser's own row has no address. Join confirmation says so. Decided by Tobechukwu Olih, 2026-11-15 and 2026-11-16. | GCO-007, GCO-003, GCO-008, GC-009, GC-025 |
+| One screen before joining (2026-11-18) | A person sees one screen before joining, not two: S10 Join exchange at `/i/[inviteToken]` (boards Join-Exchange-guest, -default, -alone, -approval, -busy, -error, -loading, -offline). Signed out it shows public data only: the inviter, the count, the dates and How it works; no faces, names or organiser note until signed in (GC-002 context C stands). Signed in it adds the people in, the organiser's note and "Joining as {name}, {email}", and Join exchange or Ask to join acts in place. After signing up or logging in from an invite: sign-up, code, name (Profile setup), then joined automatically and on to Attach wishlist; an approval exchange sends the request instead; a returning person skips the name step. If the exchange closed, filled or cancelled, or the person was removed or already asked, the existing unavailable or ask screen shows and nothing is automatic. The automatic step needs a sign-in that started from the invite; opening `/i/[inviteToken]/join` any other way goes to the invite screen. Decided by Tobechukwu Olih. | GC-002, GC-003, GC-004, GC-005, GC-009, GC-012 |
 
 ## What changed in v1.1
 
@@ -33,10 +34,10 @@ Version 1.1 folds in the UX architecture decisions: 28 stories are updated (18 p
 | Re-match impossible | When the leaver and their giver had drawn each other, the organiser confirms a full re-draw (before the event only) | GC-017, GCO-011 |
 | After the event | A giver who loses their person is given someone at random by the system; the organiser confirms, warned that one person will have two givers | GC-017, GCO-011 |
 | Re-draw notice | Everyone gets the names-drawn email; people whose person changed get an added note that names nobody | GC-014, GCO-012 |
-| Invite preview | Inviter + count only; faces and names appear after sign-in | GC-002, GC-009 |
+| Invite preview | Inviter + count only; faces and names appear after sign-in, on the same screen (updated 2026-11-18) | GC-002, GC-009 |
 | Reveal privacy | "Hide again" hides the name on Reveal and the exchange page, per device | GC-013, GC-014 |
 | Sign-up | Email only; phone added later in Settings | GC-003 (no change) |
-| Profile setup | Skipped for invitees, who keep their sign-up name and get a photo prompt later; Landing sign-ups still see it | GC-005, GC-006, GC-009 |
+| Profile setup | New invitees see it (the name step) between the code and joining (updated 2026-11-18); returning invitees skip it | GC-005, GC-006, GC-009 |
 | Pending at draw | Request closes; shown on the requester's Home only | GC-006, GC-012 |
 | Removed person | Neutral email: "You're no longer in {exchange}." | GCO-007, GC-029 |
 | Only 2 left after the draw | Organiser chooses: invite more (joining reopens with a new join-by, event must be ahead, then a full re-draw) or cancel | GC-012, GC-017, GCO-007 |
@@ -119,6 +120,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-002 · Entry: Invite preview
 
+**Updated 2026-11-18 (decided by Tobechukwu Olih, join-one-screen):** this is now the one screen before joining (S10 Join exchange, boards Join-Exchange-guest and -default). Signed out it shows public data only: "{Inviter} invited you", the exchange, the joined count line, Budget, Join by, Names drawn, Gifts exchanged (was "Gift day"), "How it works" with three steps ("Add a wishlist, or a few ideas, so your giver has something to go on.", "On {day} we draw names. Only you see who you're buying for.", "Buy one gift within {budget} and bring it on {gift day}."), the privacy line and "{Organiser}, the organiser, can see your email address." under it. No faces, names or organiser note until signed in (the board's guest faces are not built). Buttons: Join exchange and "I already have an account". Signed in, the same screen adds the faces and "{first names} are in.", the organiser's note ("From {Organiser}") and "Joining as"; see GC-009.
+
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/i/[inviteToken]`. The board lines replace the one-sentence explainer: "{Inviter} invited you", "{N} people have joined so far." (hidden at 0, where the board says "You'd be one of the first to join."; one person reads "1 person has joined so far."), and "How it works" with three steps. The count is active members other than the organiser (Q5). Join this exchange goes to Sign up when signed out (with the invite carried, GC-003), to the join confirmation when signed in, and to the exchange page for a member. A link that is wrong, reset, closed, cancelled or full shows Invite unavailable (GC-012) with status 200 and no search indexing (Q10). The page is `noindex`, sends no referrer, and its title is generic. Not in v1: "Open in browser" fallback, Switch account, QR. Manual-draw exchanges read "Names drawn" as the join-by moment until the preview returns the draw mode (open item, owner decision pending).
 
 **Updated in v1.1:** the public preview shows a count of who has joined, not faces or names. Shows the event time.
@@ -131,13 +134,13 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 - A. Invite preview (public). The most common entry point — a link dropped in a WhatsApp group, often opened in WhatsApp's in-app browser.
 - B. Critical moment: must prove the invite is legit before asking for anything.
-- C. Because the link can be forwarded to strangers, the public preview never shows who has joined. Faces and names first appear on Join confirmation (GC-009), once the person is signed in.
+- C. Because the link can be forwarded to strangers, the public preview never shows who has joined. Faces and names first appear on the same screen once the person is signed in (GC-009; updated 2026-11-18).
 
 #### In scope — Dev tasks
 
 - Show inviter name + photo, exchange name, budget range (₦), join-by, gift day (date only), how many people have joined (count only), 3-line explainer.
 - All dates and times show in the viewer's own time zone.
-- Join this exchange: not signed in → GC-003 (every participant needs an account; join resumes after); signed in → GC-009; already a member → exchange detail (GC-013).
+- Join exchange: not signed in → GC-003 (every participant needs an account; join resumes after); signed in → joins in place (GC-009); already a member → exchange detail (GC-013).
 - Skeleton of inviter, title and dates while the link resolves.
 
 #### Edge cases — Non-standard scenarios
@@ -187,7 +190,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - Invite context banner when arriving from Invite preview ("You're joining Cousins' Christmas 2026").
 - Continue emails a 6-digit code, valid for 10 minutes. The email carries the code only, with no link. Auto-submit when all digits are in; resend after cooldown; change email.
 - Verify code keeps its state (email, invite context, cooldown) when the person leaves for their email app and comes back, including inside WhatsApp's in-app browser. If the page reloads, it reopens on Verify code for the same email, not on Sign up.
-- On verify: invite pending → GC-009 (Profile setup is skipped; the sign-up first name is used); new user with no invite → GC-005; else Home or original deep link.
+- On verify: invite pending → a new account goes to Profile setup (GC-005) and then joins automatically; a returning person joins automatically (GC-009; updated 2026-11-18); new user with no invite → GC-005; else Home or original deep link.
 - Phone numbers and SMS login: not in v1 (decided 2026-11-03).
 
 #### Edge cases — Non-standard scenarios
@@ -225,7 +228,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - The 6-digit code goes by email (code only, no link).
 - Phone login and SMS codes: not in v1.
 - Invite context banner when relevant.
-- After verify: invite pending → GC-009, else Home or original deep link.
+- After verify: invite pending → joins automatically (GC-009; updated 2026-11-18), else Home or original deep link.
 
 #### Edge cases — Non-standard scenarios
 
@@ -413,6 +416,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-009 · Joining: Confirm
 
+**Updated 2026-11-18 (decided by Tobechukwu Olih, join-one-screen):** there is no separate confirmation screen. Signed in, `/i/[inviteToken]` shows the faces and "{first names} are in." (up to five, then "and N others"; "Only {Organiser} so far. You'd be one of the first to join." when alone), the organiser's note in a quiet card, How it works, the privacy line with the organiser-email line, and "Joining as {name}, {email}"; Join exchange (or Ask to join on an approval exchange, with its approval line) and "Not now" act in place. "What you're agreeing to" is gone; How it works carries its three lines. The date row is "Gifts exchanged". After sign-up or log-in from an invite, `/i/[inviteToken]/join` joins the person automatically (or sends their request) only within 30 minutes of a sign-in that started from the invite (the intent is not single-use; joining again does nothing extra and a second request is refused, owner decision 103); any other visit to it goes to the invite screen. New people see Profile setup between the code and joining. If the invite is no longer joinable they see the existing unavailable or ask screen instead. Busy, error ("We couldn't add you to '{exchange}'. Nothing has changed, so you can try again.") and offline states are as before.
+
 **Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** on an exchange that needs approval the same confirmation shows, with Ask to join instead of Join exchange and "{Organiser} approves everyone who joins, so this sends a request. Nobody else is told." `join_exchange` still refuses these exchanges; only the explicit Ask to join sends a request (Q3), and it sets Profile setup as done like Join (Q10). The next screen is "Waiting for {Organiser}" / "{Organiser} has your request and decides." with the join-by row and **Go to Exchanges** (to Exchanges, not Home); it makes no email or Home promise (Q6). Ask to join is limited to 20 requests an hour per person (Q9).
 
 **Updated 2026-11-16 (decided by Tobechukwu Olih):** "What you're agreeing to" gains a last bullet: "{Organiser}, the organiser, can see your email address." (Part 1 board Joining-Confirm-*).
@@ -425,11 +430,11 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### Context
 
-- A. Join confirmation. Entry: Invite preview when signed in; straight after Verify code with a pending invite (Profile setup is skipped for invitees, GC-005).
+- A. Join exchange (the one invite screen, signed in). Entry: the invite link; or straight after Verify code (and Profile setup for a new account) with a pending invite, where the join happens automatically (updated 2026-11-18).
 
 #### In scope — Dev tasks
 
-- Show exchange, organiser, participant faces and names (first shown here, not on the public preview), budget (₦), join-by, draw date and time, gift day (date only; updated 2026-11-09, Tobechukwu Olih), organiser's note, signed-in account. All in the viewer's own time zone.
+- Show exchange, organiser, participant faces and names (shown only when signed in, not on the public preview), budget (₦), join-by, draw date and time, gift day (date only; updated 2026-11-09, Tobechukwu Olih), organiser's note, signed-in account. All in the viewer's own time zone.
 - Join exchange → GC-010; Not now. (Switch account: not in v1.)
 - If the organiser approves joins → request sent, user lands on Home with the pending row (GC-006).
 
@@ -446,7 +451,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 #### Content
 
-- "What you're agreeing to"
+- "How it works" (replaces "What you're agreeing to", 2026-11-18)
 - "Joining as Ifeoma Nwosu"
 
 ### GC-010 · Joining: Attach wishlist

@@ -16,9 +16,12 @@ const PULSE = "animate-pulse motion-reduce:animate-none bg-surface-muted";
 type Props =
   | { shape: "row"; className?: string }
   | { shape: "block"; className?: string }
+  // `box` has no size of its own: the caller gives it width, height and radius (avatar and tile stand-ins).
+  | { shape: "box"; className: string }
   | { shape: "line"; text?: TextSize; className?: string };
 
 export function Skeleton(props: Props) {
+  if (props.shape === "box") return <div aria-hidden className={cx(PULSE, props.className)} />;
   if (props.shape === "line") {
     return (
       <div aria-hidden className={cx(TEXT_CLASS[props.text ?? "base"], props.className)}>
