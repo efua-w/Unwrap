@@ -1,6 +1,6 @@
 // UI copy for Activity (S09, GC-006 / GCO-003). Sources: boards Activity-* (canvas "Unwrap", m and d) and
-// the owner decisions of 2026-11-14 (docs/tasks/slice-6.md, Q12). "Choose which emails you get" is left out
-// until slice 7. Lines marked "pending" are not on a board and are listed in docs/copy-pending.md.
+// the owner decisions of 2026-11-14 (docs/tasks/slice-6.md, Q12). "Choose which emails you get" came with
+// slice 7 (it links to Notifications). Lines marked "pending" are not on a board and are listed in docs/copy-pending.md.
 
 export const ACTIVITY_COPY = {
   title: "Activity",
@@ -12,6 +12,7 @@ export const ACTIVITY_COPY = {
   joined: (name: string, exchange: string) => `${name} joined ${exchange}.`,
   asked: (name: string, exchange: string) => `${name} asked to join ${exchange}.`,
   askedSub: (time: string) => `${time} · Approve or decline`,
+  chooseEmails: "Choose which emails you get",
   older: "Load older activity",
   olderBusy: "Loading older activity",
   emptyTitle: "You're all caught up.",

@@ -20,9 +20,10 @@ export default async function ProfilePage() {
           <Avatar name={profile.displayName} size="profile" decorative />
           <h1 className="min-w-0 break-words text-heading-2">{profile.displayName}</h1>
         </div>
-        {/* GC-027: the way into Privacy (S45). Account and Notifications join it in slice 16. */}
+        {/* GC-026, GC-027: the ways into Notifications (S44, slice 7, owner Q10) and Privacy (S45). Account joins them in slice 16. */}
         <ul className="w-full">
-          <ListRow href="/profile/privacy" title="Privacy" />
+          <ListRow href="/profile/notifications" title="Notifications" sub="Which emails you get" />
+          <ListRow href="/profile/privacy" title="Privacy" divider />
         </ul>
         <LogOutButton />
       </div>

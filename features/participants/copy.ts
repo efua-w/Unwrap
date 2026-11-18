@@ -37,16 +37,18 @@ export const PARTICIPANTS_COPY = {
   fewBodyClosed: "Names need at least 3 people to draw.",
   fewReqBody: (first: string, day: string) => `Approve ${first} and you'll have the 3 people needed to draw. People can join until ${day}.`,
   fewReqBodyClosed: (first: string) => `Approve ${first}.`,
-  // S31 Org-Remove-before / -busy / -done. Q14: the board's email sentence is dropped.
+  // S31 Org-Remove-before / -busy / -done. The board's email sentence is back with E12 (slice 7, owner Q8/Q14).
   removeTitle: (first: string, exchange: string) => `Remove ${first} from ${exchange}?`,
-  // pending: body without the email sentence; "Their wishlist stays theirs." is kept (owner Q14).
-  removeBody: (first: string) => `${first} will lose access to this exchange. Their wishlist stays theirs.`,
+  // Board Org-Remove-before, exact. WHY the address (organiser only, GCO-007): the organiser already reads it on
+  // this page, and it says where the removal email goes. pending: the variant for a person with no address.
+  removeBody: (first: string, email: string | null) =>
+    `${first} gets a short email ${email ? `at ${email} ` : ""}saying they're no longer in it. It doesn't give a reason or say who removed them. Their wishlist stays theirs.`,
   removeConfirm: (first: string) => `Remove ${first}`,
   removeKeep: "Keep",
   removeOffline: "You're offline. You can remove someone once you're back online.",
   removedToast: (first: string, exchange: string) => `${first} was removed from ${exchange}.`,
-  // Owner Q14: the board's "They've been emailed." is dropped (no email is sent yet).
-  approvedToast: (first: string) => `${first} is in.`,
+  // Board Org-People approve toast; "They've been emailed." is back with E09 (slice 7, owner Q8).
+  approvedToast: (first: string) => `${first} is in. They've been emailed.`,
   loadError: (exchange: string) => `We couldn't load the people in ${exchange}. Nothing has changed.`,
   // pending: the error board's subtitle when the count could not be read: the exchange's name alone.
   errorSubtitle: (exchange: string) => exchange,

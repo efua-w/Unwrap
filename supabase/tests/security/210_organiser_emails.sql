@@ -251,7 +251,10 @@ select ok(
   not exists (
     select 1 from pg_proc p
     where p.pronamespace = 'public'::regnamespace
-      and p.proname not in ('get_participants', 'get_join_requests')
+      -- WHY the two slice 7 functions (owner decision 2026-11-17): send_email_invite takes the address the organiser
+      -- typed, and claim_due_emails (service_role only) returns each recipient's own address to the sender. Tests 220
+      -- and 230 prove who can call them and that each row carries only the recipient's address.
+      and p.proname not in ('get_participants', 'get_join_requests', 'send_email_invite', 'claim_due_emails')
       and (p.proargnames::text ilike '%email%'
            or (p.proretset and p.prorettype = 'pg_catalog.record'::regtype and pg_get_function_result(p.oid) ilike '%email%'))),
   'no other function in public returns or takes an email');

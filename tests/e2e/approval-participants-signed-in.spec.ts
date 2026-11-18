@@ -172,7 +172,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await shot(hostPage, "participants-request", width);
 
           await hostPage.getByRole("button", { name: "Approve Chidi" }).click();
-          await expect(toast(hostPage)).toContainText("Chidi is in.");
+          await expect(toast(hostPage)).toContainText("Chidi is in. They've been emailed.");
           await expect(hostPage.getByRole("heading", { name: /Wants to join/ })).toHaveCount(0);
           await expect(hostPage.getByRole("heading", { name: "Still need a wishlist (2)" })).toBeVisible();
           await expect(hostPage.getByText("Ngozi (you)")).toBeVisible();
@@ -266,7 +266,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await shot(hostPage, "exchange-request-block-closed", width);
           await hostPage.getByRole("link", { name: "Review request" }).click();
           await hostPage.getByRole("button", { name: "Approve Chidi" }).click();
-          await expect(toast(hostPage)).toContainText("Chidi is in.");
+          await expect(toast(hostPage)).toContainText("Chidi is in. They've been emailed.");
           expect(await memberStates(exchange.id, chidi.id)).toEqual(["active"]);
         } finally {
           await asker.context.close();
@@ -300,7 +300,10 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await open.click();
           const confirm = page.getByRole("alertdialog", { name: "Remove Femi from Approval swap?" });
           await expect(confirm).toBeVisible();
-          await expect(confirm.getByText("Femi will lose access to this exchange. Their wishlist stays theirs.")).toBeVisible();
+          // Board Org-Remove-before, exact: the organiser's own page names the address the email goes to (E12).
+          await expect(
+            confirm.getByText(`Femi gets a short email at ${femi.email} saying they're no longer in it. It doesn't give a reason or say who removed them. Their wishlist stays theirs.`),
+          ).toBeVisible();
           await expectNoAxeViolations(page);
           await shot(page, "participants-remove-confirm", width);
           await confirm.getByRole("button", { name: "Keep" }).click();
@@ -340,7 +343,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await page.reload();
           await expect(page.getByRole("heading", { name: "Wants to join (1)" })).toBeVisible();
           await page.getByRole("button", { name: "Approve Femi" }).click();
-          await expect(toast(page)).toContainText("Femi is in.");
+          await expect(toast(page)).toContainText("Femi is in. They've been emailed.");
           await expect.poll(async () => (await memberStates(exchange.id, femi.id)).includes("active")).toBe(true);
           await gone.goto(`/exchanges/${exchange.id}`);
           await expect(gone.getByRole("heading", { level: 1, name: "Approval swap" })).toBeVisible();

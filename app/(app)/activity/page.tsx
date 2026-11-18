@@ -2,6 +2,7 @@ import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeading } from "@/components/layout/PageHeading";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
@@ -15,8 +16,7 @@ import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 
 // S09 Activity (GC-006, GCO-003). Boards: Activity-default, -allread, -empty, -error, -loading, -offline,
 // -older (m and d). Slice 6 writes two kinds of event, "{Name} joined {exchange}." and "{Name} asked to join
-// {exchange}."; the other kinds arrive with slices 7 to 10. The "Choose which emails you get" link waits for
-// slice 7 (owner Q12).
+// {exchange}."; the other kinds arrive with slices 8 to 10. "Choose which emails you get" links to Notifications (slice 7).
 export default async function ActivityPage() {
   const profile = await requireProfile("/activity");
   return (
@@ -53,7 +53,17 @@ async function ActivityContent() {
   }
 
   if (page.items.length === 0) {
-    return <EmptyState icon={CheckCircle} title={ACTIVITY_COPY.emptyTitle} body={ACTIVITY_COPY.emptyBody} />;
+    return (
+      <>
+        <EmptyState icon={CheckCircle} title={ACTIVITY_COPY.emptyTitle} body={ACTIVITY_COPY.emptyBody} />
+        {/* Board Activity-empty: the link sits centred under the empty state. */}
+        <div className="flex justify-center">
+          <Button variant="link" href="/profile/notifications">
+            {ACTIVITY_COPY.chooseEmails}
+          </Button>
+        </div>
+      </>
+    );
   }
   return <ActivityFeed initialItems={page.items} initialCursor={page.cursor} unreadCount={unread} />;
 }

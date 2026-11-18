@@ -43,6 +43,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"email_invites": {
+                  Row: {
+                    "created_at": string,"exchange_id": string,"id": string,"invited_address": string,"sent_by": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"exchange_id": string,"id"?: string,"invited_address": string,"sent_by": string
+                  }
+                  Update: {
+                    "created_at"?: string,"exchange_id"?: string,"id"?: string,"invited_address"?: string,"sent_by"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "email_invites_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "email_invites_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges_visible"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "email_invites_sent_by_fkey"
+      columns: ["sent_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"exchange_members": {
                   Row: {
                     "attached_wishlist_id": string | null,"exchange_id": string,"id": string,"joined_at": string,"left_at": string | null,"state": Database["public"]['Enums']["exchange_member_state"],"taking_part": boolean,"user_id": string
@@ -245,6 +277,11 @@ isOneToOne: false
 "attach_wishlist":
 { Args: { "p_exchange": string,"p_wishlist": string }; Returns: undefined
                            },
+"claim_due_emails":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempts": number,"budget_preset": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"template": string,"to_email": string,"to_name": string,"to_timezone": string
+            }[]
+                           },
 "create_exchange":
 { Args: { "p_approval_required": boolean,"p_budget": Database["public"]['Enums']["exchange_budget_preset"],"p_draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"p_draw_time": string,"p_gift_day": string,"p_join_by_date": string,"p_name": string,"p_note": string,"p_taking_part": boolean,"p_time_zone": string }; Returns: string
                            },
@@ -318,6 +355,9 @@ isOneToOne: false
 "mark_all_activity_read":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
+"mark_email_result":
+{ Args: { "p_error_code"?: string,"p_id": string }; Returns: undefined
+                           },
 "remove_member":
 { Args: { "p_member": string }; Returns: undefined
                            },
@@ -335,6 +375,9 @@ isOneToOne: false
                            },
 "restore_wishlist_item":
 { Args: { "p_item_id": string }; Returns: undefined
+                           },
+"send_email_invite":
+{ Args: { "p_email": string,"p_exchange": string }; Returns: undefined
                            },
 "use_exchange_ideas":
 { Args: { "p_exchange": string }; Returns: string
