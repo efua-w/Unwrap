@@ -14,7 +14,11 @@ const seed = people();
 async function signedIn(browser: Browser, viewport: { width: number; height: number }, person: Person, next: string) {
   const context = await browser.newContext({ viewport, timezoneId: ZONE });
   const page = await context.newPage();
-  await signInThroughVerify(context, page, person.email, { next });
+  // WHY an invite `next` is opened after signing in to Home (join-one-screen): signing in FROM an invite is the
+  // path that joins or asks automatically; these specs click the one screen's own button.
+  const isInvite = next.startsWith("/i/");
+  await signInThroughVerify(context, page, person.email, { next: isInvite ? "/home" : next });
+  if (isInvite) await page.goto(next);
   return { context, page };
 }
 
@@ -49,14 +53,14 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const approval = await seedExchange(organiser, "Approval swap", { approval: true });
 
         // Femi joins the open exchange, Chidi asks to join the approval one: the real actions write the events.
-        const joiner = await signedIn(browser, viewport, femi, `/i/${open.token}/join`);
+        const joiner = await signedIn(browser, viewport, femi, `/i/${open.token}`);
         try {
           await joiner.page.getByRole("button", { name: "Join exchange" }).click();
           await expect(joiner.page).toHaveURL(new RegExp(`/exchanges/${open.id}/list\\?from=join$`), { timeout: 30_000 });
         } finally {
           await joiner.context.close();
         }
-        const asker = await signedIn(browser, viewport, chidi, `/i/${approval.token}/join`);
+        const asker = await signedIn(browser, viewport, chidi, `/i/${approval.token}`);
         try {
           await asker.page.getByRole("button", { name: "Ask to join" }).click();
           await expect(asker.page.getByRole("heading", { level: 1, name: "Waiting for Ngozi" })).toBeVisible();

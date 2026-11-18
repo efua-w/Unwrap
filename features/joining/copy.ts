@@ -1,5 +1,5 @@
-// UI copy for the invite preview (S02), the join confirmation (S10), Invite unavailable (S13) and Ask to join.
-// Boards: Entry-Invite-*, Entry-Signup/Login/Verify-invite, Joining-Confirm-*, Joining-Unavailable-*
+// UI copy for the one invite screen (S10 Join exchange, signed out and signed in), Invite unavailable (S13) and
+// Ask to join. Boards: Join-Exchange-* (2026-11-18, one screen), Entry-Signup/Login/Verify-invite, Joining-Confirm-requested, Joining-Unavailable-*
 // (the boards decide where they differ from the story, owner decision Q9, 2026-11-13). Lines not on a
 // board or in a story are marked "pending" and listed in docs/copy-pending.md. Names go in single
 // quotes inside a sentence (owner decision Q9).
@@ -15,18 +15,22 @@ export const INVITE_COPY = {
   budget: "Budget",
   joinBy: "Join by",
   namesDrawn: "Names drawn",
-  giftDay: "Gift day",
   giftsExchanged: "Gifts exchanged",
   zoneLine: (zone: string) => `Times are in your time zone (${zone}).`,
   how: {
     title: "How it works",
-    // Board lines; the story's one-sentence explainer is superseded by the board (Q9).
-    join: "Join and add a wishlist so your giver has ideas.",
-    drawn: (day: string) => `On ${day} we draw names for everyone.`,
-    reveal: "You find out who you are buying for. Only you.",
+    // Board Join-Exchange-default (2026-11-18, owner decision 3).
+    wishlist: "Add a wishlist, or a few ideas, so your giver has something to go on.",
+    drawn: (day: string) => `On ${day} we draw names. Only you see who you're buying for.`,
+    // Pending: the board shows only the automatic draw; this is the organiser-draws variant.
+    drawnManual: (organiserFirstName: string) =>
+      `When ${organiserFirstName} is ready, we draw names. Only you see who you're buying for.`,
+    buy: (budget: string, giftDay: string) => `Buy one gift within ${budget} and bring it on ${giftDay}.`,
   },
+  // Board: sits under the privacy line.
+  emailLine: (organiserFirstName: string) => `${organiserFirstName}, the organiser, can see your email address.`,
   privacy: (organiserFirstName: string) => `Nobody sees who got whom, not even ${organiserFirstName}.`,
-  join: "Join this exchange",
+  join: "Join exchange",
   haveAccount: "I already have an account",
   banner: (exchange: string) => `You're joining ${exchange}`,
   loading: "Loading the invite",
@@ -41,8 +45,6 @@ export function joinedCountLine(joinedCount: number): string {
 }
 
 export const JOIN_COPY = {
-  organisedBy: (name: string) => `Organised by ${name}`,
-  whosIn: (count: number) => `Who's in (${count})`,
   // "Ngozi Eze, Femi Adeyemi and Bisi Lawal." No "(organising)" suffix (owner 2026-11-16).
   peopleLine: (people: ReadonlyArray<{ name: string }>): string => {
     const labels = people.map((p) => p.name);
@@ -54,20 +56,20 @@ export const JOIN_COPY = {
     const named = JOIN_COPY.peopleLine(people).replace(/\.$/, "");
     return `${count} ${count === 1 ? "person is" : "people are"} in: ${named}`;
   },
+  // "Ngozi, Femi and Bisi are in." First names, five at most, then "and N others" (the pattern of the
+  // approved requests line, copy-pending 2026-11-18). One person: "Ngozi is in."
+  inLine: (people: ReadonlyArray<{ name: string }>): string => {
+    const shown = people.slice(0, 5).map((p) => firstName(p.name));
+    const others = people.length - shown.length;
+    if (others > 0) return `${shown.join(", ")} and ${others} ${others === 1 ? "other" : "others"} are in.`;
+    if (shown.length === 1) return `${shown[0]} is in.`;
+    return `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]} are in.`;
+  },
   onlyOrganiser: (organiserFirstName: string) => `Only ${organiserFirstName} so far. You'd be one of the first to join.`,
   // Pending: the board shows only the automatic draw; this is the organiser-draws variant (Q13).
   drawWhenReady: (organiserFirstName: string) => `When ${organiserFirstName} is ready`,
   from: (organiserFirstName: string) => `From ${organiserFirstName}`,
-  agreeing: {
-    title: "What you're agreeing to",
-    wishlist: "Add a wishlist, or a few ideas, so your giver has something to go on.",
-    buy: (budget: string) => `Buy one gift for the person you draw, within ${budget}.`,
-    bring: "Bring your gift on the day.",
-    // Part 1 board Joining-Confirm-*: the organiser can see your address (owner decision 2026-11-15).
-    email: (organiserFirstName: string) => `${organiserFirstName}, the organiser, can see your email address.`,
-  },
   joiningAs: "Joining as",
-  join: "Join exchange",
   notNow: "Not now",
   failed: (exchange: string) => `We couldn't add you to ${exchange}. Nothing has changed, so you can try again.`,
   tryAgain: "Try again",

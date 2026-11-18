@@ -137,7 +137,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           const page = await visitor.newPage();
           await page.goto(`/i/${exchange.token}`);
           await expect(page.getByRole("heading", { level: 1, name: "Office Secret Santa" })).toBeVisible();
-          await expect(page.getByText("When Ngozi is ready")).toBeVisible();
+          await expect(page.getByText("When Ngozi is ready", { exact: true })).toBeVisible();
           await expectNoAxeViolations(page);
         } finally {
           await visitor.close();
@@ -162,6 +162,128 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await page.screenshot({ path: `test-results/screenshots/exchange-closed-${width}.png`, fullPage: true });
       });
 
+      test("signed in: one screen with the people, the note and Joining as; Join exchange in one tap; /join without a sign-in does nothing (join-one-screen)", async ({ browser }) => {
+        test.setTimeout(180_000);
+        const organiser = await newPerson("Ngozi");
+        const femi = await newPerson("Femi");
+        const exchange = await seedExchange(organiser, "Church choir Kris Kringle");
+        await addMember(exchange.id, femi);
+        const joiner = await newPerson("Amaka");
+
+        const context = await browser.newContext({ viewport, timezoneId: ZONE });
+        try {
+          const page = await context.newPage();
+          await signIn(context, page, joiner, "/home");
+          await page.goto(`/i/${exchange.token}`);
+          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}$`));
+          await expect(page.getByText("Ngozi invited you")).toBeVisible();
+          await expect(page.getByRole("img", { name: "2 people are in: Ngozi and Femi" })).toBeVisible();
+          await expect(page.getByText("Ngozi and Femi are in.")).toBeVisible();
+          await expect(page.getByRole("heading", { name: "From Ngozi" })).toBeVisible();
+          await expect(page.getByText("Gifts after the carol service.")).toBeVisible();
+          await expect(page.getByText("Gifts exchanged")).toBeVisible();
+          await expect(page.getByText(`On ${DRAW_DAY} we draw names. Only you see who you're buying for.`)).toBeVisible();
+          await expect(page.getByText("Ngozi, the organiser, can see your email address.")).toBeVisible();
+          await expect(page.getByText("Joining as")).toBeVisible();
+          await expect(page.getByText(joiner.email)).toBeVisible();
+          await expect(page.getByRole("link", { name: "Not now" })).toBeVisible();
+          await expectNoAxeViolations(page);
+          await page.screenshot({ path: `test-results/screenshots/join-one-screen-${width}.png`, fullPage: true });
+          expect(await memberRow(exchange.id, joiner.id)).toEqual([]);
+
+          // A pasted or crafted /join link has no sign-in intent: it goes to the one screen and joins nobody.
+          await page.goto(`/i/${exchange.token}/join`);
+          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}$`));
+          expect(await memberRow(exchange.id, joiner.id)).toEqual([]);
+
+          // One tap: no second screen.
+          await page.waitForLoadState("networkidle");
+          await page.getByRole("button", { name: "Join exchange" }).click();
+          await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list\\?from=join$`), { timeout: 30_000 });
+          expect(await memberRow(exchange.id, joiner.id)).toEqual([{ state: "active", taking_part: true, attached_wishlist_id: null }]);
+        } finally {
+          await context.close();
+        }
+      });
+
+      test("signed in: busy, error and offline states of the one screen (join-one-screen, GC-009, GC-029)", async ({ browser }) => {
+        test.setTimeout(180_000);
+        const organiser = await newPerson("Ngozi");
+        const exchange = await seedExchange(organiser, "Church choir Kris Kringle");
+        const joiner = await newPerson("Amaka");
+        const shot = (page: Page, state: string) =>
+          page.screenshot({ path: `test-results/screenshots/join-one-screen-${state}-${width}.png`, fullPage: true });
+
+        const context = await browser.newContext({ viewport, timezoneId: ZONE });
+        try {
+          const page = await context.newPage();
+          await signIn(context, page, joiner, "/home");
+          await expect(page).toHaveURL(/\/home/);
+
+          // Loading is not covered here: loading.tsx shows on a client navigation only for a route the router has
+          // prefetched, and `next dev` does not prefetch, so a held request keeps the old page on screen.
+          await page.goto(`/i/${exchange.token}`);
+          await expect(page.getByRole("heading", { level: 1, name: "Church choir Kris Kringle" })).toBeVisible();
+          await page.waitForLoadState("networkidle");
+
+          // Busy: the join action is held. Join exchange shows the spinner and ignores taps; Not now is disabled.
+          // Error: the real answer is rewritten to a failure (the same technique as the Start exchange spec), so
+          // the person IS added behind it; Join is idempotent, which is what makes Try again safe.
+          let release: () => void = () => {};
+          const held = new Promise<void>((resolve) => (release = resolve));
+          let failedOnce = false;
+          await page.route(
+            (url) => url.pathname === `/i/${exchange.token}`,
+            async (route) => {
+              const request = route.request();
+              if (request.method() !== "POST" || !request.headers()["next-action"] || failedOnce) return route.fallback();
+              failedOnce = true;
+              await held;
+              const response = await route.fetch();
+              const body = await response.text();
+              const headers = { ...response.headers() };
+              delete headers["content-length"];
+              await route.fulfill({
+                response,
+                headers,
+                body: body.replace(/\{"ok":true,"exchangeId":"[0-9a-f-]{36}"\}/, '{"ok":false,"reason":"failed"}'),
+              });
+            },
+          );
+          await page.getByRole("button", { name: "Join exchange" }).click();
+          await expect(page.getByRole("button", { name: "Join exchange" })).toHaveAttribute("aria-busy", "true");
+          await expect(page.getByRole("link", { name: "Not now" })).toHaveAttribute("aria-disabled", "true");
+          await shot(page, "busy");
+          release();
+          const errorText = "We couldn't add you to 'Church choir Kris Kringle'. Nothing has changed, so you can try again.";
+          await expect(page.getByText(errorText)).toBeVisible({ timeout: 30_000 });
+          expect(failedOnce).toBe(true);
+          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}$`));
+          await expect(page.getByRole("button", { name: "Join exchange" })).toBeEnabled();
+          await expect(page.getByRole("link", { name: "Not now" })).not.toHaveAttribute("aria-disabled", "true");
+          await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+          await expectNoAxeViolations(page);
+          await shot(page, "error");
+
+          // Offline: both actions are disabled and the banner says so (GC-029: no offline writes).
+          await context.setOffline(true);
+          await expect(page.getByText("You're offline. Pages you've opened stay on screen.")).toBeVisible();
+          await expect(page.getByRole("button", { name: "Join exchange" })).toBeDisabled();
+          await expect(page.getByRole("link", { name: "Not now" })).toHaveAttribute("aria-disabled", "true");
+          await shot(page, "offline");
+          await context.setOffline(false);
+          await expect(page.getByText("You're offline. Pages you've opened stay on screen.")).toBeHidden();
+          await expect(page.getByRole("button", { name: "Join exchange" })).toBeEnabled();
+
+          // Try again from the error: the second answer is the real one and the person lands on the attach page.
+          await page.getByRole("button", { name: "Try again" }).click();
+          await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list\\?from=join$`), { timeout: 30_000 });
+          expect(await memberRow(exchange.id, joiner.id)).toEqual([{ state: "active", taking_part: true, attached_wishlist_id: null }]);
+        } finally {
+          await context.close();
+        }
+      });
+
       test("signed-out visitor: preview without other names, a bad token, Join goes to Sign up, /join goes to Log in", async ({ browser }) => {
         test.setTimeout(120_000);
         const organiser = await newPerson("Ngozi");
@@ -176,9 +298,14 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await expect(page.getByRole("heading", { level: 1, name: "Family Christmas 2026" })).toBeVisible();
           await expect(page.getByText("Ngozi invited you")).toBeVisible();
           await expect(page.getByText("1 person has joined so far.")).toBeVisible();
-          await expect(page.getByText("Everyone adds a wishlist.")).toHaveCount(0);
-          await expect(page.getByText("Join and add a wishlist so your giver has ideas.")).toBeVisible();
-          await expect(page.getByText("₦5,000 to ₦10,000")).toBeVisible();
+          await expect(page.getByText("Add a wishlist, or a few ideas, so your giver has something to go on.")).toBeVisible();
+          await expect(page.getByText("Gifts exchanged")).toBeVisible();
+          await expect(page.getByText("Ngozi, the organiser, can see your email address.")).toBeVisible();
+          // Owner decision 1 (2026-11-18): signed out shows public data only, no faces, names, note or "Joining as".
+          await expect(page.getByRole("img", { name: /people are in|is in:/ })).toHaveCount(0);
+          await expect(page.getByRole("heading", { name: "From Ngozi" })).toHaveCount(0);
+          await expect(page.getByText("Joining as")).toHaveCount(0);
+          await expect(page.getByText("₦5,000 to ₦10,000", { exact: true })).toBeVisible();
           await expect(page.getByText(formatDayTime(new Date(JOIN_AT), ZONE)).first()).toBeVisible();
           await expect(page.getByText("Times are in your time zone (WAT).")).toBeVisible();
           await expectNoAxeViolations(page);
@@ -190,7 +317,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           expect(html).not.toContain("carol service");
           expect(html).not.toContain(femi.email);
 
-          await page.getByRole("link", { name: "Join this exchange" }).click();
+          await page.getByRole("link", { name: "Join exchange" }).click();
           await expect(page).toHaveURL(new RegExp(`/signup\\?next=${encodeURIComponent(`/i/${exchange.token}/join`)}$`));
           await expect(page.getByText("You're joining Family Christmas 2026")).toBeVisible();
           await expectNoAxeViolations(page);
@@ -214,7 +341,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         }
       });
 
-      test("new joiner: Sign up with the banner, Verify, no Profile setup, Join, add ideas, You're in, the exchange page", async ({ browser }) => {
+      test("new joiner: Sign up with the banner, Verify, name step, joined automatically, add ideas, You're in, the exchange page", async ({ browser }) => {
         test.setTimeout(240_000);
         const organiser = await newPerson("Ngozi");
         const exchange = await seedExchange(organiser, "Church choir swap");
@@ -226,7 +353,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           const page = await context.newPage();
           await page.route("**/auth/v1/otp**", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
           await page.goto(`/i/${exchange.token}`);
-          await page.getByRole("link", { name: "Join this exchange" }).click();
+          await page.getByRole("link", { name: "Join exchange" }).click();
           await page.waitForLoadState("networkidle");
           await expect(page.getByText("You're joining Church choir swap")).toBeVisible();
           await page.getByLabel("First name").fill("Chidi");
@@ -237,20 +364,16 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await page.waitForLoadState("networkidle");
           await page.getByLabel("6-digit code").fill(await mintCode(joiner.email));
 
-          // GC-003 / owner Q1: straight to the join confirmation, not Profile setup.
-          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}/join$`), { timeout: 30_000 });
-          await expect(page.getByRole("heading", { name: "What you're agreeing to" })).toBeVisible();
-          await expect(page.getByText("Organised by Ngozi")).toBeVisible();
-          await expect(page.getByText(`${DRAW_DAY}`).first()).toBeVisible();
-          await expectNoAxeViolations(page);
-          await page.screenshot({ path: `test-results/screenshots/join-confirm-${width}.png`, fullPage: true });
-          // Nothing is created before Join exchange.
+          // Join-one-screen (owner decision 2): code, then the name step, then joined automatically.
+          await expect(page).toHaveURL(new RegExp(`/welcome\\?next=${encodeURIComponent(`/i/${exchange.token}/join`)}$`), { timeout: 30_000 });
+          await expect(page.getByRole("heading", { name: "How should people see you?" })).toBeVisible();
+          // Nothing is created before the name step is done.
           expect(await memberRow(exchange.id, joiner.id)).toEqual([]);
-
-          await page.getByRole("button", { name: "Join exchange" }).click();
+          await page.waitForLoadState("networkidle");
+          await page.getByRole("button", { name: "Continue" }).click();
           await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list\\?from=join$`), { timeout: 30_000 });
           expect(await memberRow(exchange.id, joiner.id)).toEqual([{ state: "active", taking_part: true, attached_wishlist_id: null }]);
-          // The sign-up name was kept and onboarding is done (Q1).
+          // The sign-up name was kept and onboarding is done.
           const profile = await adminClient().from("profiles").select("display_name, onboarded_at").eq("id", joiner.id).single();
           expect(profile.data?.display_name).toBe("Chidi");
           expect(profile.data?.onboarded_at).not.toBeNull();
@@ -343,7 +466,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         }
       });
 
-      test("existing account: Log in with the banner, join, Skip for now, then attach a wishlist from the exchange page", async ({ browser }) => {
+      test("existing account: Log in with the banner, joined automatically, Skip for now, then attach a wishlist from the exchange page", async ({ browser }) => {
         test.setTimeout(240_000);
         const organiser = await newPerson("Ngozi");
         const exchange = await seedExchange(organiser, "Book club gift swap", { manual: true });
@@ -364,10 +487,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await expect(page).toHaveURL(/\/verify$/);
           await page.waitForLoadState("networkidle");
           await page.getByLabel("6-digit code").fill(await mintCode(joiner.email));
-          await expect(page).toHaveURL(new RegExp(`/i/${exchange.token}/join$`), { timeout: 30_000 });
-          // The organiser-draws variant (owner Q13: pending copy).
-          await expect(page.getByText("When Ngozi is ready").first()).toBeVisible();
-          await page.getByRole("button", { name: "Join exchange" }).click();
+          // Join-one-screen: a returning person is joined automatically, with no extra screen or tap.
           await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list\\?from=join$`), { timeout: 30_000 });
           await page.waitForLoadState("networkidle");
 
@@ -758,8 +878,9 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const formerContext = await browser.newContext({ viewport, timezoneId: ZONE });
         try {
           const page = await formerContext.newPage();
-          await signIn(formerContext, page, former, `/i/${exchange.token}/join`);
-          await expect(page.getByRole("heading", { name: "What you're agreeing to" })).toBeVisible();
+          await signIn(formerContext, page, former, "/home");
+          await page.goto(`/i/${exchange.token}`);
+          await expect(page.getByRole("heading", { name: "How it works" })).toBeVisible();
           await page.getByRole("button", { name: "Join exchange" }).click();
           await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list\\?from=join$`), { timeout: 30_000 });
           const rows = await memberRow(exchange.id, former.id);
@@ -771,7 +892,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         const removedContext = await browser.newContext({ viewport, timezoneId: ZONE });
         try {
           const page = await removedContext.newPage();
-          await signIn(removedContext, page, removed, `/i/${exchange.token}/join`);
+          await signIn(removedContext, page, removed, "/home");
+          await page.goto(`/i/${exchange.token}`);
           await expect(page.getByRole("heading", { name: CANT_USE })).toBeVisible();
           // GC-012 (Q5): a removed person never joins from the link; the page only offers a request.
           await expect(page.getByText("You can't join 'Family Christmas 2026' with this link. You can ask to be let in.")).toBeVisible();

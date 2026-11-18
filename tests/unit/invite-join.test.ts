@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { JOIN_COPY, REQUEST_COPY, UNAVAILABLE_COPY, joinedCountLine, unavailableBody } from "../../features/joining/copy.ts";
+import { INVITE_COPY, JOIN_COPY, REQUEST_COPY, UNAVAILABLE_COPY, joinedCountLine, unavailableBody } from "../../features/joining/copy.ts";
 import { parseInvitePreview, parseJoinDetails } from "../../features/joining/parse.ts";
 import { decideInviteView, refusalFromHint, requestRefusalFromHint } from "../../features/joining/status.ts";
 import { inviteJoinPath, inviteTokenFromNext, isInviteNext } from "../../lib/auth/invite-path.ts";
+import { JOIN_INTENT_COOKIE, JOIN_INTENT_MAX_AGE_S, joinIntentMatches, joinIntentPath } from "../../lib/auth/join-intent.ts";
 import { destinationAfterVerify } from "../../lib/auth/verify-state.ts";
 
 const TOKEN = "0123456789abcdef0123456789abcdef";
@@ -76,14 +77,18 @@ describe("inviteTokenFromNext (GC-003, GC-004: only an exact invite path is an i
   });
 });
 
-describe("destinationAfterVerify with an invite (owner decision Q1)", () => {
-  it("sends an invitee straight to the join page, sign-up included (no Profile setup)", () => {
-    expect(destinationAfterVerify({ flow: "signup", next: `/i/${TOKEN}/join` })).toBe(`/i/${TOKEN}/join`);
+describe("destinationAfterVerify with an invite (join-one-screen, owner decision 2, 2026-11-18)", () => {
+  it("sends a new invitee through the name step and back to the join action page", () => {
+    const joinPath = `/i/${TOKEN}/join`;
+    expect(destinationAfterVerify({ flow: "signup", next: joinPath })).toBe(`/welcome?next=${encodeURIComponent(joinPath)}`);
+  });
+  it("sends a returning invitee straight to the join action page", () => {
     expect(destinationAfterVerify({ flow: "login", next: `/i/${TOKEN}/join` })).toBe(`/i/${TOKEN}/join`);
   });
-  it("sends a bare invite page to the join page", () => {
-    expect(destinationAfterVerify({ flow: "signup", next: `/i/${TOKEN}` })).toBe(`/i/${TOKEN}/join`);
-    expect(destinationAfterVerify({ flow: "login", next: `/i/${TOKEN}` })).toBe(`/i/${TOKEN}/join`);
+  it("treats a bare invite page the same way", () => {
+    const joinPath = `/i/${TOKEN}/join`;
+    expect(destinationAfterVerify({ flow: "signup", next: `/i/${TOKEN}` })).toBe(`/welcome?next=${encodeURIComponent(joinPath)}`);
+    expect(destinationAfterVerify({ flow: "login", next: `/i/${TOKEN}` })).toBe(joinPath);
   });
   it("still sends a Landing sign-up to Profile setup", () => {
     expect(destinationAfterVerify({ flow: "signup" })).toBe("/welcome");
@@ -275,6 +280,17 @@ describe("copy", () => {
     expect(joinedCountLine(1)).toBe("1 person has joined so far.");
     expect(joinedCountLine(5)).toBe("5 people have joined so far.");
   });
+  it("writes the board's first-name line and the how-it-works steps", () => {
+    const first = (n: number) => ["Ngozi Eze", "Femi Adeyemi", "Bisi Lawal", "Chinedu Okoro", "Yemi Ojo", "Tobi Ade", "Sade Bello"].slice(0, n).map((name) => ({ name, isOrganiser: false }));
+    expect(JOIN_COPY.inLine(first(1))).toBe("Ngozi is in.");
+    expect(JOIN_COPY.inLine(first(3))).toBe("Ngozi, Femi and Bisi are in.");
+    expect(JOIN_COPY.inLine(first(5))).toBe("Ngozi, Femi, Bisi, Chinedu and Yemi are in.");
+    expect(JOIN_COPY.inLine(first(7))).toBe("Ngozi, Femi, Bisi, Chinedu, Yemi and 2 others are in.");
+    expect(INVITE_COPY.how.drawn("Fri 27 Nov")).toBe("On Fri 27 Nov we draw names. Only you see who you're buying for.");
+    expect(INVITE_COPY.how.buy("₦5,000 to ₦10,000", "Sun 20 Dec")).toBe("Buy one gift within ₦5,000 to ₦10,000 and bring it on Sun 20 Dec.");
+    expect(INVITE_COPY.emailLine("Ngozi")).toBe("Ngozi, the organiser, can see your email address.");
+    expect(INVITE_COPY.giftsExchanged).toBe("Gifts exchanged");
+  });
   it("writes the people line and the stack label as the board does", () => {
     const people = [
       { name: "Ngozi Eze", isOrganiser: true },
@@ -312,5 +328,21 @@ describe("copy", () => {
       REQUEST_COPY.goToExchanges,
     ];
     for (const line of lines) expect(line).not.toMatch(/email|home/i);
+  });
+});
+
+describe("join intent (join-one-screen, owner approval R-2, 2026-11-18)", () => {
+  it("is scoped to the one invite path, so another invite never sees it", () => {
+    expect(joinIntentPath(TOKEN)).toBe(`/i/${TOKEN}`);
+    expect(JOIN_INTENT_COOKIE).toBe("uw_join_intent");
+  });
+  it("lasts 30 minutes", () => {
+    expect(JOIN_INTENT_MAX_AGE_S).toBe(30 * 60);
+  });
+  it("matches only its own token", () => {
+    expect(joinIntentMatches(TOKEN, TOKEN)).toBe(true);
+    expect(joinIntentMatches("b".repeat(32), TOKEN)).toBe(false);
+    expect(joinIntentMatches(undefined, TOKEN)).toBe(false);
+    expect(joinIntentMatches("", TOKEN)).toBe(false);
   });
 });

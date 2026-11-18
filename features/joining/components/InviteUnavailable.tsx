@@ -21,7 +21,7 @@ export function InviteUnavailable({
   preview: InvitePreview | null;
   signedIn: boolean;
   timeZone: string;
-  /** Set when joining closed and a request is allowed (GC-012): adds the board's second line and Ask to join. */
+  /** Set for a signed-out visitor when joining closed and a request is allowed (GC-012): adds the board's second line and Ask to join. */
   askToken?: string;
 }) {
   const moment = kind === "cancelled" ? preview?.cancelledAt : kind === "closed" ? preview?.closedAt : null;
@@ -34,7 +34,7 @@ export function InviteUnavailable({
     <InviteFrame
       footer={
         askToken ? (
-          <InviteActions token={askToken} signedIn={signedIn} ask />
+          <InviteActions token={askToken} ask />
         ) : (
           <Button fullWidth href={signedIn ? "/home" : "/"}>
             {UNAVAILABLE_COPY.goToUnwrap}

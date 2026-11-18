@@ -87,12 +87,16 @@ export function serializeVerifyState(state: VerifyState): string {
 // profiles.onboarded_at to Profile setup from every signed-in page (lib/auth/session.ts), so the
 // destination below needs no clue from the browser.
 //
-// WHY an invite goes straight to the join confirmation, sign-up included (owner decision Q1,
-// 2026-11-13; GC-003, GC-005): invitees skip Profile setup, and join_exchange marks them as set up.
-// Only a `next` that is exactly an invite path does this; a Landing sign-up still reaches Profile setup.
+// WHY an invite sign-up goes through Profile setup and back to the join action page (owner decision 2,
+// 2026-11-18; GC-003, GC-005, GC-009): the board is sign-up, code, name, joined. A returning person
+// skips the name step. Either way /i/<token>/join then joins them (or sends their request) once, because
+// finishSignIn left the join intent. Only a `next` that is exactly an invite path does this.
 export function destinationAfterVerify(state: { flow: VerifyFlow; next?: string }): string {
   const inviteToken = inviteTokenFromNext(state.next);
-  if (inviteToken) return inviteJoinPath(inviteToken);
+  if (inviteToken) {
+    const joinPath = inviteJoinPath(inviteToken);
+    return state.flow === "signup" ? `/welcome?next=${encodeURIComponent(joinPath)}` : joinPath;
+  }
   if (state.flow === "signup") {
     return state.next ? `/welcome?next=${encodeURIComponent(state.next)}` : "/welcome";
   }

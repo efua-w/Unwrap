@@ -32,8 +32,8 @@ Approved with this plan. Sheets and dialogs are client overlays on their parent 
 | Route | Access | Stories |
 |---|---|---|
 | `/` | public | GC-001 |
-| `/i/[inviteToken]` (preview, or the unavailable state) | public | GC-002, 012 |
-| `/i/[inviteToken]/join` (join confirmation) | auth + valid invite token | GC-009 |
+| `/i/[inviteToken]` (the one screen before joining: public view signed out, full view signed in, or the unavailable state) | public | GC-002, GC-009, GC-012 |
+| `/i/[inviteToken]/join` (post-sign-in action: joins or asks once after a sign-in that started from the invite; otherwise redirects to `/i/[inviteToken]`) | auth + valid invite token + join intent cookie | GC-009 |
 | `/w/[shareToken]` (noindex) | public | GC-023 |
 | `/signup`, `/login`, `/verify` | signed out | GC-003, 004 |
 | `/welcome` | auth | GC-005 |
