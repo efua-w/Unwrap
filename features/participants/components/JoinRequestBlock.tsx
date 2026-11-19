@@ -3,6 +3,7 @@ import { ExchangeTag, type ExchangeTint } from "@/components/ui/ExchangeTag";
 import { firstName } from "@/features/joining/copy";
 import { REQUEST_BLOCK_COPY } from "../copy";
 import { waitingNames } from "../format";
+import { BlockCard } from "./BlockCard";
 
 type Props = {
   exchangeId: string;
@@ -31,29 +32,27 @@ export function JoinRequestBlock({ exchangeId, names, lastJoinDay, joiningOpen, 
     ? (joiningOpen ? copy.oneBody : copy.oneBodyClosed)(firstName(only), lastJoinDay)
     : (joiningOpen ? copy.manyBody : copy.manyBodyClosed)(waitingNames(names), lastJoinDay);
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-12 rounded-2xl bg-surface-subtle p-20 md:p-24">
-      {exchange ? (
-        <div className="flex items-center gap-12">
-          <ExchangeTag name={exchange.name} tint={exchange.tint} />
-          <div className="flex min-w-0 flex-col">
-            <span className="break-words text-body-base-semibold">{exchange.name}</span>
-            <span className="text-body-sm-regular text-text-muted">{copy.meta}</span>
+    <BlockCard
+      headingId={headingId}
+      header={
+        exchange ? (
+          <div className="flex items-center gap-12">
+            <ExchangeTag name={exchange.name} tint={exchange.tint} />
+            <div className="flex min-w-0 flex-col">
+              <span className="break-words text-body-base-semibold">{exchange.name}</span>
+              <span className="text-body-sm-regular text-text-muted">{copy.meta}</span>
+            </div>
           </div>
-        </div>
-      ) : (
-        <span className="text-body-sm-semibold text-text-muted">{copy.meta}</span>
-      )}
-      <div className="flex flex-col gap-4">
-        <h2 id={headingId} className="break-words text-heading-4">
-          {title}
-        </h2>
-        <p className="break-words text-body-sm-regular text-text-secondary">{body}</p>
-      </div>
-      <div className="flex flex-col md:items-start">
-        <Button href={`/exchanges/${exchangeId}/participants`} fullWidth className="md:w-auto">
+        ) : undefined
+      }
+      meta={exchange ? undefined : copy.meta}
+      title={title}
+      body={body}
+      action={
+        <Button variant="secondary" href={`/exchanges/${exchangeId}/participants`}>
           {single ? copy.reviewOne : copy.reviewMany(count)}
         </Button>
-      </div>
-    </section>
+      }
+    />
   );
 }

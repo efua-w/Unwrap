@@ -20,18 +20,27 @@ type Props = {
   size?: AvatarSize;
   /** True when the person's name is shown next to the avatar, so screen readers skip it. */
   decorative?: boolean;
+  tone?: AvatarTone;
   className?: string;
 };
 
-export const AVATAR_BASE = "inline-flex shrink-0 items-center justify-center rounded-full border-2 border-border-default bg-surface-default text-text-default";
+export const AVATAR_BASE = "inline-flex shrink-0 items-center justify-center rounded-full border-2 text-text-default";
 
-export function Avatar({ name, size = "face", decorative = false, className }: Props) {
+// WHY a tone: on a surface/subtle card the face is grey with a ring in the card's own colour (board UwAvatar stack,
+// ring "#f7f7f7"), so overlapping faces read as separate. Anywhere else it is white with a light border.
+export type AvatarTone = "default" | "on-subtle";
+const TONE_CLASS: Record<AvatarTone, string> = {
+  default: "border-border-default bg-surface-default",
+  "on-subtle": "border-surface-subtle bg-surface-emphasis",
+};
+
+export function Avatar({ name, size = "face", decorative = false, tone = "default", className }: Props) {
   return (
     <span
       aria-hidden={decorative || undefined}
       role={decorative ? undefined : "img"}
       aria-label={decorative ? undefined : name}
-      className={cx(AVATAR_BASE, SIZE_CLASS[size], className)}
+      className={cx(AVATAR_BASE, TONE_CLASS[tone], SIZE_CLASS[size], className)}
     >
       <span aria-hidden>{initials(name)}</span>
     </span>
