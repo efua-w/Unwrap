@@ -56,6 +56,8 @@ export function parseDueRow(raw: unknown): { id: string; row: DueRow | null; cod
       joinByAt: str(r.join_by_at),
       giftDay: str(r.gift_day),
       note: str(r.note),
+      scheduleMode: str(r.draw_mode),
+      scheduleAt: str(r.draw_at),
     },
   };
 }

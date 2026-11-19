@@ -16,6 +16,11 @@ create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 select plan(14);
 
+-- WHY (test setup only, 2026-11-19): the hosted dev database keeps real outbox rows, and the E07 counts below
+-- assume an empty outbox. Clearing it inside this transaction (rolled back at the end) isolates the test, as
+-- 220, 230, 260 and 270 do. No assertion changes.
+delete from private.email_outbox;
+
 -- try_as runs one statement as a persona (null = anon): 'ok:<rows>' or 'err:<SQLSTATE>'.
 create function pg_temp.try_as(who uuid, stmt text) returns text
 language plpgsql as $$

@@ -21,11 +21,11 @@
 -- functions fails and the run stops. That is the expected "red".
 -- Round 3 (2026-11-17): four assertions on the claim's new columns (E06 only; no pair data; no address but the
 -- recipient's). They fail until the email_outbox_details migration is applied.
--- Pass: "ok 1".."ok 72", "1..72", no "not ok".
+-- Pass: "ok 1".."ok 74", "1..74", no "not ok".
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(72);
+select plan(74);
 
 -- Isolation (test setup only; no assertion, value or description changes). WHY: the dev database holds outbox and
 -- invite rows from other runs (e2e), which would be counted by the scalar subqueries and claimed ahead of this
@@ -173,7 +173,7 @@ select ok(
   (select count(*) = 4 and bool_and(p.prosecdef and p.proconfig @> array['search_path=""'])
    from pg_proc p
    where p.oid in (
-     'private.enqueue_email(text, uuid, text, uuid, uuid, uuid, text)'::regprocedure,
+     'private.enqueue_email(text, uuid, text, uuid, uuid, uuid, text, timestamptz)'::regprocedure,
      'private.cancel_pending_emails(uuid, uuid)'::regprocedure,
      'public.claim_due_emails(integer)'::regprocedure,
      'public.mark_email_result(uuid, text)'::regprocedure)),
@@ -373,7 +373,7 @@ select ok(
     where p.oid in (
       'public.join_exchange(text)'::regprocedure, 'public.request_to_join(text)'::regprocedure,
       'public.approve_join_request(uuid)'::regprocedure, 'public.remove_member(uuid)'::regprocedure,
-      'private.enqueue_email(text, uuid, text, uuid, uuid, uuid, text)'::regprocedure,
+      'private.enqueue_email(text, uuid, text, uuid, uuid, uuid, text, timestamptz)'::regprocedure,
       'private.cancel_pending_emails(uuid, uuid)'::regprocedure, 'public.claim_due_emails(integer)'::regprocedure,
       'public.mark_email_result(uuid, text)'::regprocedure)
       and (p.prosrc ilike '%assign%' or p.prosrc ilike '%reserv%')),
@@ -467,8 +467,18 @@ select is(
   (select count(*)::int from jsonb_array_elements(current_setting('test.claim1')::jsonb) c,
           jsonb_object_keys(c) k
    where k not in ('id', 'template', 'to_email', 'to_name', 'to_timezone', 'exchange_id', 'exchange_name', 'other_name',
-                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note')),
-  0, 'a claimed row has no column for a draw, a pair, an assignment, a reservation or a second address');
+                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at')),
+  0, 'a claimed row has no column for a draw result, a pair, an assignment, a reservation or a second address');
+-- Slice 8 (owner decision 2026-11-18 4): the claim also carries the draw mode and time, for E10 only, and E10 is a known
+-- template. They fail until the readiness_and_nudges migration is applied.
+select ok(
+  (select bool_and(c ->> 'draw_mode' is null and c ->> 'draw_at' is null)
+   from jsonb_array_elements(current_setting('test.claim1')::jsonb) c where c ->> 'template' <> 'E10'),
+  'no template but E10 carries the draw mode or time');
+select ok(
+  (select pg_get_constraintdef(c.oid) like '%''E10''%' and pg_get_constraintdef(c.oid) like '%''E12''%'
+   from pg_constraint c where c.conrelid = 'private.email_outbox'::regclass and c.conname = 'email_outbox_template_known'),
+  'E10 is a known template beside E06 to E09 and E12');
 select ok(
   not exists (select 1 from jsonb_array_elements(current_setting('test.claim1')::jsonb) c,
                      jsonb_each_text(c) kv

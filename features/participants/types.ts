@@ -36,3 +36,19 @@ export type MyPendingRequest = {
   organiserName: string;
   requestedAt: string;
 };
+
+/**
+ * One person taking part, as the organiser's readiness reads them (GCO-006). `memberId` is the membership row's id, not
+ * a person id. WHY no email and no list name: readiness is yes or no, so a card cannot print what its type lacks.
+ */
+export type ReadinessRow = {
+  memberId: string;
+  name: string;
+  isMe: boolean;
+  hasWishlist: boolean;
+  /** Nudged by anyone in the last 12 hours: a new nudge would skip them (GCO-008). */
+  nudgedRecently: boolean;
+};
+
+/** A person a nudge would go to. */
+export type NudgeTarget = { memberId: string; name: string };

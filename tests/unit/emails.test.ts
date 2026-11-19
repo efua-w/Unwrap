@@ -31,6 +31,8 @@ function input(template: EmailTemplate, over: Partial<RenderInput> = {}): Render
     joinByAt: template === "E06" ? JOIN_BY : null,
     giftDay: template === "E06" ? "2026-12-24" : null,
     note: template === "E06" ? "Let's keep it fun this year." : null,
+    scheduleMode: template === "E10" ? "at_join_by" : null,
+    scheduleAt: template === "E10" ? JOIN_BY : null,
     ...over,
   };
 }
@@ -167,8 +169,11 @@ describe("content (AC-2, AC-3, AC-15)", () => {
   it("has no stop-invites or unsubscribe link (Q6) and no promise of a later slice (Q9)", () => {
     for (const template of EMAIL_TEMPLATES) {
       const { html, text } = renderEmail(input(template), BASE);
+      // WHY E10 may say "reminder": its board footer is "{Organiser} sent you a reminder in {exchange}" (the nudge
+      // itself); the other templates promise none, and no template links to unsubscribe or settings it lacks.
+      const banned = template === "E10" ? /stop invite emails|unsubscribe|auto-?close|Wishlists in/i : /stop invite emails|unsubscribe|reminder|auto-?close|Wishlists in/i;
       for (const out of [html, text]) {
-        expect(out).not.toMatch(/stop invite emails|unsubscribe|reminder|auto-?close|Wishlists in/i);
+        expect(out).not.toMatch(banned);
       }
     }
   });
@@ -177,7 +182,7 @@ describe("content (AC-2, AC-3, AC-15)", () => {
     const settings = `${BASE}/profile/notifications`;
     expect(renderEmail(input("E07"), BASE).html).toContain(settings);
     expect(renderEmail(input("E08"), BASE).html).toContain(settings);
-    for (const template of ["E06", "E09", "E12"] as const) {
+    for (const template of ["E06", "E09", "E10", "E12"] as const) {
       expect(renderEmail(input(template), BASE).html).not.toContain(settings);
     }
   });
@@ -205,6 +210,59 @@ describe("content (AC-2, AC-3, AC-15)", () => {
     expect(renderEmail(input("E08"), BASE).subject).toBe("Chidi wants to join Family Christmas 2026");
     expect(renderEmail(input("E09"), BASE).subject).toBe("You're in Family Christmas 2026");
     expect(renderEmail(input("E12"), BASE).subject).toBe("You're no longer in Family Christmas 2026");
+    expect(renderEmail(input("E10"), BASE).subject).toBe("Chidi is waiting on your wishlist");
+  });
+});
+
+describe("E10 Nudge (GCO-008, board Email-E10)", () => {
+  it("is the board's email for an automatic draw, in the recipient's zone", () => {
+    const { subject, preview, html, text } = renderEmail(input("E10"), BASE);
+    expect(subject).toBe("Chidi is waiting on your wishlist");
+    expect(preview).toBe("Add it before names are drawn on Fri 27 Nov, 6:00 pm WAT.");
+    for (const out of [html, text]) {
+      expect(out).toContain("Add your wishlist for Family Christmas 2026");
+      expect(out).toContain("Hi Tolu,");
+      expect(out).toContain("Chidi is waiting on your wishlist for Family Christmas 2026. Names are drawn on Fri 27 Nov, 6:00 pm WAT.");
+      expect(out).toContain("A wishlist gives whoever draws your name a few ideas, so you get something you&#39;ll actually like. Only they will see it.".replace("&#39;", out === text ? "'" : "&#39;"));
+      expect(out).toContain("You&#39;re getting this because Chidi sent you a reminder in Family Christmas 2026.".replace("&#39;", out === text ? "'" : "&#39;"));
+    }
+    expect(html).toContain("Add my wishlist");
+    expect(html).toContain(`${BASE}/exchanges/${EX}`);
+  });
+
+  it("says when the organiser is ready for a manual draw, with no day", () => {
+    const { preview, html } = renderEmail(input("E10", { scheduleMode: "organiser_chooses", scheduleAt: null }), BASE);
+    expect(html).toContain("Names are drawn when Chidi is ready.");
+    expect(html).not.toMatch(/Names are drawn on/);
+    expect(preview).not.toMatch(/Fri|Nov/);
+  });
+
+  it("falls back to 'The organiser' when the name is gone, and never throws on a bad date", () => {
+    const { subject, html } = renderEmail(input("E10", { otherName: null, scheduleAt: "garbage" }), BASE);
+    expect(subject).toBe("The organiser is waiting on your wishlist");
+    expect(html).toContain("Names are drawn when The organiser is ready.");
+  });
+
+  it("escapes the organiser's name and the exchange name", () => {
+    const { html } = renderEmail(input("E10", { otherName: "<i>Amaka</i> Obi", exchangeName: "<b>X</b>" }), BASE);
+    expect(html).not.toContain("<i>Amaka");
+    expect(html).not.toContain("<b>X");
+  });
+
+  it("has no unsubscribe or settings link and prints no address", () => {
+    const { html, text } = renderEmail(input("E10"), BASE);
+    expect(html + text).not.toMatch(/unsubscribe|notifications/i);
+    expect([...(html + text).matchAll(/[\w.+-]+@[\w-]+\.[\w.-]+/g)]).toEqual([]);
+  });
+
+  it("the sender reads the schedule from the claim for E10", () => {
+    const parsed = parseDueRow({
+      id: "r1", template: "E10", to_email: "tolu@example.com", to_name: "Tolu Adeyemi", to_timezone: "Africa/Lagos",
+      exchange_id: EX, exchange_name: "Family Christmas 2026", other_name: "Chidi Okeke", attempts: 0,
+      draw_mode: "at_join_by", draw_at: JOIN_BY,
+    });
+    expect(parsed.row?.scheduleMode).toBe("at_join_by");
+    expect(parsed.row?.scheduleAt).toBe(JOIN_BY);
   });
 });
 

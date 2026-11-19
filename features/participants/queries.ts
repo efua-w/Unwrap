@@ -2,7 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/wishlist";
 import { toJoinRequestRow, toJoinRequestRowWithEmail, toParticipantLine } from "./map";
-import type { MyPendingRequest, JoinRequestRow, JoinRequestRowWithEmail, ParticipantLine } from "./types";
+import { callNudgeRpc } from "./rpc";
+import type { MyPendingRequest, JoinRequestRow, JoinRequestRowWithEmail, ParticipantLine, ReadinessRow } from "./types";
 
 // Reads for Participants, the request blocks and the asker's pending rows (GCO-007, GC-012). Every one is
 // a narrow database function. WHY mapped field by field: an email or a user id cannot be added to a screen
@@ -42,6 +43,22 @@ export async function getParticipants(exchangeId: string): Promise<ParticipantLi
   return data
     .filter((p) => p.taking_part)
     .map(toParticipantLine);
+}
+
+// Who is taking part and whether each has a wishlist in, for the organiser only (GCO-006). The database answers
+// anyone else with no rows, so a member's page never learns the numbers. Names and yes or no, nothing else.
+export async function getReadiness(exchangeId: string): Promise<ReadinessRow[]> {
+  if (!isUuid(exchangeId)) return [];
+  const supabase = await createClient();
+  const { data, error } = await callNudgeRpc(supabase, "get_readiness", { p_exchange: exchangeId });
+  if (error || !data) throw new Error("Could not read the readiness.");
+  return data.map((r) => ({
+    memberId: r.member_id,
+    name: r.display_name,
+    isMe: r.is_me,
+    hasWishlist: r.has_wishlist,
+    nudgedRecently: r.nudged_recently,
+  }));
 }
 
 // The signed-in person's own pending requests, oldest first (S08 Exchanges, GC-012). Only requests still

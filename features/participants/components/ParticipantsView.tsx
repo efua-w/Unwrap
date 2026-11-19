@@ -14,9 +14,10 @@ import { useToast } from "@/components/ui/Toast";
 import { InvitePeopleSheet } from "@/features/exchanges/components/InvitePeopleSheet";
 import { firstName } from "@/features/joining/copy";
 import { approveJoinRequest, declineJoinRequest, removeMember, type DecideResult } from "../actions";
-import { PARTICIPANTS_COPY } from "../copy";
+import { NUDGE_COPY, PARTICIPANTS_COPY } from "../copy";
 import { memberSubline, requestSubline } from "../format";
-import type { JoinRequestLine, ParticipantLine } from "../types";
+import type { JoinRequestLine, NudgeTarget, ParticipantLine } from "../types";
+import { NudgeSheet } from "./NudgeSheet";
 
 type Props = {
   exchangeId: string;
@@ -32,6 +33,11 @@ type Props = {
   approvalRequired: boolean;
   /** False once the exchange is past joining (drawn, ended): Approve and Remove are always refused then. Decline stays. */
   canManage: boolean;
+  /**
+   * What Nudge needs (GCO-008), or null when readiness could not be read: then no Nudge is offered. `recentIds` are the
+   * member ids nudged by anyone in the last 12 hours.
+   */
+  nudge: { organiserFirst: string; drawDay: string | null; recentIds: readonly string[] } | null;
 };
 
 type Pending = { id: string; kind: "approve" | "decline" };
@@ -45,7 +51,7 @@ const MIN_PEOPLE = 3;
 // pair (AC-12, AC-17, AC-41; owner decision 2026-11-15 for the addresses).
 // WHY the page re-reads after every change instead of editing local state: the database decides who is in,
 // so the list shown is always the one it returns.
-export function ParticipantsView({ exchangeId, exchangeName, requests, people, alone, lastJoinDay, inviteUrl, approvalRequired, canManage }: Props) {
+export function ParticipantsView({ exchangeId, exchangeName, requests, people, alone, lastJoinDay, inviteUrl, approvalRequired, canManage, nudge }: Props) {
   const copy = PARTICIPANTS_COPY;
   const router = useRouter();
   const toast = useToast();
@@ -58,6 +64,9 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
   const [removeBusy, setRemoveBusy] = useState(false);
   const [removeFailure, setRemoveFailure] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  // WHY the targets outlive the sheet: its closing animation still shows their names. Empty means "everyone was nudged recently".
+  const [nudgeTargets, setNudgeTargets] = useState<readonly NudgeTarget[]>([]);
   // WHY addresses: a person approved in this visit reads "Joined just now" until the page is reloaded (board
   // Org-People-fewapproved). Their new member row has a new id, so the address is the key that survives the refresh.
   const [justApproved, setJustApproved] = useState<readonly string[]>([]);
@@ -137,6 +146,14 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
   }
 
   const needWishlist = people.filter((p) => !p.hasWishlist);
+  // WHY not the organiser's own row: their list is "Your part", and nobody nudges themselves.
+  const nudgeable = nudge && canManage ? needWishlist.filter((p) => !p.isMe) : [];
+  const asTarget = (p: ParticipantLine): NudgeTarget => ({ memberId: p.memberId, name: p.name });
+  const notRecent = (p: ParticipantLine) => !nudge?.recentIds.includes(p.memberId);
+  function openNudge(who: readonly ParticipantLine[]) {
+    setNudgeTargets(who.filter(notRecent).map(asTarget));
+    setNudgeOpen(true);
+  }
   const ready = people.filter((p) => p.hasWishlist);
   const needed = MIN_PEOPLE - people.length;
   const few = !alone && needed > 0;
@@ -183,21 +200,31 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
         divider={index > 0}
         action={
           // WHY no Remove on the organiser's own row: the database refuses it too (22023 organiser); nor once past joining.
-          person.isOrganiser || !canManage ? undefined : (
-            <Button
-              variant="link"
-              aria-haspopup="dialog"
-              disabled={!online || busy}
-              onClick={() => {
-                setRemoveFailure(null);
-                setRemoving(person);
-                setRemoveOpen(true);
-              }}
-            >
-              {copy.remove}
-              <span className="sr-only"> {person.name}</span>
-            </Button>
-          )
+          // Nudge is a second sibling target for a person with no list yet (board Org-People-default).
+          // WHY no wrapper of our own: ListRow spaces its action targets 12 apart (board UwListItem).
+          <>
+            {nudgeable.includes(person) ? (
+              <Button variant="link" aria-haspopup="dialog" disabled={!online || busy} onClick={() => openNudge([person])}>
+                {NUDGE_COPY.nudge}
+                <span className="sr-only"> {person.name}</span>
+              </Button>
+            ) : null}
+            {person.isOrganiser || !canManage ? null : (
+              <Button
+                variant="link"
+                aria-haspopup="dialog"
+                disabled={!online || busy}
+                onClick={() => {
+                  setRemoveFailure(null);
+                  setRemoving(person);
+                  setRemoveOpen(true);
+                }}
+              >
+                {copy.remove}
+                <span className="sr-only"> {person.name}</span>
+              </Button>
+            )}
+          </>
         }
       />
     );
@@ -247,7 +274,18 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
       {alone ? null : (
         <>
           {needWishlist.length > 0 ? (
-            <Section id="need" title={copy.needTitle(needWishlist.length)}>
+            <Section
+              id="need"
+              title={copy.needTitle(needWishlist.length)}
+              action={
+                // WHY two or more (tester T3-1; board shows "Nudge all 3…"): one person already has their row's Nudge link.
+                nudgeable.length > 1 ? (
+                  <Button variant="link" aria-haspopup="dialog" disabled={!online || busy} onClick={() => openNudge(nudgeable)}>
+                    {NUDGE_COPY.nudgeAll(nudgeable.length)}
+                  </Button>
+                ) : undefined
+              }
+            >
               {needWishlist.map(personRow)}
             </Section>
           ) : null}
@@ -281,6 +319,18 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
         />
       ) : null}
 
+      {nudge && canManage ? (
+        <NudgeSheet
+          open={nudgeOpen}
+          onClose={() => setNudgeOpen(false)}
+          exchangeId={exchangeId}
+          exchangeName={exchangeName}
+          organiserFirst={nudge.organiserFirst}
+          drawDay={nudge.drawDay}
+          targets={nudgeTargets}
+        />
+      ) : null}
+
       <Sheet
         open={removeOpen}
         onClose={() => setRemoveOpen(false)}
@@ -307,13 +357,14 @@ export function ParticipantsView({ exchangeId, exchangeName, requests, people, a
 }
 
 // A list under its heading: a 44-tall heading row at 18 semibold (board Org-People-default).
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+function Section({ id, title, action, children }: { id: string; title: string; action?: ReactNode; children: ReactNode }) {
   return (
     <section aria-labelledby={`${id}-heading`} className="flex flex-col gap-4">
       <div className="flex min-h-touch-target items-center justify-between">
         <h2 id={`${id}-heading`} className="text-body-lg-semibold">
           {title}
         </h2>
+        {action}
       </div>
       <ul>{children}</ul>
     </section>
