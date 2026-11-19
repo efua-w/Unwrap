@@ -279,7 +279,7 @@ isOneToOne: false
                            },
 "claim_due_emails":
 { Args: { "p_limit"?: number }; Returns: {
-              "attempts": number,"budget_preset": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"template": string,"to_email": string,"to_name": string,"to_timezone": string
+              "attempts": number,"budget_preset": string,"draw_at": string,"draw_mode": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"template": string,"to_email": string,"to_name": string,"to_timezone": string
             }[]
                            },
 "create_exchange":
@@ -324,6 +324,11 @@ isOneToOne: false
 "get_participants":
 { Args: { "p_exchange": string }; Returns: {
               "display_name": string,"email": string,"has_wishlist": boolean,"is_me": boolean,"is_organiser": boolean,"member_id": string,"taking_part": boolean
+            }[]
+                           },
+"get_readiness":
+{ Args: { "p_exchange": string }; Returns: {
+              "display_name": string,"has_wishlist": boolean,"is_me": boolean,"member_id": string,"nudged_recently": boolean
             }[]
                            },
 "get_removed_exchange_name":
@@ -378,6 +383,14 @@ isOneToOne: false
                            },
 "send_email_invite":
 { Args: { "p_email": string,"p_exchange": string }; Returns: undefined
+                           },
+"send_nudge":
+{ Args: { "p_exchange": string,"p_members": (string)[] }; Returns: {
+              "display_name": string,"member_id": string
+            }[]
+                           },
+"undo_nudge":
+{ Args: { "p_exchange": string }; Returns: number
                            },
 "use_exchange_ideas":
 { Args: { "p_exchange": string }; Returns: string

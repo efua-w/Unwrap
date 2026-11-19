@@ -2,7 +2,6 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/wishlist";
 import { toJoinRequestRow, toJoinRequestRowWithEmail, toParticipantLine } from "./map";
-import { callNudgeRpc } from "./rpc";
 import type { MyPendingRequest, JoinRequestRow, JoinRequestRowWithEmail, ParticipantLine, ReadinessRow } from "./types";
 
 // Reads for Participants, the request blocks and the asker's pending rows (GCO-007, GC-012). Every one is
@@ -50,7 +49,7 @@ export async function getParticipants(exchangeId: string): Promise<ParticipantLi
 export async function getReadiness(exchangeId: string): Promise<ReadinessRow[]> {
   if (!isUuid(exchangeId)) return [];
   const supabase = await createClient();
-  const { data, error } = await callNudgeRpc(supabase, "get_readiness", { p_exchange: exchangeId });
+  const { data, error } = await supabase.rpc("get_readiness", { p_exchange: exchangeId });
   if (error || !data) throw new Error("Could not read the readiness.");
   return data.map((r) => ({
     memberId: r.member_id,

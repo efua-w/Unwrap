@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { NOT_FOUND, REFUSED, SIGNED_OUT } from "@/features/joining/status";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/wishlist";
-import { callNudgeRpc } from "./rpc";
 
 // GCO-007 Approve, Decline and Remove. WHY an id of the request or the member and nothing else (plan §6
 // invariant 8): the database reads the caller from the session and decides who may (organiser only, P0002
@@ -90,7 +89,7 @@ export async function sendNudge(exchangeId: unknown, memberIds: unknown): Promis
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { ok: false, reason: "signed-out" };
-  const { data, error } = await callNudgeRpc(supabase, "send_nudge", { p_exchange: exchangeId, p_members: ids });
+  const { data, error } = await supabase.rpc("send_nudge", { p_exchange: exchangeId, p_members: ids });
   if (error) {
     if (error.code === SIGNED_OUT) return { ok: false, reason: "signed-out" };
     if (error.code === RATE_LIMITED) return { ok: false, reason: "rate-limited" };
@@ -110,7 +109,7 @@ export async function undoNudge(exchangeId: unknown): Promise<UndoNudgeResult> {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { ok: false, reason: "signed-out" };
-  const { data, error } = await callNudgeRpc(supabase, "undo_nudge", { p_exchange: exchangeId });
+  const { data, error } = await supabase.rpc("undo_nudge", { p_exchange: exchangeId });
   if (error) return { ok: false, reason: error.code === SIGNED_OUT ? "signed-out" : "failed" };
   revalidatePath("/exchanges", "layout");
   return { ok: true, stopped: data ?? 0 };
