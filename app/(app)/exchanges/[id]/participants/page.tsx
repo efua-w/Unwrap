@@ -18,7 +18,7 @@ export default async function ParticipantsPage({ params }: { params: Promise<{ i
   return (
     <AppShell profile={{ name: profile.displayName }} back={{ label: PARTICIPANTS_COPY.back, href: path }}>
       <Suspense fallback={<ParticipantsLoading />}>
-        <ParticipantsContent id={id} viewerId={profile.id} />
+        <ParticipantsContent id={id} viewerId={profile.id} viewerName={profile.displayName} />
       </Suspense>
     </AppShell>
   );

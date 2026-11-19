@@ -4,7 +4,7 @@ import { renderHtml, renderText, type EmailContent } from "./layout.ts";
 import { exchangeLink, inviteLink, notificationsLink, participantsLink } from "./links.ts";
 import type { RenderedEmail, RenderInput } from "./types.ts";
 
-// The five emails slice 7 sends, from boards Email-E06, -E07, -E08, -E09 and -E12 (canvas "Unwrap").
+// The emails slices 7 and 8 send, from boards Email-E06, -E07, -E08, -E09, -E10 and -E12 (canvas "Unwrap").
 // Left out, by owner decisions Q9 and the round 3 decision (2026-11-17): the draw date ("Names drawn"), auto-close,
 // "Wishlists in {n} of {m}" and the E07 counts, and anything that promises the draw or a reminder. E06 shows the
 // budget, join-by, gift day and the organiser's note, with moments in the recipient's zone and its label.
@@ -100,6 +100,28 @@ function content(input: RenderInput, base: string): EmailContent & { subject: st
         signoff: "Happy gifting,",
         reason: `You're getting this because you asked to join ${exchange}.`,
       };
+    case "E10": {
+      // WHY the organiser's name and nobody else's (GCO-008): the email says who is waiting, and never who gives to whom.
+      const organiser = other || "The organiser";
+      const when =
+        input.scheduleMode === "at_join_by" && input.scheduleAt ? formatMoment(input.scheduleAt, input.toTimezone) : null;
+      return {
+        subject: `${organiser} is waiting on your wishlist`,
+        // pending (docs/copy-pending.md): the board's preview has the day; a manual draw has none.
+        preview: when ? `Add it before names are drawn on ${when}.` : "Add it before names are drawn.",
+        heading: `Add your wishlist for ${exchange}`,
+        greeting: greeting(input.toName),
+        paragraphs: [
+          `${organiser} is waiting on your wishlist for ${exchange}. ${
+            when ? `Names are drawn on ${when}.` : `Names are drawn when ${organiser} is ready.`
+          }`,
+          "A wishlist gives whoever draws your name a few ideas, so you get something you'll actually like. Only they will see it.",
+        ],
+        cta: { label: "Add my wishlist", url: exchangeLink(base, input.exchangeId) },
+        signoff: "Happy gifting,",
+        reason: `You're getting this because ${organiser} sent you a reminder in ${exchange}.`,
+      };
+    }
     case "E12":
       return {
         subject: `You're no longer in ${exchange}`,

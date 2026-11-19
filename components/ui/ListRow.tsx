@@ -18,7 +18,7 @@ type Props = Target & {
   note?: string;
   /** Non-interactive label at the end of the target, such as a who-can-see chip. */
   meta?: ReactNode;
-  /** A trailing control (such as the bin). Rendered as a sibling of the target, never inside it. */
+  /** Trailing controls (such as the bin, or Nudge and Remove). Siblings of the target, never inside it, 12 apart (board UwListItem). */
   action?: ReactNode;
   /** A line above the row, between rows. */
   divider?: boolean;
@@ -48,7 +48,7 @@ export function ListRow({ title, leading, sub, note, meta, action, divider = fal
     "flex min-h-row min-w-0 flex-1 items-center gap-12 rounded-lg py-12 text-left focus-ring disabled:cursor-not-allowed";
 
   return (
-    <li data-row-id={rowId} className={cx("flex items-center gap-8", divider && "border-t-1 border-border-subtle")}>
+    <li data-row-id={rowId} className={cx("flex items-center gap-12", divider && "border-t-1 border-border-subtle")}>
       {target.href !== undefined && target.external ? (
         <a href={target.href} target="_blank" rel="noopener noreferrer nofollow ugc" className={targetClass}>
           {body}
@@ -64,7 +64,7 @@ export function ListRow({ title, leading, sub, note, meta, action, divider = fal
           {body}
         </button>
       )}
-      {action ? <span className="shrink-0">{action}</span> : null}
+      {action ? <span className="flex shrink-0 items-center gap-12">{action}</span> : null}
     </li>
   );
 }

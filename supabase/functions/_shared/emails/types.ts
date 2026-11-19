@@ -2,7 +2,7 @@
 // cannot print what its input has no field for. There is no draw, pair, giver, receiver, reservation, wishlist
 // or item here, and the only address is the recipient's own (`toEmail`), which only E06's footer prints.
 
-export const EMAIL_TEMPLATES = ["E06", "E07", "E08", "E09", "E12"] as const;
+export const EMAIL_TEMPLATES = ["E06", "E07", "E08", "E09", "E10", "E12"] as const;
 export type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
 
 export function isEmailTemplate(value: string): value is EmailTemplate {
@@ -17,7 +17,7 @@ export type RenderInput = {
   toEmail: string;
   exchangeId: string;
   exchangeName: string;
-  /** E07 and E08: the person who joined or asked. E06: the inviter. Null for E09 and E12 (GCO-007). */
+  /** E07 and E08: the person who joined or asked. E06: the inviter. E10: the organiser who nudged. Null for E09 and E12 (GCO-007). */
   otherName: string | null;
   /** E06 only. */
   inviteToken: string | null;
@@ -28,6 +28,12 @@ export type RenderInput = {
   joinByAt: string | null;
   giftDay: string | null;
   note: string | null;
+  /**
+   * E10 only: when names are drawn, so the email can say "on {day}" or "when {organiser} is ready" (owner 2026-11-18).
+   * WHY not called draw*: this is the schedule the organiser chose, never a result of the draw.
+   */
+  scheduleMode: string | null;
+  scheduleAt: string | null;
 };
 
 export type RenderedEmail = {

@@ -9,7 +9,7 @@ import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { getMemberExchange, getOrganiserExchange } from "@/features/exchanges/queries";
 import { RemovedFromExchange } from "@/features/participants/components/RemovedFromExchange";
-import { getJoinRequests, getRemovedExchangeName } from "@/features/participants/queries";
+import { getJoinRequests, getReadiness, getRemovedExchangeName } from "@/features/participants/queries";
 import { requireProfile } from "@/lib/auth/session";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 import { buildInviteUrl } from "@/lib/site-url";
@@ -24,7 +24,7 @@ export default async function ExchangePage({ params }: { params: Promise<{ id: s
   return (
     <AppShell profile={{ name: profile.displayName }} back={{ label: EXCHANGE_COPY.detail.back, href: "/exchanges" }}>
       <Suspense fallback={<DetailLoading />}>
-        <DetailContent id={id} viewerId={profile.id} />
+        <DetailContent id={id} viewerId={profile.id} viewerName={profile.displayName} />
       </Suspense>
     </AppShell>
   );
@@ -43,12 +43,13 @@ function DetailLoading() {
   );
 }
 
-async function DetailContent({ id, viewerId }: { id: string; viewerId: string }) {
+async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerId: string; viewerName: string }) {
   const copy = EXCHANGE_COPY.detail;
   let detail;
   let member = null;
   let removedFrom: string | null = null;
   let waitingNames: string[] = [];
+  let readiness: Awaited<ReturnType<typeof getReadiness>> | null = null;
   let inviteUrl: string | null = null;
   try {
     detail = await getOrganiserExchange(id, viewerId);
@@ -58,6 +59,9 @@ async function DetailContent({ id, viewerId }: { id: string; viewerId: string })
     if (!detail && !member) removedFrom = await getRemovedExchangeName(id);
     // WHY organiser only: the database answers a member with an empty list, and a member's page never asks (AC-42).
     if (detail) waitingNames = (await getJoinRequests(id)).map((r) => r.name);
+    // WHY its own catch: readiness is an extra on the page. If it cannot be read the page still loads, without the
+    // readiness block and Nudge, rather than showing a load error for the whole exchange.
+    if (detail) readiness = await getReadiness(id).catch(() => null);
     // WHY here: the link is built on the server from SITE_URL and the token, and goes only to the
     // organiser's invite section. A closed exchange has no link worth sharing.
     if (detail?.exchange.isOpen) inviteUrl = await buildInviteUrl(detail.inviteToken);
@@ -72,5 +76,12 @@ async function DetailContent({ id, viewerId }: { id: string; viewerId: string })
   const timeZone = await readViewerTimeZone();
   if (member) return <ExchangeMemberView exchange={member} timeZone={timeZone} />;
   if (!detail) return <NotAvailable />;
-  return <ExchangeJustStarted exchange={detail.exchange} inviteUrl={inviteUrl} timeZone={timeZone} waitingNames={waitingNames} />;
+  return <ExchangeJustStarted
+      exchange={detail.exchange}
+      inviteUrl={inviteUrl}
+      timeZone={timeZone}
+      waitingNames={waitingNames}
+      readiness={readiness}
+      organiserName={viewerName}
+    />;
 }

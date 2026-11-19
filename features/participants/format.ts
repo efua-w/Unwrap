@@ -17,7 +17,7 @@ export function askedLabel(requestedAt: string, now: Date, timeZone: string): st
 
 const NAMES_SHOWN = 3;
 
-// "Chidi, Bisi and Femi", or "Chidi, Bisi, Femi and 2 others" past three. First names only (the story's
+// "Chidi, Bisi and Femi" (also the people a nudge goes to, boards Org-Nudge-*), or "Chidi, Bisi, Femi and 2 others" past three. First names only (the story's
 // "{A, B and C} are waiting"). Needs at least two names: a single request has its own sentence.
 export function waitingNames(displayNames: readonly string[]): string {
   const first = displayNames.map(firstName);
