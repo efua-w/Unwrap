@@ -1,4 +1,5 @@
 import type { ExchangeTint } from "@/components/ui/ExchangeTag";
+import type { Database } from "@/lib/supabase/database.types";
 import type { BudgetPreset } from "@/lib/money/budget";
 import type { DrawMode } from "@/lib/validation/exchange";
 
@@ -54,6 +55,8 @@ export type OrganiserExchange = Schedule & {
   createdAt: string;
   /** Calculated status (open, joining_closed, ...). Only "open" has a link worth sharing. */
   isOpen: boolean;
+  /** The calculated status (cancelled never reaches here: it is "not available"). Exclusions follows it (GCO-009). */
+  state: Database["public"]["Enums"]["exchange_status"];
   /** Open or joining closed: the only states where people can still be approved or removed (GCO-007). */
   canManagePeople: boolean;
   people: PersonLine[];

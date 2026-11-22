@@ -152,3 +152,18 @@ UI copy that isn't in a story's Content section. It is used only once approved. 
 | "Nudge undone." / "It had already gone out, so it can't be undone." | Toast after Undo on "Nudge sent to ..." (GCO-008) | No board | Approved 2026-11-19 (Tobechukwu Olih) |
 | "Add it before names are drawn." | E10 preview line when the organiser draws names themselves | Board preview has "{draw_at}", which a manual draw lacks | Approved 2026-11-19 (Tobechukwu Olih) |
 | "{N} people have added a wishlist, {M} haven't" (also "No one has", "1 person has", "1 hasn't") | Spoken description of the face row on the readiness block (GCO-006) | Board UwAvatar stack label is "5 people have added a wishlist, 3 haven't"; the singular and zero forms are derived | Approved 2026-11-19 (Tobechukwu Olih) |
+| "{n} pairs" / "1 pair" | Organiser tools subtitle for the Exclusions row (GCO-006, GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "Remove {A} and {B}" | Bin button accessible name on an exclusion pair row (GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "We couldn't save the pairs. Nothing has changed, so you can try again." | Exclusions save failed (GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "We couldn't load the pairs for {exchange}." | Exclusions load error (GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "With these pairs, names can't be drawn fairly. Remove a few pairs, or invite more people. You can still save, and the draw checks again later." | Exclusions impossible alert when no single pair fixes it (GCO-009) | No board (Q3b) | Approved 2026-11-22 (Tobechukwu Olih) |
+| "Stop two people drawing each other, like couples or siblings. It works both ways, and only you can see these pairs." | Exclusions intro (GCO-009) | Board Org-Excl-empty-m (all states) | Approved (board) |
+| "No pairs yet. Everyone can draw anyone except themselves." | Exclusions empty state (GCO-009) | Board Org-Excl-empty-m | Approved (board) |
+| "Neither will draw the other." / "Neither drew the other." (locked) | Exclusions pair row subtitle (GCO-009) | Boards Org-Excl-default-m, -locked-m | Approved (board) |
+| "{A} and {B}" row title; "Pairs" list name | Exclusions pair rows (GCO-009) | Boards Org-Excl-default-m, -two-m | Approved (board) |
+| "With these pairs, names can't be drawn fairly. Remove {A} and {B}, or invite more people. You can still save, and the draw checks again later." and the "Remove that pair" button | Exclusions impossible alert when one pair fixes it (GCO-009, Q3a) | Board Org-Excl-impossible-m | Approved (board) |
+| Sheet step 1: title "Add a pair", body "Who's the first person?"; step 2: title "Who shouldn't {first} draw?", body "{first} won't draw them, and they won't draw {first}." Buttons "Next", "Add pair", "Back", "Cancel" | Exclusions sheet (GCO-009) | Boards Org-Excl-pairfirst-m, -pairsecond-m | Approved (board) |
+| "Pairs saved." | Toast after Save pairs (GCO-009) | Board Org-Excl-saved-m | Approved (board) |
+| "Someone in these pairs is no longer taking part. The list is up to date now, so check the pairs and save again." | Exclusions save refused because the people changed (GCO-009, Q9 "stale list") | No board | Awaiting approval |
+| "Names are drawn, so pairs can't change now." / "No pairs were set." | Exclusions locked view and save refused after the draw (GCO-009, Q5a) | Board Org-Excl-locked-m | Approved (board) |
+| "We couldn't load the pairs for this exchange." | Exclusions load error when the exchange itself could not be read | Derived from the approved "{exchange}" line | Awaiting approval |

@@ -8,6 +8,8 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { getMemberExchange, getOrganiserExchange } from "@/features/exchanges/queries";
+import { getExclusions } from "@/features/exclusions/queries";
+import type { ExclusionsEntry } from "@/features/exclusions/types";
 import { RemovedFromExchange } from "@/features/participants/components/RemovedFromExchange";
 import { getJoinRequests, getReadiness, getRemovedExchangeName } from "@/features/participants/queries";
 import { requireProfile } from "@/lib/auth/session";
@@ -51,6 +53,7 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
   let waitingNames: string[] = [];
   let readiness: Awaited<ReturnType<typeof getReadiness>> | null = null;
   let inviteUrl: string | null = null;
+  let exclusions: ExclusionsEntry | null = null;
   try {
     detail = await getOrganiserExchange(id, viewerId);
     // WHY only when not the organiser: a member's page has no token and no organiser tools (GC-013, AC-24).
@@ -62,6 +65,11 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
     // WHY its own catch: readiness is an extra on the page. If it cannot be read the page still loads, without the
     // readiness block and Nudge, rather than showing a load error for the whole exchange.
     if (detail) readiness = await getReadiness(id).catch(() => null);
+    // WHY only while pairs can be set or are shown (owner Q5b, Q6): open, joining closed and drawn. WHY its own catch: the
+    // count is an extra on the row, so the row shows without it rather than failing the page.
+    if (detail && (detail.exchange.state === "open" || detail.exchange.state === "joining_closed" || detail.exchange.state === "drawn")) {
+      exclusions = { count: await getExclusions(id).then((pairs) => pairs.length).catch(() => null) };
+    }
     // WHY here: the link is built on the server from SITE_URL and the token, and goes only to the
     // organiser's invite section. A closed exchange has no link worth sharing.
     if (detail?.exchange.isOpen) inviteUrl = await buildInviteUrl(detail.inviteToken);
@@ -83,5 +91,6 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
       waitingNames={waitingNames}
       readiness={readiness}
       organiserName={viewerName}
+      exclusions={exclusions}
     />;
 }

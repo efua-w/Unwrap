@@ -133,6 +133,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"exclusions": {
+                  Row: {
+                    "created_at": string,"exchange_id": string,"first_member_id": string,"id": string,"second_member_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"exchange_id": string,"first_member_id": string,"id"?: string,"second_member_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"exchange_id"?: string,"first_member_id"?: string,"id"?: string,"second_member_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exclusions_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "exclusions_exchange_id_fkey"
+      columns: ["exchange_id"]
+isOneToOne: false
+      referencedRelation: "exchanges_visible"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "exclusions_first_member_id_fkey"
+      columns: ["first_member_id"]
+isOneToOne: false
+      referencedRelation: "exchange_members"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "exclusions_second_member_id_fkey"
+      columns: ["second_member_id"]
+isOneToOne: false
+      referencedRelation: "exchange_members"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"join_requests": {
                   Row: {
                     "created_at": string,"decided_at": string | null,"dismissed_at": string | null,"exchange_id": string,"id": string,"status": Database["public"]['Enums']["join_request_status"],"user_id": string
@@ -277,6 +315,11 @@ isOneToOne: false
 "attach_wishlist":
 { Args: { "p_exchange": string,"p_wishlist": string }; Returns: undefined
                            },
+"check_exclusions":
+{ Args: { "p_exchange": string,"p_first": (string)[],"p_second": (string)[] }; Returns: {
+              "feasible": boolean,"people_count": number,"relax_first": string,"relax_second": string
+            }[]
+                           },
 "claim_due_emails":
 { Args: { "p_limit"?: number }; Returns: {
               "attempts": number,"budget_preset": string,"draw_at": string,"draw_mode": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"template": string,"to_email": string,"to_name": string,"to_timezone": string
@@ -300,6 +343,11 @@ isOneToOne: false
 "get_exchange_people":
 { Args: { "p_exchange": string }; Returns: {
               "display_name": string,"is_me": boolean,"is_organiser": boolean,"taking_part": boolean
+            }[]
+                           },
+"get_exclusions":
+{ Args: { "p_exchange": string }; Returns: {
+              "created_at": string,"first_member_id": string,"first_name": string,"id": string,"second_member_id": string,"second_name": string
             }[]
                            },
 "get_invite_preview":
@@ -380,6 +428,9 @@ isOneToOne: false
                            },
 "restore_wishlist_item":
 { Args: { "p_item_id": string }; Returns: undefined
+                           },
+"save_exclusions":
+{ Args: { "p_exchange": string,"p_first": (string)[],"p_second": (string)[] }; Returns: number
                            },
 "send_email_invite":
 { Args: { "p_email": string,"p_exchange": string }; Returns: undefined
