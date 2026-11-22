@@ -379,8 +379,10 @@ select is(
   || '/' || (select draw_round::text from public.exchanges where id = current_setting('test.ex_p')::uuid),
   '5/2/0/false/5/4/5/1', 'a second draw writes nothing and queues nothing, and the round stays 1');
 
--- 14. AC-8: once drawn, joining, asking, approving, removing, changing pairs, nudging and inviting are all refused (22023,
+-- 14. AC-8: once drawn, joining, asking, approving, removing, changing pairs and nudging are all refused (22023,
 -- hint closed). A pending request is written directly for Mo so approve has something to refuse.
+-- WHY no invite here (owner decision 2026-11-23): send_email_invite is revoked from signed-in users (20261117213330), so it
+-- answers 42501 before any state check; test 230 covers that.
 do $fx$ begin
   insert into public.join_requests (exchange_id, user_id) values (current_setting('test.ex_p')::uuid, pg_temp.u(12));
 end $fx$;
@@ -391,10 +393,9 @@ select is(
       (select id from public.join_requests where exchange_id = current_setting('test.ex_p')::uuid and user_id = pg_temp.u(12) and status = 'pending')))
   || '/' || pg_temp.run_as(pg_temp.u(1), format('select public.remove_member(%L)', pg_temp.mid(current_setting('test.ex_p'), 'Bola')))
   || '/' || pg_temp.run_as(pg_temp.u(1), format('select public.save_exclusions(%L, array[]::uuid[], array[]::uuid[])', current_setting('test.ex_p')))
-  || '/' || pg_temp.run_as(pg_temp.u(1), format('select count(*) from public.send_nudge(%L, array[%L]::uuid[])', current_setting('test.ex_p'), pg_temp.mid(current_setting('test.ex_p'), 'Bola')))
-  || '/' || pg_temp.run_as(pg_temp.u(1), format('select public.send_email_invite(%L, %L)', current_setting('test.ex_p'), 'someone@example.test')),
-  'err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed',
-  'after the draw join, ask, approve, remove, save pairs, nudge and invite are refused (22023, closed)');
+  || '/' || pg_temp.run_as(pg_temp.u(1), format('select count(*) from public.send_nudge(%L, array[%L]::uuid[])', current_setting('test.ex_p'), pg_temp.mid(current_setting('test.ex_p'), 'Bola'))),
+  'err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed',
+  'after the draw join, ask, approve, remove, save pairs and nudge are refused (22023, closed)');
 
 -- 15. AC-8: attaching a list or switching to ideas is refused too (P0002, as for any closed exchange), and nothing changes.
 do $fx$ begin
