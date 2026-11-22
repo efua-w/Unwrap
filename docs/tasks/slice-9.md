@@ -76,3 +76,28 @@ The decisions row (2026-11-16) says the organiser sees addresses "on Participant
 ### Acceptance criteria
 AC-1 through AC-25 (see planner output for full list). Key ones:
 - AC-1: 42501 on table access; AC-2: organiser-only reads; AC-4: bidirectional; AC-6: locked after draw; AC-7: infeasible save allowed; AC-10: full matching or zero rows; AC-11: oracle agreement for n≤6; AC-12: edge coverage; AC-13: relax pair
+
+---
+
+## Builder — round 1 — 2026-11-22
+- Task: slice-9 — Exclusions migration, engine and security tests (GCO-009)
+- Requirements: GCO-009; plan §5, §6 inv 2/10/11
+- Files/components: supabase/migrations/20261122110555_exclusions.sql, supabase/tests/security/280_exclusions.sql, supabase/tests/security/290_compute_matching.sql
+- Work completed: migration written (table + 8 functions), two pgTAP test files (33 + 17 assertions)
+- Outstanding issues: None for database layer
+- Next action: main session applies migration, runs tests, then calls builder back for app code (step 7+)
+
+### Status: DATABASE DONE — WAITING FOR APP CODE
+
+---
+
+## Main session — migration applied — 2026-11-22
+- Migration applied to dev project `ulziqspdjtjszvdcwdek` via `apply_migration`, version `20261122110555`
+- Local file renamed to `20261122110555_exclusions.sql`
+- Drift check passed: 21 files, 21 recorded
+- Security tests run on dev:
+  - **280_exclusions.sql**: 33/33 assertions passed (access control, diff-save, state refusals, pair vanish, no assignment/reservation references)
+  - **290_compute_matching.sql**: 17/17 assertions passed (oracle agreement n≤6, valid matchings 7–100, even/odd paths, Hall violation, determinism, variety, bad input, no-retry rule)
+- Database types regenerated from dev schema
+- Typecheck passes clean
+- Next action: call builder for app code (step 7 onward: queries, actions, types, copy, draft helpers, page, components, unit tests, e2e tests)
