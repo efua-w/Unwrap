@@ -152,3 +152,8 @@ UI copy that isn't in a story's Content section. It is used only once approved. 
 | "Nudge undone." / "It had already gone out, so it can't be undone." | Toast after Undo on "Nudge sent to ..." (GCO-008) | No board | Approved 2026-11-19 (Tobechukwu Olih) |
 | "Add it before names are drawn." | E10 preview line when the organiser draws names themselves | Board preview has "{draw_at}", which a manual draw lacks | Approved 2026-11-19 (Tobechukwu Olih) |
 | "{N} people have added a wishlist, {M} haven't" (also "No one has", "1 person has", "1 hasn't") | Spoken description of the face row on the readiness block (GCO-006) | Board UwAvatar stack label is "5 people have added a wishlist, 3 haven't"; the singular and zero forms are derived | Approved 2026-11-19 (Tobechukwu Olih) |
+| "{n} pairs" / "1 pair" | Organiser tools subtitle for the Exclusions row (GCO-006, GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "Remove {A} and {B}" | Bin button accessible name on an exclusion pair row (GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "We couldn't save the pairs. Nothing has changed, so you can try again." | Exclusions save failed (GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "We couldn't load the pairs for {exchange}." | Exclusions load error (GCO-009) | No board | Approved 2026-11-22 (Tobechukwu Olih) |
+| "With these pairs, names can't be drawn fairly. Remove a few pairs, or invite more people. You can still save, and the draw checks again later." | Exclusions impossible alert when no single pair fixes it (GCO-009) | No board (Q3b) | Approved 2026-11-22 (Tobechukwu Olih) |
