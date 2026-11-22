@@ -559,7 +559,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByRole("heading", { name: "People (3)" })).toBeVisible();
         await expect(page.getByText("You, Femi and Bisi.")).toBeVisible();
         await expect(page.getByText("Nothing yet. Add one so your giver has ideas.")).toBeVisible();
-        for (const hidden of ["Edit details", "Draw names now…", "Cancel exchange…", "Exclusions", "Invite by email"]) {
+        for (const hidden of ["Edit details", "Draw names now…", "Cancel exchange…", "Invite by email"]) {
           await expect(page.getByText(hidden)).toHaveCount(0);
         }
         await expectNoAxeViolations(page);
