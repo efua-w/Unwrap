@@ -201,10 +201,10 @@ select ok(
   and not has_function_privilege('authenticated', 'private.add_activity_event(uuid, uuid, public.activity_kind, uuid)', 'execute'),
   'private.add_activity_event is not executable by anon or signed-in people');
 
--- 4. The kinds, in order: only the two people events exist (AC-20).
+-- 4. The kinds, in order: the two people events (AC-20) and, from slice 10, names_drawn (no subject, GC-007).
 select is(
   (select string_agg(enumlabel, ',' order by enumsortorder) from pg_enum where enumtypid = 'public.activity_kind'::regtype),
-  'member_joined,join_requested', 'the only event kinds are member_joined and join_requested');
+  'member_joined,join_requested,names_drawn', 'the only event kinds are member_joined, join_requested and names_drawn');
 
 -- 5-6. RLS is on and nobody has a grant, so a direct read or write is refused outright (AC-18, AC-19).
 select ok(
