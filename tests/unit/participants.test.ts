@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { askedLabel, memberSubline, requestSubline, waitingNames } from "@/features/participants/format";
 import { toJoinRequestRow, toJoinRequestRowWithEmail, toParticipantLine } from "@/features/participants/map";
-import { PARTICIPANTS_COPY, REQUEST_BLOCK_COPY } from "@/features/participants/copy";
+import { NUDGE_COPY, PARTICIPANTS_COPY, REQUEST_BLOCK_COPY } from "@/features/participants/copy";
+import { summariseReadiness } from "@/features/participants/readiness";
+import type { ReadinessRow } from "@/features/participants/types";
 
 describe("askedLabel (GCO-007)", () => {
   const now = new Date("2026-11-15T14:00:00Z");
@@ -107,5 +109,80 @@ describe("row mappers (GCO-007)", () => {
     expect(member.email).toBe("ifeoma.nwosu@gmail.com");
     expect(member.hasWishlist).toBe(false);
     expect("takingPart" in member).toBe(false);
+  });
+});
+
+describe("summariseReadiness (GCO-006, GCO-008)", () => {
+  const row = (name: string, over: Partial<ReadinessRow> = {}): ReadinessRow => ({
+    memberId: `m-${name}`,
+    name,
+    isMe: false,
+    hasWishlist: false,
+    nudgedRecently: false,
+    ...over,
+  });
+
+  it("counts everyone taking part, the organiser included, and who has a list in", () => {
+    const rows = [row("Amaka Obi", { isMe: true, hasWishlist: true }), row("Ifeoma Nwosu", { hasWishlist: true }), row("Emeka Okafor"), row("Tolu Adeyemi")];
+    const summary = summariseReadiness(rows);
+    expect(summary.total).toBe(4);
+    expect(summary.inCount).toBe(2);
+    expect(summary.missing.map((m) => m.name)).toEqual(["Emeka Okafor", "Tolu Adeyemi"]);
+  });
+
+  it("never offers the organiser's own missing list to a nudge", () => {
+    const summary = summariseReadiness([row("Amaka Obi", { isMe: true }), row("Emeka Okafor", { hasWishlist: true })]);
+    expect(summary.missing).toEqual([]);
+    expect(summary.targets).toEqual([]);
+  });
+
+  it("keeps recently nudged people in missing but out of the targets", () => {
+    const summary = summariseReadiness([row("Emeka Okafor", { nudgedRecently: true }), row("Tolu Adeyemi")]);
+    expect(summary.missing).toHaveLength(2);
+    expect(summary.targets).toEqual([{ memberId: "m-Tolu Adeyemi", name: "Tolu Adeyemi" }]);
+  });
+
+  it("gives targets only a member id and a name", () => {
+    const [target] = summariseReadiness([row("Emeka Okafor")]).targets;
+    expect(Object.keys(target ?? {}).sort()).toEqual(["memberId", "name"]);
+  });
+});
+
+describe("Nudge copy (boards Org-Nudge-*, Exchange-Detail-obefore and -ojust; owner decisions 2026-11-18)", () => {
+  it("matches the readiness block", () => {
+    expect(NUDGE_COPY.cardMeta("Fri 27 Nov")).toBe("Needs you by Fri 27 Nov");
+    expect(NUDGE_COPY.cardTitle(5, 8)).toBe("5 of 8 wishlists are in");
+    expect(NUDGE_COPY.cardBodyMany("Emeka, Tolu and Ada")).toBe("Emeka, Tolu and Ada haven't added theirs.");
+    expect(NUDGE_COPY.cardBodyOne("Seun")).toBe("Seun hasn't added theirs yet.");
+    expect(NUDGE_COPY.cardAction(3, "Emeka")).toBe("Nudge 3 people…");
+    expect(NUDGE_COPY.cardAction(1, "Seun")).toBe("Nudge Seun…");
+  });
+
+  it("matches the page header", () => {
+    expect(`${NUDGE_COPY.headerWishlists(5, 8)} ${NUDGE_COPY.headerDrawOn("Fri 27 Nov")}`).toBe("5 of 8 wishlists are in. Names are drawn Fri 27 Nov.");
+    expect(`${NUDGE_COPY.headerPeople(4)} ${NUDGE_COPY.headerDrawOn("Fri 4 Dec")}`).toBe("4 people are in. Names are drawn Fri 4 Dec.");
+  });
+
+  it("matches the sheet", () => {
+    expect(NUDGE_COPY.title(3, "")).toBe("Nudge 3 people?");
+    expect(NUDGE_COPY.title(1, "Seun")).toBe("Nudge Seun?");
+    expect(NUDGE_COPY.preview("Amaka", "Family Christmas 2026", "Fri 27 Nov")).toBe(
+      "“Amaka is waiting on your wishlist for Family Christmas 2026. Names are drawn Fri 27 Nov.”",
+    );
+    expect(NUDGE_COPY.privacy).toBe("Anyone nudged in the last 12 hours is skipped.");
+    expect(NUDGE_COPY.recentTitle).toBe("Everyone was nudged recently");
+    expect(NUDGE_COPY.recentBody).toBe("Everyone here was nudged in the last 12 hours. Give them a little time.");
+    expect(NUDGE_COPY.bodyOffline).toBe("You're offline. You can send this once you're back online. They'll get this by email:");
+    expect(NUDGE_COPY.sentToast("Emeka, Tolu and Ada")).toBe("Nudge sent to Emeka, Tolu and Ada.");
+    expect(NUDGE_COPY.nudgeAll(3)).toBe("Nudge all 3…");
+  });
+
+  it("says the same thing the email says for a manual draw (owner decision 2)", () => {
+    expect(NUDGE_COPY.preview("Amaka", "Book club", null)).toContain("Names are drawn when Amaka is ready.");
+  });
+
+  it("uses the approved failure and rate-limit lines", () => {
+    expect(NUDGE_COPY.failed).toBe("We couldn't send the nudge. Nothing was sent, so you can try again.");
+    expect(NUDGE_COPY.rateLimited).toBe("You've sent a lot of nudges in the last hour. Try again later.");
   });
 });

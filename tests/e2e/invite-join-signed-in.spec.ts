@@ -554,7 +554,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await addMember(exchange.id, femi);
         await addMember(exchange.id, bisi);
         await page.reload();
-        await expect(page.getByText("3 people in.", { exact: true })).toBeVisible();
+        // Board Exchange-Detail-obefore: the header leads with readiness once someone else is in (nobody has a wishlist yet).
+        await expect(page.getByText(`0 of 3 wishlists are in. Names are drawn ${DRAW_DAY}.`, { exact: true })).toBeVisible();
         await expect(page.getByRole("heading", { name: "People (3)" })).toBeVisible();
         await expect(page.getByText("You, Femi and Bisi.")).toBeVisible();
         await expect(page.getByText("Nothing yet. Add one so your giver has ideas.")).toBeVisible();

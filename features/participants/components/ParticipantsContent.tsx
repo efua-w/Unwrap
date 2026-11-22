@@ -5,11 +5,13 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { getOrganiserExchange } from "@/features/exchanges/queries";
 import { lastJoinDay } from "@/features/exchanges/timeline";
+import { firstName } from "@/features/joining/copy";
+import { formatDay } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 import { buildInviteUrl } from "@/lib/site-url";
 import { PARTICIPANTS_COPY } from "../copy";
 import { askedLabel } from "../format";
-import { getJoinRequestsWithEmail, getParticipants } from "../queries";
+import { getJoinRequestsWithEmail, getParticipants, getReadiness } from "../queries";
 import { ParticipantsView } from "./ParticipantsView";
 
 function Heading({ sub }: { sub?: string }) {
@@ -48,7 +50,7 @@ export function ParticipantsLoading() {
 // S30 Participants (GCO-007). WHY the organiser guard is getOrganiserExchange: it answers null for a missing,
 // cancelled, someone else's or member-only exchange alike, so every non-organiser gets the same S47 page and
 // learns nothing (AC-12). The database enforces it again in each function this page calls.
-export async function ParticipantsContent({ id, viewerId }: { id: string; viewerId: string }) {
+export async function ParticipantsContent({ id, viewerId, viewerName }: { id: string; viewerId: string; viewerName: string }) {
   const copy = PARTICIPANTS_COPY;
   let detail;
   try {
@@ -80,6 +82,8 @@ export async function ParticipantsContent({ id, viewerId }: { id: string; viewer
     );
   }
 
+  // WHY its own catch: Nudge is an extra on this page. If readiness cannot be read the list still shows, without Nudge.
+  const readiness = await getReadiness(id).catch(() => null);
   const timeZone = await readViewerTimeZone();
   const now = new Date();
   const alone = people.every((p) => p.isMe);
@@ -103,6 +107,15 @@ export async function ParticipantsContent({ id, viewerId }: { id: string; viewer
         inviteUrl={inviteUrl}
         approvalRequired={exchange.approvalRequired}
         canManage={exchange.canManagePeople}
+        nudge={
+          readiness
+            ? {
+                organiserFirst: firstName(viewerName),
+                drawDay: exchange.drawMode === "at_join_by" && exchange.drawAt ? formatDay(new Date(exchange.drawAt), timeZone) : null,
+                recentIds: readiness.filter((r) => r.nudgedRecently).map((r) => r.memberId),
+              }
+            : null
+        }
       />
     </div>
   );

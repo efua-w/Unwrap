@@ -21,6 +21,7 @@ Each decision below is rewritten into the stories it affects, which carry an **U
 | Organiser's own list (2026-11-09) | S49 "Your list for this exchange" is its own page. An organiser taking part reaches it from S14 › Your part. They attach a whole wishlist or add ideas just for this exchange. Boards Org-List-* and Exchange-Detail-oattached / -oideas. | GC-010, GCO-004 |
 | Creation limits (2026-11-13) | Each person can start at most 10 exchanges, 30 wishlists and 300 items in an hour. Past that the action fails with the normal save error, and works again once the hour has passed. Decided by Tobechukwu Olih. | GCO-001, GC-019, GC-021 |
 | Organiser sees emails (2026-11-16) | Organisers can see the email address of the people in their own exchange and of people waiting to join, on Participants only. This reverses "The organiser never sees participants' email addresses". Pair secrecy and asymmetric visibility are unchanged: an address never says who gives to whom, and no member sees another person's address. The organiser's own row has no address. Join confirmation says so. Decided by Tobechukwu Olih, 2026-11-15 and 2026-11-16. | GCO-007, GCO-003, GCO-008, GC-009, GC-025 |
+| Readiness and nudges (2026-11-19) | Built for the exchange page and Participants only (Home and the Exchanges subtitle wait for the Home slice; the all-ready alert and Run draw wait for the draw slice). The readiness card is a grey block with the face row (dashed circles for people missing) and a secondary "Nudge {n} people…" button. An organiser can send 20 nudge emails an hour; the nudge email is always sent; no activity event. See GCO-006, GCO-007 and GCO-008 for the rest. Decided by Tobechukwu Olih. | GCO-006, GCO-007, GCO-008 |
 | One screen before joining (2026-11-18) | A person sees one screen before joining, not two: S10 Join exchange at `/i/[inviteToken]` (boards Join-Exchange-guest, -default, -alone, -approval, -busy, -error, -loading, -offline). Signed out it shows public data only: the inviter, the count, the dates and How it works; no faces, names or organiser note until signed in (GC-002 context C stands). Signed in it adds the people in, the organiser's note and "Joining as {name}, {email}", and Join exchange or Ask to join acts in place. After signing up or logging in from an invite: sign-up, code, name (Profile setup), then joined automatically and on to Attach wishlist; an approval exchange sends the request instead; a returning person skips the name step. If the exchange closed, filled or cancelled, or the person was removed or already asked, the existing unavailable or ask screen shows and nothing is automatic. The automatic step needs a sign-in that started from the invite; opening `/i/[inviteToken]/join` any other way goes to the invite screen. Decided by Tobechukwu Olih. | GC-002, GC-003, GC-004, GC-005, GC-009, GC-012 |
 
 ## What changed in v1.1
@@ -1221,7 +1222,7 @@ Organiser is a participant with all participant abilities, unless they chose "No
 | GCO-005 | Invite people | Invite people by WhatsApp, link, email or phone |  |
 | GCO-006 | Track readiness | See who has joined and who still needs a wishlist | Updated |
 | GCO-007 | Manage participants | Approve or decline join requests and remove people | Updated |
-| GCO-008 | Nudge people | Remind people who haven't added a wishlist |  |
+| GCO-008 | Nudge people | Remind people who haven't added a wishlist | Updated |
 | GCO-009 | Exclusions | Stop specific pairs drawing each other |  |
 | GCO-010 | Edit exchange | Change details or dates after creating | Updated |
 | GCO-011 | Draw names | Draw names once, knowing who isn't ready | Updated |
@@ -1417,6 +1418,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 
 ### GCO-006 · Track readiness
 
+**Updated 2026-11-19 (decided by Tobechukwu Olih, slice 8):** built on the exchange page and Participants only. Home and the Exchanges-list subtitle wait for the Home slice, and the all-ready alert with Run draw waits for the draw slice. On the exchange page the organiser sees a readiness card (meta "Needs you by {day}", headline "5 of 8 wishlists are in", a face row of the people whose lists are in followed by a dashed circle for each person missing, then "Emeka, Tolu and Ada haven't added theirs.") with a secondary button "Nudge 3 people…" ("Nudge {First}…" for one). The card counts only people taking part, never the organiser when they are just organising. A list the person kept after deleting it counts as in. The card shows who has a list, never its items or reservations.
+
 **Updated 2026-11-15 (decided by Tobechukwu Olih, owner decisions 2026-11-14 Q1–Q18):** the "Needs you now" request block is built on the exchange page and on Exchanges: "{Name} wants to join." / "Approve or decline {first}'s request. People can join until {day}." / **Review request**; for several, "{n} people want to join." with the first names and **Review {n} requests**; after the join-by day the body says "Joining closed on {day}." instead (Q16). The action goes to Participants. The request block comes first, then the invite section or the closed card (Q17). The readiness split ("Still need a wishlist", "Ready"), Nudge and "Join request would make 3" belong to slice 8 (Q18).
 
 **Updated in v1.1:** covers the organiser who isn't taking part; Hand over organising joins the tools; the event step shows its time.
@@ -1450,6 +1453,8 @@ Organiser is a participant with all participant abilities, unless they chose "No
 - "Emeka, Tolu and Ada haven't added theirs."
 
 ### GCO-007 · Manage participants
+
+**Updated 2026-11-19 (decided by Tobechukwu Olih, slice 8):** Participants now has Nudge. "Still need a wishlist ({n})" has a header link "Nudge all {n}…" only when 2 or more people are in it, and each row there shows "Nudge" and "Remove…" side by side, as on the latest board Org-People-default. Nudge all is disabled offline. The Nudge sheet is GCO-008.
 
 **Updated 2026-11-17 (decided by Tobechukwu Olih, slice 7 owner decisions Q1–Q12, docs/tasks/slice-7.md):** the Remove sheet's board sentence is back, now true: "{First} gets a short email at {address} saying they're no longer in it. It doesn't give a reason or say who removed them. Their wishlist stays theirs." (the organiser already reads the address on this page). Approving shows "{First} is in. They've been emailed." The removed person's email (E12) says "You're no longer in {exchange}", gives no reason, does not name the organiser, and cannot be turned off. The approved person's email (E09) "You're in {exchange}" is always sent and names no organiser. An approval email that has not been sent yet is cancelled if the person is removed first. This replaces the slice 6 decision that dropped the email sentences (Q14).
 
@@ -1492,6 +1497,15 @@ Organiser is a participant with all participant abilities, unless they chose "No
 - "You're no longer in {exchange}. Your wishlist is still yours to use."
 
 ### GCO-008 · Nudge people
+
+**Updated 2026-11-19 (decided by Tobechukwu Olih, slice 8):** built from the exchange-page card and Participants only (Home and Exchanges entries wait for the Home slice). The sheet (a dialog up to 480 wide on desktop) reads "Nudge {n} people?" (a single person: "Nudge {First}?") with their first names, "They'll get this by email:", the message preview, "Anyone nudged in the last 12 hours is skipped.", Send nudge and Cancel. In a manual-draw exchange the message says "Names are drawn when {Organiser} is ready." Rules:
+
+- An organiser can send 20 nudge emails an hour. The limit counts emails, not taps. Nudges that were undone don't count; emails cancelled because the person left or added a list (not_needed) or that had no recipient (no_recipient) do. A send that would go over the limit is refused whole, nothing is sent: "You've sent a lot of nudges in the last hour. Try again later."
+- The 12-hour skip counts a nudge from any sender, so two organisers don't both nudge the same person. A send that skips some people goes to the rest, and the toast names only those nudged: "Nudge sent to Emeka, Tolu and Ada." with Undo. If everyone was nudged recently: "Everyone was nudged recently" / "Everyone here was nudged in the last 12 hours. Give them a little time."
+- Undo works within 20 seconds, while the emails still wait; after that: "It had already gone out, so it can't be undone." Undo stops every email of that organiser's still waiting in that exchange.
+- The nudge email (E10) is always sent and can't be turned off. It names the organiser, links to the exchange, and is cancelled if the person left or added a list before it goes. No activity event is written for a nudge.
+- Failure: "We couldn't send the nudge. Nothing was sent, so you can try again."
+- Nudge and "Remove…" sit side by side on Participants rows (GCO-007).
 
 **As Organiser, I want to** remind people who haven't added a wishlist, **so that** everyone is ready before the draw.
 

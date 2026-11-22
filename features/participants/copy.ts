@@ -14,7 +14,7 @@ export const PARTICIPANTS_COPY = {
   askedOn: (day: string, time: string) => `${day}, ${time}`,
   approve: "Approve",
   decline: "Decline",
-  // Boards Org-People-*: the people split by wishlist (owner 2026-11-16). No Nudge until a later slice.
+  // Boards Org-People-*: the people split by wishlist (owner 2026-11-16).
   needTitle: (n: number) => `Still need a wishlist (${n})`,
   readyTitle: (n: number) => `Ready (${n})`,
   hasWishlist: "Wishlist added",
@@ -86,4 +86,54 @@ export const INVITE_APPROVAL_COPY = {
   waitingOne: (first: string) => `${first} is waiting for you to let them in.`,
   // pending: the waiting note for several people.
   waitingMany: (n: number) => `${n} people are waiting for you to let them in.`,
+} as const;
+
+// GCO-006 readiness and GCO-008 Nudge (boards Exchange-Detail-obefore / -ojust, Org-Nudge-default, -busy, -sent,
+// -recent, -offline, Org-People-default; owner decisions 2026-11-18 1 to 4). Lines marked "pending" are not on a board
+// and are listed in docs/copy-pending.md for approval.
+export const NUDGE_COPY = {
+  // The exchange page's readiness block.
+  cardMeta: (day: string) => `Needs you by ${day}`,
+  // pending: a manual draw has no day to be ready by.
+  cardMetaManual: "Needs you before names are drawn",
+  cardTitle: (inCount: number, total: number) => `${inCount} of ${total} wishlists are in`,
+  cardBodyOne: (first: string) => `${first} hasn't added theirs yet.`,
+  cardBodyMany: (names: string) => `${names} haven't added theirs.`,
+  // The face row's one description (board UwAvatar stack: "5 people have added a wishlist, 3 haven't"). Counts only,
+  // no names. pending: the singular forms are not on a board (docs/copy-pending.md).
+  facesLabel: (inCount: number, missing: number) =>
+    `${inCount === 0 ? "No one has" : inCount === 1 ? "1 person has" : `${inCount} people have`} added a wishlist, ${missing === 1 ? "1 hasn't" : `${missing} haven't`}`,
+  // Boards: "Nudge 3 people…" and, for one person, "Nudge Seun…".
+  cardAction: (count: number, first: string) => (count === 1 ? `Nudge ${first}…` : `Nudge ${count} people…`),
+  // The page header's first line, with others in (boards Exchange-Detail-obefore, -ojust). "4 people are in." when the
+  // organiser only organises. pending: the manual-draw sentence is the Exchanges row's, "You draw names when you're ready."
+  headerWishlists: (inCount: number, total: number) => `${inCount} of ${total} wishlists are in.`,
+  headerPeople: (n: number) => `${n} people are in.`,
+  headerDrawOn: (day: string) => `Names are drawn ${day}.`,
+  headerDrawManual: "You draw names when you're ready.",
+  // Participants (board Org-People-default).
+  nudgeAll: (n: number) => `Nudge all ${n}…`,
+  nudge: "Nudge",
+  // The sheet (boards Org-Nudge-*).
+  title: (count: number, first: string) => (count === 1 ? `Nudge ${first}?` : `Nudge ${count} people?`),
+  body: "They'll get this by email:",
+  bodyOffline: "You're offline. You can send this once you're back online. They'll get this by email:",
+  preview: (organiser: string, exchange: string, drawDay: string | null) =>
+    `“${organiser} is waiting on your wishlist for ${exchange}. ${
+      drawDay ? `Names are drawn ${drawDay}.` : `Names are drawn when ${organiser} is ready.`
+    }”`,
+  privacy: "Anyone nudged in the last 12 hours is skipped.",
+  send: "Send nudge",
+  cancel: "Cancel",
+  close: "Close",
+  recentTitle: "Everyone was nudged recently",
+  recentBody: "Everyone here was nudged in the last 12 hours. Give them a little time.",
+  sentToast: (names: string) => `Nudge sent to ${names}.`,
+  undo: "Undo",
+  // pending: Undo results (no board).
+  undoneToast: "Nudge undone.",
+  undoTooLate: "It had already gone out, so it can't be undone.",
+  // Owner decision 2026-11-18 2 and 3.
+  failed: "We couldn't send the nudge. Nothing was sent, so you can try again.",
+  rateLimited: "You've sent a lot of nudges in the last hour. Try again later.",
 } as const;
