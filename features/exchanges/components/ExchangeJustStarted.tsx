@@ -12,6 +12,7 @@ import { ReadinessBlock } from "@/features/participants/components/ReadinessBloc
 import { NUDGE_COPY } from "@/features/participants/copy";
 import { summariseReadiness } from "@/features/participants/readiness";
 import type { ReadinessRow } from "@/features/participants/types";
+import type { ExclusionsEntry } from "@/features/exclusions/types";
 import { cx } from "@/components/ui/cx";
 import { ExchangeDetailHeader } from "./ExchangeDetailHeader";
 import { InviteSection } from "./InviteSection";
@@ -32,6 +33,8 @@ type Props = {
   readiness: readonly ReadinessRow[] | null;
   /** The organiser's own display name, for the nudge preview. */
   organiserName: string;
+  /** Null when pairs cannot be set any more: no Exclusions row (GCO-009). Organiser-only. */
+  exclusions: ExclusionsEntry | null;
 };
 
 // S14 Exchange-Detail-started (GC-013, GCO-004) with the owner's decisions of 2026-11-09: header
@@ -39,7 +42,7 @@ type Props = {
 // next", and no control whose feature is not built yet (Invite by email, Edit, Draw, Cancel). Slice 5
 // adds Your part (S49 row), People and Organiser tools > Invite people (boards Exchange-Detail-oattached,
 // -oideas, -ostarted, Org-People-default; owner Q14).
-export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingNames, readiness, organiserName }: Props) {
+export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingNames, readiness, organiserName, exclusions }: Props) {
   const copy = EXCHANGE_COPY.detail;
   // WHY others, not the count: "alone" is about people other than the viewer, who may only be organising.
   const others = exchange.people.filter((p) => !p.isMe);
@@ -133,7 +136,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
         seeAllHref={`/exchanges/${exchange.id}/participants`}
       />
 
-      {inviteUrl ? (
+      {inviteUrl || exclusions ? (
         <OrganiserTools
           exchangeId={exchange.id}
           exchangeName={exchange.name}
@@ -141,6 +144,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
           inviteUrl={inviteUrl}
           approvalRequired={exchange.approvalRequired}
           waitingNames={waitingNames}
+          exclusions={exclusions}
         />
       ) : null}
     </div>

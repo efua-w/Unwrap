@@ -101,3 +101,53 @@ AC-1 through AC-25 (see planner output for full list). Key ones:
 - Database types regenerated from dev schema
 - Typecheck passes clean
 - Next action: call builder for app code (step 7 onward: queries, actions, types, copy, draft helpers, page, components, unit tests, e2e tests)
+
+---
+
+## Builder — round 2 — 2026-11-22
+- Task: slice-9 — Exclusions app code, steps 7 onward (GCO-009)
+- Requirements: GCO-009, GCO-006 (Organiser tools row with pair count), owner decisions Q1a to Q9
+- Files/components: `features/exclusions/*`, `app/(app)/exchanges/[id]/exclusions/page.tsx`, OrganiserTools, ExchangeJustStarted, exchange page, `tests/unit/exclusions.test.ts`, `tests/e2e/exclusions-signed-in.spec.ts`
+- Work completed: full app layer — server queries/actions, types, copy, draft helpers, page, components (ExclusionsContent, ExclusionsView, AddPairSheet), OrganiserTools Exclusions row, unit tests (19), e2e spec (5 tests × 3 widths)
+- Outstanding issues: builder could not read the boards
+- Next action: main session board-checks and fixes copy
+
+### Status: READY FOR TEST (after board check)
+
+---
+
+## Main session — board check — 2026-11-22
+- Read all 8 Org-Excl-* boards (empty, default, pairfirst, pairsecond, impossible, saved, two, locked) from the Part 2 canvas
+- Fixed copy to match the boards:
+  - **Intro**: merged intro + privacy into one paragraph ("Stop two people drawing each other…only you can see these pairs.")
+  - **Empty state**: plain text ("No pairs yet. Everyone can draw anyone except themselves.") instead of EmptyState component
+  - **Pair subtitle**: added "Neither will draw the other." on each pair row
+  - **Verdict position**: moved between pair list and Add button (board order)
+  - **Sheet step 1**: body "Who's the first person?" (was "First person")
+  - **Sheet step 2**: title changes to "Who shouldn't {first} draw?", body "{first} won't draw them, and they won't draw {first}."
+  - **Locked view**: "Names are drawn" (not "have been drawn"), subtitle "Neither drew the other." (past tense), no Lock icon (board shows plain text)
+  - **Removed**: separate privacy Alert (integrated into intro), EmptyState component (plain text), CheckCircle icon on fair line (board shows plain text)
+- Updated `docs/copy-pending.md`: 7 "Awaiting approval" lines changed to "Approved (board)"
+- Updated e2e test for changed empty-state copy
+- All checks pass: typecheck, lint, tokens:check, 408 unit tests
+- Next action: tester
+
+---
+
+## Tester — round 1 e2e fixes — 2026-11-22
+- Tester round 1 found 3 e2e defects (test code, not product):
+  1. Sheet locator breaks at step 2 (dialog title changes) — fixed with separate step1/step2 locators
+  2. 3 people + 1 pair = infeasible (not feasible) — fixed by using 4 people; then 4 people + 2 pairs still feasible — fixed by using 3 pairs
+  3. `getByRole("alert")` matches Next.js route announcer — fixed with `.filter({ hasText: "can't be drawn fairly" })`
+- All 15 e2e tests pass (5 tests × 3 widths), all checks green
+- Next action: tester round 2
+
+---
+
+## Reviewer — round 1 — 2026-11-22
+- Verdict: CHANGES REQUIRED (one High finding)
+- **R1-1 (High)**: `queries.ts` maps `display_name` directly to `DraftPair.firstName` without calling `firstName()`, so saved pairs show full names ("Nneka Obi") instead of first names ("Nneka") after reload
+- **R1-2 (Low)**: Two copy-pending lines still awaiting approval (stale-list and load-error) — tracked, does not block
+- Fix: added `firstName()` import and applied it to both name fields in `getExclusions` mapping
+- All checks pass after fix: typecheck, lint, 408 unit tests
+- Next action: tester round 3, then reviewer round 2
