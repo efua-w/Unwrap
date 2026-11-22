@@ -111,7 +111,7 @@ end $$;
 create function pg_temp.mk(p_name text, p_taking boolean) returns text
 language sql as $$
   select format('select public.create_exchange(%L, null, %L, current_date + 10, %L, %L, current_date + 20, %L, %s, true)',
-    p_name, '10k_20k', 'organiser_chooses', '18:00', 'Africa/Lagos', p_taking)
+    p_name, '10k_20k', 'organiser_chooses', '18:00', 'Africa/Lagos', p_taking::text)
 $$;
 
 -- No passwords, no real addresses: the .test TLD can never reach an inbox.
@@ -180,6 +180,14 @@ do $fx$ begin
   perform pg_temp.try_as(pg_temp.u(1), pg_temp.mk('T310 Pool', true));
   perform pg_temp.try_as(pg_temp.u(6), pg_temp.mk('T310 Quiet', false));
   perform pg_temp.try_as(pg_temp.u(11), pg_temp.mk('T310 Few', true));
+  -- WHY a guard: try_as swallows errors, so a failed create would otherwise show only as a uuid error much later.
+  -- It adds no assertion; it reports the real SQLSTATE if an exchange was not created.
+  if (select count(*) from public.exchanges where name in ('T310 Pool', 'T310 Quiet', 'T310 Few')) <> 3 then
+    raise exception 'T310 fixture: exchanges not created; create_exchange gave Pool=%, Quiet=%, Few=%',
+      pg_temp.try_as(pg_temp.u(1), pg_temp.mk('T310 Pool', true)),
+      pg_temp.try_as(pg_temp.u(6), pg_temp.mk('T310 Quiet', false)),
+      pg_temp.try_as(pg_temp.u(11), pg_temp.mk('T310 Few', true));
+  end if;
 end $fx$;
 
 do $fx$ begin
@@ -418,15 +426,19 @@ select is(
   'the asker sees their request on the drawn exchange as closed; nobody else does; Ola''s is still pending');
 
 -- 18. Q5: Dismiss. Only the asker's own closed request: someone else's is P0002, a pending one is refused (22023, status).
-select is(
-  pg_temp.run_as(pg_temp.u(14), format('select public.dismiss_join_request(%L)',
+-- WHY the dismissals are their own statement: the dismissed_at read below must see what they wrote (same-statement trap).
+do $fx$ begin
+  perform set_config('test.dismiss', pg_temp.run_as(pg_temp.u(14), format('select public.dismiss_join_request(%L)',
     (select id from public.join_requests where exchange_id = current_setting('test.ex_p')::uuid and user_id = pg_temp.u(13))))
   || '/' || pg_temp.run_as(pg_temp.u(14), format('select public.dismiss_join_request(%L)',
     (select id from public.join_requests where exchange_id = current_setting('test.ex_q')::uuid and user_id = pg_temp.u(14))))
   || '/' || pg_temp.run_as(pg_temp.u(13), format('select public.dismiss_join_request(%L)',
     (select id from public.join_requests where exchange_id = current_setting('test.ex_p')::uuid and user_id = pg_temp.u(13))))
   || '/' || pg_temp.run_as(pg_temp.u(13), format('select public.dismiss_join_request(%L)',
-    (select id from public.join_requests where exchange_id = current_setting('test.ex_p')::uuid and user_id = pg_temp.u(13))))
+    (select id from public.join_requests where exchange_id = current_setting('test.ex_p')::uuid and user_id = pg_temp.u(13)))), true);
+end $fx$;
+select is(
+  current_setting('test.dismiss')
   || '/' || pg_temp.val_as(pg_temp.u(13), $$(select count(*) from public.list_my_join_requests())$$)
   || '/' || (select (dismissed_at is not null)::text from public.join_requests
              where exchange_id = current_setting('test.ex_p')::uuid and user_id = pg_temp.u(13)),
@@ -455,9 +467,13 @@ select ok(
 
 -- 21. AC-10, GCO-012, Q1c: the organiser of Q only organises. Hana, Ife, Jide and Kemi take part; the draw clears the
 -- blocked reason.
+-- WHY the draw is its own statement: the round, blocked reason and state read below must see what it wrote.
+do $fx$ begin
+  perform set_config('test.draw_q', pg_temp.val_as(pg_temp.u(6), format($q$(select people_count::text || '/' || pairs_excluded::text || '/' || emails_queued::text || '/' || drawn_now::text
+    from public.draw_names(%L))$q$, current_setting('test.ex_q'))), true);
+end $fx$;
 select is(
-  pg_temp.val_as(pg_temp.u(6), format($q$(select people_count::text || '/' || pairs_excluded::text || '/' || emails_queued::text || '/' || drawn_now::text
-    from public.draw_names(%L))$q$, current_setting('test.ex_q')))
+  current_setting('test.draw_q')
   || '/' || (select draw_round::text || ':' || coalesce(draw_blocked_reason, '-') from public.exchanges where id = current_setting('test.ex_q')::uuid)
   || '/' || private.exchange_status(current_setting('test.ex_q')::uuid)::text,
   '4/0/4/true/1:-/drawn', 'an organiser just organising draws: 4 people, 4 emails, round 1, blocked reason cleared, state drawn');

@@ -212,9 +212,13 @@ select is(
   'ok/23001/23001', 'superseded_at is set once and then can neither move nor be cleared (a row cannot come back)');
 
 -- 15. A superseded row frees the giver: a new current row for the same giver is allowed, the old one stays.
+-- WHY the insert is its own statement: a count in the same select uses that statement's snapshot and cannot see the row.
+do $fx$ begin
+  perform set_config('test.try15', pg_temp.owner_try(format('insert into private.assignments (exchange_id, giver_member_id, receiver_member_id, draw_round, kind) values (%L, %L, %L, 2, ''rematch'')',
+    current_setting('test.ex_p'), pg_temp.mid('Bola'), pg_temp.mid('Dayo'))), true);
+end $fx$;
 select is(
-  pg_temp.owner_try(format('insert into private.assignments (exchange_id, giver_member_id, receiver_member_id, draw_round, kind) values (%L, %L, %L, 2, ''rematch'')',
-    current_setting('test.ex_p'), pg_temp.mid('Bola'), pg_temp.mid('Dayo')))
+  current_setting('test.try15')
   || '/' || (select count(*)::text from private.assignments where giver_member_id = pg_temp.mid('Bola')),
   'ok/2', 'a giver can be given a new current row once the old one is superseded, and the old one is kept');
 
