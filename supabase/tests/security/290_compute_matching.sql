@@ -15,7 +15,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(17);
+select plan(18);
 
 -- Helpers live in pg_temp so nothing is left in `public` (it would break the allowlist test 030).
 create function pg_temp.id(i int) returns uuid
