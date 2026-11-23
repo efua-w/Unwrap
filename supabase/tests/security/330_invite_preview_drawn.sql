@@ -136,6 +136,8 @@ do $fx$ begin
     select current_setting('test.ex_d')::uuid, pg_temp.u(n), true, now() - make_interval(days => 5 - n) from unnest(array[2, 3]) n;
   -- C closed joining an hour ago and was never drawn. D and O keep join-by ten days ahead.
   update public.exchanges set join_by_at = now() - interval '1 hour' where id = current_setting('test.ex_c')::uuid;
+  -- WHY: mk always asks for approval, which makes the preview status 'approval'. O must be a plain open exchange.
+  update public.exchanges set approval_required = false where id = current_setting('test.ex_o')::uuid;
 end $fx$;
 
 -- The draw happens before join-by (owner decision Q2), in its own block after the members exist.
