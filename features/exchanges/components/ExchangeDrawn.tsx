@@ -1,7 +1,10 @@
 import { Envelope, Gift } from "@phosphor-icons/react/dist/ssr";
 import { Button } from "@/components/ui/Button";
-import { ActionCard, type ActionCardPlacement } from "@/components/ui/ActionCard";
+import type { ActionCardPlacement } from "@/components/ui/ActionCard";
 import { ListRow } from "@/components/ui/ListRow";
+import { cardKey } from "@/features/draw/card-dismiss";
+import { CardReset } from "@/features/draw/components/CardDismiss";
+import { DismissibleActionCard } from "@/features/draw/components/DismissibleActionCard";
 import { DRAW_COPY } from "@/features/draw/copy";
 import { RecipientRow } from "@/features/draw/components/RecipientRow";
 import type { DrawSummary, MyAssignment } from "@/features/draw/types";
@@ -54,9 +57,12 @@ export function ExchangeDrawn(props: Props) {
   ];
 
   // WHY two placements: a banner first and a tray last, so the focus order matches what is on screen at each size (WCAG 2.4.3).
+  // WHY the assignment id: a replaced assignment is a new card (GC-014). The id is the caller's own, already on this page.
+  const key = assignment ? cardKey("reveal", assignment.assignmentId) : null;
   const card = (placement: ActionCardPlacement) =>
-    assignment && !assignment.revealed ? (
-      <ActionCard
+    assignment && key && !assignment.revealed ? (
+      <DismissibleActionCard
+        cardKey={key}
         label={DRAW_COPY.needsYou}
         placement={placement}
         icon={Gift}
@@ -71,71 +77,76 @@ export function ExchangeDrawn(props: Props) {
     ) : null;
 
   return (
-    <div className="flex flex-col gap-32 md:max-w-reading-max">
+    <div className="flex flex-col gap-32">
+      {/* WHY the banner sits outside the reading column: boards S14 make it the width of the content area (1040 at 1440), while the page below it reads in a 640 column. */}
       {card("banner")}
-      <ExchangeDetailHeader name={e.name} tint={e.tint}>
-        <p className="text-body-base-regular text-text-default">{DRAW_COPY.headerDrawn(gift)}</p>
-        <p className="text-body-sm-regular text-text-muted">{second}</p>
-      </ExchangeDetailHeader>
+      {/* WHY: once revealed the card's condition is gone, so an old Dismiss must not hide a later one. */}
+      {assignment && key && assignment.revealed ? <CardReset cardKey={key} /> : null}
+      <div className="flex flex-col gap-32 md:max-w-reading-max">
+        <ExchangeDetailHeader name={e.name} tint={e.tint}>
+          <p className="text-body-base-regular text-text-default">{DRAW_COPY.headerDrawn(gift)}</p>
+          <p className="text-body-sm-regular text-text-muted">{second}</p>
+        </ExchangeDetailHeader>
 
-      {summary ? (
-        <section aria-labelledby="drawn-heading" className="flex flex-col gap-8">
-          <h2 id="drawn-heading" className="text-heading-4">
-            {DRAW_COPY.drawnSection}
+        {summary ? (
+          <section aria-labelledby="drawn-heading" className="flex flex-col gap-8">
+            <h2 id="drawn-heading" className="text-heading-4">
+              {DRAW_COPY.drawnSection}
+            </h2>
+            <p className="text-body-base-regular text-text-secondary">{DRAW_COPY.drawnSentence(summary.told, summary.peopleCount)}</p>
+          </section>
+        ) : null}
+
+        <section aria-labelledby="part-heading" className="flex flex-col gap-4">
+          <h2 id="part-heading" className="text-heading-4">
+            {copy.yourPart}
           </h2>
-          <p className="text-body-base-regular text-text-secondary">{DRAW_COPY.drawnSentence(summary.told, summary.peopleCount)}</p>
+          {takingPart && list ? (
+            <ul>
+              {/* WHY a plain row (owner Q7): the list after the draw is slice 11, so there is nothing to open yet. */}
+              <ListRow title={copy.yourListTitle} sub={drawnListSubline(list)} />
+              {assignment ? (
+                <RecipientRow exchangeId={e.id} assignmentId={assignment.assignmentId} revealedBefore={assignment.revealed} />
+              ) : null}
+            </ul>
+          ) : (
+            <p className="text-body-base-regular text-text-secondary">{DRAW_COPY.justOrganisingBody}</p>
+          )}
         </section>
-      ) : null}
 
-      <section aria-labelledby="part-heading" className="flex flex-col gap-4">
-        <h2 id="part-heading" className="text-heading-4">
-          {copy.yourPart}
-        </h2>
-        {takingPart && list ? (
-          <ul>
-            {/* WHY a plain row (owner Q7): the list after the draw is slice 11, so there is nothing to open yet. */}
-            <ListRow title={copy.yourListTitle} sub={drawnListSubline(list)} />
-            {assignment ? (
-              <RecipientRow exchangeId={e.id} assignmentId={assignment.assignmentId} revealedBefore={assignment.revealed} />
-            ) : null}
-          </ul>
-        ) : (
-          <p className="text-body-base-regular text-text-secondary">{DRAW_COPY.justOrganisingBody}</p>
-        )}
-      </section>
-
-      <section aria-labelledby="dates-heading" className="flex flex-col gap-4">
-        <h2 id="dates-heading" className="text-heading-4">
-          {copy.datesTitle}
-        </h2>
-        <DetailRows rows={dateRows} zoneLine={copy.zoneLine(zoneShortName(new Date(e.joinByAt), timeZone))} />
-      </section>
-
-      <PeopleSection people={people} alone={false} count={count} />
-
-      {e.note ? (
-        <section aria-labelledby="note-heading" className="flex flex-col gap-8 rounded-2xl bg-surface-subtle p-16">
-          <h2 id="note-heading" className="text-body-base-semibold">
-            {organiser ? DRAW_COPY.yourNote : copy.fromOrganiser(firstName(props.exchange.organiserName))}
+        <section aria-labelledby="dates-heading" className="flex flex-col gap-4">
+          <h2 id="dates-heading" className="text-heading-4">
+            {copy.datesTitle}
           </h2>
-          <p className="whitespace-pre-line break-words text-body-base-regular text-text-secondary">{e.note}</p>
+          <DetailRows rows={dateRows} zoneLine={copy.zoneLine(zoneShortName(new Date(e.joinByAt), timeZone))} />
         </section>
-      ) : null}
 
-      {organiser && props.exclusions ? (
-        <OrganiserTools
-          exchangeId={e.id}
-          exchangeName={e.name}
-          lastJoinDay=""
-          inviteUrl={null}
-          approvalRequired={props.exchange.approvalRequired}
-          waitingNames={[]}
-          exclusions={props.exclusions}
-          draw={null}
-        />
-      ) : null}
+        <PeopleSection people={people} alone={false} count={count} />
 
-      {card("tray")}
+        {e.note ? (
+          <section aria-labelledby="note-heading" className="flex flex-col gap-8 rounded-2xl bg-surface-subtle p-16">
+            <h2 id="note-heading" className="text-body-base-semibold">
+              {organiser ? DRAW_COPY.yourNote : copy.fromOrganiser(firstName(props.exchange.organiserName))}
+            </h2>
+            <p className="whitespace-pre-line break-words text-body-base-regular text-text-secondary">{e.note}</p>
+          </section>
+        ) : null}
+
+        {organiser && props.exclusions ? (
+          <OrganiserTools
+            exchangeId={e.id}
+            exchangeName={e.name}
+            lastJoinDay=""
+            inviteUrl={null}
+            approvalRequired={props.exchange.approvalRequired}
+            waitingNames={[]}
+            exclusions={props.exclusions}
+            draw={null}
+          />
+        ) : null}
+
+        {card("tray")}
+      </div>
     </div>
   );
 }

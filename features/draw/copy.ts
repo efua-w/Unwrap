@@ -106,6 +106,8 @@ export const DRAW_COPY = {
   cardListWhenManual: (organiserFirst: string) => `Names are drawn when ${organiserFirst} is ready.`,
   // Accessible name of the ActionCard region (screen-reader text only; the board has no visible label).
   needsYou: "Needs you",
+  // pending: no board shows the close control's name (owner request 2026-11-23).
+  dismissCard: "Dismiss",
   // Exchanges rows.
   rowDrawn: (gift: string) => `Names are drawn. Gifts on ${gift}.`,
   rowCardTitle: (exchange: string) => `Names are drawn for ${exchange}`,

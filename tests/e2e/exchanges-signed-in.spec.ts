@@ -358,6 +358,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
         // GC-008: a primary button in the block above means Start an exchange is secondary.
         await expect(page.getByRole("link", { name: "Start an exchange" })).toHaveClass(/border-border-emphasis/);
         await expectNoAxeViolations(page);
+        // Mid-slice change 2026-11-23: the Exchanges page is restructured around the ActionCard banner, so the page must still not scroll sideways.
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
         await page.screenshot({ path: `test-results/screenshots/exchanges-started-${width}.png`, fullPage: true });
         await page.getByRole("link", { name: "Share invite link" }).click();
         await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange?.id}#invite$`));

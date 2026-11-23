@@ -98,6 +98,65 @@ for (const { name: width, viewport } of VIEWPORTS) {
         }
       });
 
+      // Mid-slice change 2026-11-23 (owner): the ActionCard banner is as wide as the content area, has a Dismiss at the far right,
+      // and a dismissed card stays hidden on this device. The "Add your wishlist" card stands in for the drawn-state card,
+      // which needs a real draw (same component, gate and button; only the key differs).
+      test("action card: banner width, Dismiss, it stays hidden after a reload, no horizontal overflow", async ({ browser }) => {
+        test.setTimeout(120_000);
+        const { joined, exchange } = await exchangeWith("Banner swap", ["Ife"]);
+        const [ife] = joined;
+        const member = await signedIn(browser, viewport, ife, `/exchanges/${exchange.id}`);
+        try {
+          const page = member.page;
+          const card = page.getByRole("complementary", { name: "Needs you" });
+          const noOverflow = async () =>
+            expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+          await expect(card).toContainText("Add your wishlist");
+          await noOverflow();
+
+          if (viewport.width < 768) {
+            // The tray as built: no close control.
+            await expect(card).toBeVisible();
+            await expect(card.getByRole("button", { name: "Dismiss" })).toHaveCount(0);
+            return;
+          }
+
+          await expect(card).toBeVisible();
+          const box = await card.boundingBox();
+          // WHY "Your part": the title sits beside the exchange tag, so its left edge is not the column's.
+          const column = await page.getByRole("heading", { name: "Your part" }).boundingBox();
+          expect(box).not.toBeNull();
+          // The board banner is 1040 wide at 1440 (the content area). Below that it fills the content area.
+          if (viewport.width === 1440) expect(Math.abs((box?.width ?? 0) - 1040)).toBeLessThanOrEqual(1);
+          else expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport.width);
+          // Left edge lines up with the page below it.
+          expect(Math.abs((box?.x ?? 0) - (column?.x ?? 0))).toBeLessThanOrEqual(1);
+          await noOverflow();
+
+          // Dismiss is a real button, the last control in the card, and sits at its far right.
+          const dismiss = card.getByRole("button", { name: "Dismiss" });
+          const action = card.getByRole("link", { name: "Add your wishlist" });
+          await expect(dismiss).toBeVisible();
+          const dBox = await dismiss.boundingBox();
+          const aBox = await action.boundingBox();
+          expect((dBox?.x ?? 0)).toBeGreaterThan((aBox?.x ?? 0) + (aBox?.width ?? 0) - 1);
+          expect((box?.x ?? 0) + (box?.width ?? 0) - ((dBox?.x ?? 0) + (dBox?.width ?? 0))).toBeLessThanOrEqual(32);
+          await page.screenshot({ path: `test-results/screenshots/action-card-banner-${width}.png`, fullPage: true });
+
+          await dismiss.click();
+          await expect(card).toHaveCount(0);
+          await page.reload();
+          await expect(page.getByRole("heading", { level: 1, name: "Banner swap" })).toBeVisible();
+          await expect(card).toHaveCount(0);
+          // The tray is the same card: it stays hidden at the narrow width too.
+          await page.setViewportSize({ width: 390, height: 844 });
+          await expect(card).toHaveCount(0);
+          await page.setViewportSize(viewport);
+        } finally {
+          await member.context.close();
+        }
+      });
+
       test("not available: an outsider, and a member on Names drawn, before any draw (S47)", async ({ browser }) => {
         test.setTimeout(120_000);
         const { ngozi, joined, exchange } = await exchangeWith("Quiet swap", ["Ife"]);

@@ -18,6 +18,8 @@ type Props = {
   sub: string;
   /** The one action, as a Button. */
   action: ReactNode;
+  /** The close control, at the far right. Banner only: the tray has no close (no mobile board shows one). */
+  dismiss?: ReactNode;
   className?: string;
 };
 
@@ -26,8 +28,10 @@ type Props = {
 // order would move the card on screen and leave it in the other place in the focus and reading order (WCAG 2.4.3, 1.3.2).
 // The caller puts the banner where it reads first and the tray where it reads last; each is hidden (display: none, so
 // out of the focus order too) at the size it does not belong to.
-// WHY no dismiss: every use so far is "do this now", and the boards for those cards show no hide control.
-export function ActionCard({ label, placement, icon, title, sub, action, className }: Props) {
+// WHY the dismiss is a slot and banner-only: the card knows nothing about where a hide is remembered (the caller wraps it and
+// passes the control), and the owner asked for the close on the desktop banner only (2026-11-23). It is a sibling of the
+// action, never inside it. The banner is as wide as the content area (the caller places it outside the reading column).
+export function ActionCard({ label, placement, icon, title, sub, action, dismiss, className }: Props) {
   return (
     <aside
       aria-label={label}
@@ -51,7 +55,10 @@ export function ActionCard({ label, placement, icon, title, sub, action, classNa
           <p className="break-words text-body-sm-regular text-text-secondary">{sub}</p>
         </div>
       </div>
-      <div className="flex flex-col md:flex-row md:items-center">{action}</div>
+      <div className="flex flex-col md:flex-row md:items-center md:gap-8">
+        {action}
+        {placement === "banner" ? dismiss : null}
+      </div>
     </aside>
   );
 }
