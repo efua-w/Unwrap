@@ -28,6 +28,8 @@ export type ExchangeListContext = Schedule & {
   budget: BudgetPreset;
   isOrganiser: boolean;
   takingPart: boolean;
+  /** Names are drawn (or the gift day has passed): the list can only be added when nothing is attached, or removed (GC-010). */
+  afterDraw: boolean;
   /** Only read for the organiser-draws wording on You're in. */
   organiserName: string | null;
 };

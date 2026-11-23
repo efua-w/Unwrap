@@ -26,15 +26,14 @@ const recipientRow = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("parseRecipient (GC-014, AC-5, AC-6)", () => {
-  it("reads the person and their Most wanted items, dropping the link reference", () => {
+  it("reads the person and their Most wanted items, keeping the opaque reference for the item sheet (GC-015)", () => {
     const r = parseRecipient(recipientRow());
     expect(r).toEqual({
       displayName: "Kemi Bello",
       avatarPath: null,
       listState: "items",
-      mostWanted: [{ name: "Noise-cancelling earbuds", priceKobo: 2_200_000 }],
+      mostWanted: [{ ref: "abc", name: "Noise-cancelling earbuds", priceKobo: 2_200_000 }],
     });
-    expect(JSON.stringify(r)).not.toContain("abc");
   });
 
   it("refuses an answer with an extra key such as a list name or an id", () => {
@@ -58,7 +57,7 @@ describe("parseRecipient (GC-014, AC-5, AC-6)", () => {
   });
 
   it("keeps an item with no price", () => {
-    expect(parseMostWanted([{ ref: "a", name: "Candle", price_kobo: null }])).toEqual([{ name: "Candle", priceKobo: null }]);
+    expect(parseMostWanted([{ ref: "a", name: "Candle", price_kobo: null }])).toEqual([{ ref: "a", name: "Candle", priceKobo: null }]);
   });
 });
 

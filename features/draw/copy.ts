@@ -140,5 +140,7 @@ export const DRAW_COPY = {
   noList: (first: string) => `${first} hasn't added a wishlist yet.`,
   onlyYou: (first: string) => `Only you can see this. ${first} never will.`,
   hideAgain: "Hide again",
+  // Board Exchange-Reveal-revealed: the primary button above Hide again.
+  viewList: "View their wishlist",
   loadingRecipient: "Opening your person's name",
 } as const;

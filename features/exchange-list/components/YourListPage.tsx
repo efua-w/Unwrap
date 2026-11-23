@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { cx } from "@/components/ui/cx";
 import { ExchangeTag, type ExchangeTint } from "@/components/ui/ExchangeTag";
 import { ListRow } from "@/components/ui/ListRow";
+import { Sheet } from "@/components/ui/Sheet";
 import { useToast } from "@/components/ui/Toast";
 import { removeWishlistItem } from "@/features/wishlists/actions";
 import { ItemSheet, type ItemSheetActions } from "@/features/wishlists/components/ItemSheet";
@@ -16,25 +17,30 @@ import type { BudgetPreset } from "@/lib/money/budget";
 import {
   addIdeaItem,
   attachWishlistToExchange,
+  detachWishlistFromExchange,
   startExchangeIdeas,
   updateIdeaItem,
   type AddIdeaResult,
   type AttachResult,
+  type DetachResult,
   type IdeasResult,
 } from "../actions";
 import {
   addedDetachedToast,
   addedToast,
+  afterListIntro,
   attachFailed,
   budgetGuide,
   itemSheetAttachedNote,
   LIST_COPY,
   priceHelper,
   reattachedToast,
+  removeTitle,
   restoredToast,
   savedToast,
   switchedToast,
   switchFailed,
+  wishlistRemovedToast,
 } from "../copy";
 import type { ListMode, MyExchangeList, MyIdeas } from "../types";
 import { IdeasList, useIdeaRows } from "./IdeasList";
@@ -44,7 +50,7 @@ type Props = {
   mode: ListMode;
   /** Participant only: the page was reached from Join, so Skip for now and the You're in page apply (Q11). */
   fromJoin: boolean;
-  exchange: { id: string; name: string; tint: ExchangeTint; budget: BudgetPreset };
+  exchange: { id: string; name: string; tint: ExchangeTint; budget: BudgetPreset; afterDraw: boolean };
   myList: MyExchangeList;
   ideas: MyIdeas;
   /** The row for an attached wishlist or kept list ("6 items · updated Sat 31 Oct"). */
@@ -66,6 +72,9 @@ type Previous = { id: string; name: string };
 // use_exchange_ideas) and shows what get_my_exchange_list answered, so a refused attach shows as failed
 // and nothing on screen claims a change that did not happen. The in-app page stays put after a change and
 // shows a toast with Undo (owner 2026-11-16); Undo calls the same attach, detach and restore actions.
+// After the draw (slice 11, GC-010; boards Joining-Attach-drawn, -drawnlist, -remove, -removed) the same page: no Skip, no
+// switching (a list can be added only when nothing is attached, so the way to change is Remove wishlist…, then add), and
+// Remove wishlist… for a personal list only (a kept list and ideas are not removed from here; the database refuses both).
 export function YourListPage({
   mode,
   fromJoin,
@@ -82,6 +91,7 @@ export function YourListPage({
   const { online, reportNetworkError } = useNetworkStatus();
   const organiser = mode === "organiser";
   const toJoined = !organiser && fromJoin;
+  const afterDraw = exchange.afterDraw;
   const exchangePath = `/exchanges/${exchange.id}`;
   const ownPath = organiser ? `${exchangePath}/my-list` : `${exchangePath}/list`;
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -94,6 +104,7 @@ export function YourListPage({
   });
   const [failed, setFailed] = useState<Failed | null>(null);
   const [busy, setBusy] = useState<"ideas" | "retry" | null>(null);
+  const [removal, setRemoval] = useState<{ open: boolean; busy: boolean; failed: boolean }>({ open: false, busy: false, failed: false });
 
   const signedOut = () => router.replace(`/login?next=${encodeURIComponent(ownPath)}`);
   const rows = useIdeaRows(ideasListId, ideas.items, signedOut, () =>
@@ -115,7 +126,7 @@ export function YourListPage({
   const noLists = wishlistCount === 0;
   // WHY attachedList and not just screen: "current" also covers a kept list (GC-030), where the one wishlist the
   // person has is not attached and must stay choosable.
-  const onlyOneList = !toJoined && attachedList !== null && wishlistCount === 1;
+  const onlyOneList = !toJoined && !afterDraw && attachedList !== null && wishlistCount === 1;
   // WHY: board My-List-picker and -itemfilled disable every page button while a sheet is open or a change
   // is in flight; offline disables them as well (the shell's banner says so).
   const locked = !online || picker.open || itemSheet.open || busy !== null;
@@ -150,9 +161,45 @@ export function YourListPage({
 
   const reattach = (list: Previous) => () => attachWishlistToExchange(exchange.id, list.id);
 
+  // Remove wishlist… (GC-010 after the draw). WHY Undo is a plain re-attach: the list, its items and the giver's marks stay.
+  async function removeList() {
+    if (!attachedList || removal.busy) return;
+    const previous = attachedList;
+    setRemoval({ open: true, busy: true, failed: false });
+    let result: DetachResult | null = null;
+    try {
+      result = await detachWishlistFromExchange(exchange.id);
+    } catch {
+      reportNetworkError();
+    }
+    if (result?.ok) {
+      setRemoval({ open: false, busy: false, failed: false });
+      toast.show({
+        message: wishlistRemovedToast(exchange.name),
+        action: { label: WISHLIST_COPY.undo, onAction: () => void undo(reattach(previous)) },
+        above: "actions",
+      });
+      return;
+    }
+    if (result && !result.ok && result.reason === "signed-out") return signedOut();
+    // WHY a refresh and no explanation: not-found, kept, ideas and not-available all mean this page is out of date.
+    if (result && !result.ok && result.reason !== "failed") {
+      setRemoval({ open: false, busy: false, failed: false });
+      router.refresh();
+      return;
+    }
+    setRemoval({ open: true, busy: false, failed: true });
+  }
+
   async function attach(id: string, name: string): Promise<UseOutcome> {
     try {
       const result = await attachWishlistToExchange(exchange.id, id);
+      if (!result.ok && result.reason === "attached") {
+        // WHY: another tab attached a list since this page loaded. Show what is there now.
+        toast.show({ message: LIST_COPY.alreadyAttached, above: "actions" });
+        router.refresh();
+        return "ok";
+      }
       if (result.ok) {
         if (toJoined) {
           finishJoin();
@@ -171,7 +218,7 @@ export function YourListPage({
             above: "actions",
           });
         } else {
-          toast.show({ message: LIST_COPY.toastAttached, above: "actions" });
+          toast.show({ message: afterDraw ? LIST_COPY.afterToastAttached : LIST_COPY.toastAttached, above: "actions" });
         }
         return "ok";
       }
@@ -306,12 +353,17 @@ export function YourListPage({
     });
   }
 
-  const intro =
-    toJoined || screen === "choose"
+  const intro = afterDraw
+    ? screen === "choose"
+      ? LIST_COPY.afterChooseIntro
+      : afterListIntro(screen === "ideas" ? rows.shown.length : myList.itemCount)
+    : toJoined || screen === "choose"
       ? budgetGuide(toJoined ? "join" : "app", exchange.budget)
       : screen === "current"
         ? LIST_COPY.currentIntro
         : LIST_COPY.ideasIntro;
+  // WHY: a kept list cannot be removed or replaced after the draw, and ideas are removed item by item, so the bar is empty then.
+  const showBar = !(afterDraw && screen === "current" && !attachedList);
 
   // Buttons share one wrapping row on desktop, auto width (boards My-List-*-d).
   const wide = "md:w-auto";
@@ -335,7 +387,7 @@ export function YourListPage({
       ) : (
         <>
           <header className="flex flex-col gap-8">
-            <h1 className="text-heading-2">{LIST_COPY.organiserTitle}</h1>
+            <h1 className="text-heading-2">{afterDraw && screen === "choose" ? LIST_COPY.participantTitle : LIST_COPY.organiserTitle}</h1>
             <p className="flex items-center gap-12">
               <ExchangeTag name={exchange.name} tint={exchange.tint} size="sm" />
               <span className="min-w-0 break-words text-body-base-semibold text-text-secondary">{exchange.name}</span>
@@ -352,7 +404,7 @@ export function YourListPage({
           onEdit={openItemSheet}
           onRemove={rows.remove}
           footer={
-            toJoined ? null : (
+            toJoined || afterDraw ? null : (
               <Button variant="link" disabled={locked} aria-haspopup="dialog" onClick={openPicker}>
                 {LIST_COPY.chooseInstead}
               </Button>
@@ -410,8 +462,9 @@ export function YourListPage({
         </Alert>
       ) : null}
 
-      <Alert variant="privacy">{LIST_COPY.privacy}</Alert>
+      <Alert variant="privacy">{afterDraw ? LIST_COPY.afterPrivacy : LIST_COPY.privacy}</Alert>
 
+      {showBar ? (
       <div
         ref={actionsRef}
         className={cx(
@@ -424,13 +477,24 @@ export function YourListPage({
       >
         {screen === "ideas" ? (
           <>
-            <Button fullWidth className={wide} disabled={locked} onClick={() => done(LIST_COPY.toastReady)}>
+            <Button fullWidth className={wide} disabled={locked} onClick={() => done(afterDraw ? LIST_COPY.afterToastReady : LIST_COPY.toastReady)}>
               {LIST_COPY.done}
             </Button>
             <Button variant="secondary" fullWidth className={wide} disabled={locked} aria-haspopup="dialog" onClick={() => openItemSheet()}>
               {LIST_COPY.addAnother}
             </Button>
           </>
+        ) : screen === "current" && afterDraw ? (
+          <Button
+            variant="destructive-text"
+            fullWidth
+            className={wide}
+            disabled={locked}
+            aria-haspopup="dialog"
+            onClick={() => setRemoval({ open: true, busy: false, failed: false })}
+          >
+            {LIST_COPY.removeWishlist}
+          </Button>
         ) : screen === "current" ? (
           <>
             <Button
@@ -494,6 +558,28 @@ export function YourListPage({
           </>
         )}
       </div>
+      ) : null}
+
+      <Sheet
+        open={removal.open}
+        onClose={() => setRemoval({ open: false, busy: false, failed: false })}
+        variant="destructive"
+        title={removeTitle(exchange.name)}
+        description={LIST_COPY.removeBody}
+        busy={removal.busy}
+        footer={
+          <>
+            <Button variant="destructive" fullWidth busy={removal.busy} disabled={!online} onClick={() => void removeList()}>
+              {LIST_COPY.removeConfirm}
+            </Button>
+            <Button variant="text" fullWidth disabled={removal.busy} onClick={() => setRemoval({ open: false, busy: false, failed: false })}>
+              {LIST_COPY.removeKeep}
+            </Button>
+          </>
+        }
+      >
+        {removal.failed ? <Alert variant="error">{LIST_COPY.removeFailed}</Alert> : null}
+      </Sheet>
 
       <WishlistPickerSheet
         key={`picker-${sessions.picker}`}

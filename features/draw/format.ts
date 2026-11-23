@@ -36,9 +36,9 @@ export function parseMostWanted(raw: unknown): MostWantedItem[] | null {
     const { name, price_kobo } = entry;
     if (typeof name !== "string" || name.trim() === "") return null;
     if (price_kobo !== null && (typeof price_kobo !== "number" || !Number.isInteger(price_kobo) || price_kobo < 0)) return null;
-    // WHY `ref` is read and dropped: it is the link reference of slice 11; this screen shows plain rows (Q7).
-    if (typeof entry.ref !== "string") return null;
-    items.push({ name, priceKobo: price_kobo });
+    // WHY `ref` is kept now (slice 11): the row opens that item's sheet on the recipient's list.
+    if (typeof entry.ref !== "string" || entry.ref === "") return null;
+    items.push({ ref: entry.ref, name, priceKobo: price_kobo });
   }
   return items;
 }

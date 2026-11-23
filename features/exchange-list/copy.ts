@@ -48,10 +48,27 @@ export const LIST_COPY = {
   // the in-app page keeps them on the page (owner 2026-11-16, boards My-List-*).
   toastAttached: "Wishlist attached. Your giver will see it after the draw.",
   toastReady: "Your list is ready. Your giver will see it after the draw.",
+  // After the draw (slice 11, GC-010; boards Joining-Attach-drawn, -drawnlist, -remove, -removed). The first, second and
+  // fourth lines are the boards' and the story's; the rest are pending (docs/copy-pending.md).
+  afterChooseIntro: "Your giver will see the list you pick as soon as you attach it.",
+  afterPrivacy: "Only your giver can see it. Nobody else in the exchange can.",
+  afterToastAttached: "Wishlist attached. Your giver can see it now.",
+  afterToastReady: "Your list is ready. Your giver can see it now.", // pending
+  removeWishlist: "Remove wishlist…",
+  removeConfirm: "Remove wishlist",
+  removeKeep: "Keep it",
+  removeBody: "Your giver won't see it any more. The list stays in your Wishlists, and you can attach it again later.",
+  removeFailed: "We couldn't remove your wishlist. Nothing has changed, so you can try again.", // pending
+  alreadyAttached: "You already have a list here, so we refreshed the page.", // pending
   // Failure: the approved load-error line of the exchange page, reused (S14 Exchange-Detail-error).
   loadError: EXCHANGE_COPY.detail.loadError,
 } as const;
 
+// "6 items. Only your giver can see them." (board Joining-Attach-drawnlist)
+export const afterListIntro = (count: number) =>
+  `${itemCountLabel(count)}. Only your giver can see ${count === 1 ? "it" : "them"}.`;
+export const removeTitle = (exchange: string) => `Remove your wishlist from ${exchange}?`;
+export const wishlistRemovedToast = (exchange: string) => `Wishlist removed from ${exchange}.`;
 export const ideasHeading = (count: number) => `Your list for this exchange (${count})`;
 export const addedToast = (name: string) => `Added ${q(name)}.`;
 export const switchedToast = (list: string) => `Switched to ${q(list)}.`;
