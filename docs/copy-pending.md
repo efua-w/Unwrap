@@ -184,4 +184,4 @@ UI copy that isn't in a story's Content section. It is used only once approved. 
 | "We couldn't dismiss that. Try again." | Toast when Dismiss on a closed request fails (GC-006) | No board | Approved 2026-11-23 |
 | "Names are drawn for {exchange}." with "{time} · See who you're buying for" | Activity row (GC-007) | Board Activity-default | Approved 2026-11-23 |
 | "Needs you" (hidden label) | Accessible name of the ActionCard region on Exchanges and the drawn exchange page (GC-006, GC-013) | No board; screen-reader text only | Approved 2026-11-23 |
-| "Dismiss" (hidden label) | Accessible name of the close control on the desktop ActionCard banner (owner request 2026-11-23, mid-slice change to slice 10) | No board shows it; the control is an X icon, so the name is screen-reader text only | Awaiting approval |
+| "Dismiss" (hidden label) | Accessible name of the close control on the desktop ActionCard banner (owner request 2026-11-23, mid-slice change to slice 10) | No board shows it; the control is an X icon, so the name is screen-reader text only | Approved 2026-11-23 |
