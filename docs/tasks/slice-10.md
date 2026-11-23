@@ -130,3 +130,30 @@ AC-1 through AC-17 (see planner output for full list). Key ones:
 - Next action: main session applies the migration (rename the file to the Supabase version), runs db:test (300, 310, 320 plus the full suite), regenerates database.types.ts, then the builder starts step 3 (app code).
 
 ### Status: DATABASE DONE — WAITING ON MIGRATION APPLY
+
+---
+
+## Main session — 2026-11-23
+- Task: slice-10 — migration applies, pgTAP and CI fixes, tester and reviewer rounds, docs
+- Requirements: GCO-011, GCO-012, GC-014, GC-013, GC-006, GC-007, GC-002 (Q2), GC-026
+- Files/components: supabase/migrations/20261122215259_draw_and_reveal.sql, 20261123090758_invite_preview_drawn.sql; supabase/tests/security/300, 310, 320, 330 (new), 200, 210, 220, 270 (edited); lib/supabase/database.types.ts (CI's file); features/draw/*; docs/progress.md, docs/user-stories.md
+- Work completed (verified = ran or read in this task; assumed = not run):
+  - Migration `draw_and_reveal` applied to dev as 20261122215259; `db:drift --strict` passed 22/22 (verified).
+  - PR #25 security job, first run: 210 test 15 (allowlist), 300 test 15 (same-statement count) and 310 (fixture `mk` formatted a boolean as `t`, so no exchange existed) failed. Fixed in setup only, expected values unchanged: 300 and 310 by the builder, 210 by an allowlist entry for `draw_names` and `get_draw_summary` (owner decision 2026-11-22). Second run: 310 test 15 failed because `send_email_invite` is revoked from signed-in users (42501); the invite refusal was dropped from that check (owner decision 2026-11-23). Third run: pgTAP `Result: PASS`, then only the types drift check failed; CI's generated `database.types.ts` was applied as a patch (commit 45ae067) and the temporary `features/draw/rpc.ts` cast was deleted (all verified from the CI log and the local checks).
+  - A run on 45ae067 showed both CI jobs SUCCESS (verified). That run covered the committed database layer and types only, not the app code.
+  - Tester round 1: PASS. No Critical or High. typecheck, lint, tokens:check, 446 unit tests, 51 email tests passed; Playwright with `E2E_ALLOW_DRAW` unset at 390, 768 and 1440: 141 passed, 6 skipped (the opt-in draw tests), 0 failed. Defects T1-1 (Medium, E21 "All {n} people… have been told" can be false) and T1-2 (Low, "unless someone leaves").
+  - Reviewer round 1: CHANGES REQUIRED. Pair secrecy checked, nothing found. Findings and status:
+    - R1-1 High (invite preview `closed_at` is the future join-by date after an early draw): fixed by migration `invite_preview_drawn` and test 330; applied as 20261123090758, drift check passed 23/23 (verified). 330 itself has not run (assumed pending CI).
+    - R1-2 Medium (E21 wording): fixed, E21 always says "Everyone taking part has someone to buy for."; count line deferred (item 113).
+    - R1-3 Medium (ActionCard focus order): fixed by rendering a banner and a tray switched with `max-md:hidden` / `md:hidden`; not seen in a browser for the drawn states (assumed).
+    - R1-4 Medium (docs): this note, progress.md and user-stories.md.
+    - R1-5 Medium (real draw not clicked through as each role): open (items 115 to 118).
+    - R1-6 Low (`loadRecipient` skipped the reveal check): fixed, it returns unavailable until revealed.
+    - R1-7 Low (Server Actions do not check exchange state): skipped, item 110.
+    - R1-8 Low (N+1 on Exchanges): skipped, item 112.
+    - R1-9 Low (hard-coded "Needs you" label, stale comment): fixed, copy-pending row added.
+    - R1-10 Low (RevealFlow keeps the name in state after Hide again in another tab): fixed.
+  - Builder round 3: typecheck, lint, tokens:check, 446 unit tests and the non-draw Playwright specs (exchanges-signed-in 21/21, draw-reveal 6/6 with 6 opt-in skips at three widths) passed (builder's report).
+  - Commits pushed to slice-10-draw: 9baccf5 (migration and 330), c5433a6 (app code). CI has not been read for these commits.
+- Outstanding issues: CI on 9baccf5 and c5433a6 (330 and the full suite); tester re-test and reviewer re-review after round 3; owner approval of the E21 deferral and the "Needs you" copy rows; signed-in click-through and board comparison (items 117, 118); two drawn throwaway exchanges in dev that cannot be deleted (item 116)
+- Next action: read CI on PR #25; if green, tester round 2 then reviewer round 2; owner click-through
