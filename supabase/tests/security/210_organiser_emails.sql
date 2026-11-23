@@ -254,7 +254,9 @@ select ok(
       -- WHY the two slice 7 functions (owner decision 2026-11-17): send_email_invite takes the address the organiser
       -- typed, and claim_due_emails (service_role only) returns each recipient's own address to the sender. Tests 220
       -- and 230 prove who can call them and that each row carries only the recipient's address.
-      and p.proname not in ('get_participants', 'get_join_requests', 'send_email_invite', 'claim_due_emails')
+      -- WHY draw_names and get_draw_summary (owner decision 2026-11-22, slice 10): each returns a COUNT named emails_queued
+      -- (how many Names are drawn emails were queued), never an address. Tests 310 and 320 prove who can call them.
+      and p.proname not in ('get_participants', 'get_join_requests', 'send_email_invite', 'claim_due_emails', 'draw_names', 'get_draw_summary')
       and (p.proargnames::text ilike '%email%'
            or (p.proretset and p.prorettype = 'pg_catalog.record'::regtype and pg_get_function_result(p.oid) ilike '%email%'))),
   'no other function in public returns or takes an email');

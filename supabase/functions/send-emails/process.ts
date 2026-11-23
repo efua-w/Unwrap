@@ -58,6 +58,7 @@ export function parseDueRow(raw: unknown): { id: string; row: DueRow | null; cod
       note: str(r.note),
       scheduleMode: str(r.draw_mode),
       scheduleAt: str(r.draw_at),
+      peopleCount: typeof r.people_count === "number" ? r.people_count : null,
     },
   };
 }

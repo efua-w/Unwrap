@@ -60,16 +60,17 @@ export async function getReadiness(exchangeId: string): Promise<ReadinessRow[]> 
   }));
 }
 
-// The signed-in person's own pending requests, oldest first (S08 Exchanges, GC-012). Only requests still
-// waiting come back: a declined one disappears silently (owner Q8).
+// The signed-in person's own requests, oldest first (S08 Exchanges, GC-012, GC-006): the ones still waiting, and the ones
+// the draw closed until their asker dismisses them (owner Q5, 2026-11-22). A declined one disappears silently (owner Q8).
 export async function listMyPendingRequests(): Promise<MyPendingRequest[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("list_my_join_requests");
   if (error) throw new Error("Could not read your requests.");
   return data
-    .filter((r) => r.status === "pending")
+    .flatMap((r) => (r.status === "pending" || r.status === "closed" ? [{ ...r, status: r.status }] : []))
     .map((r) => ({
       requestId: r.request_id,
+      status: r.status,
       exchangeName: r.exchange_name,
       exchangeTint: r.exchange_tint,
       organiserName: r.organiser_name,

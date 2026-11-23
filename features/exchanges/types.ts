@@ -76,4 +76,6 @@ export type MemberExchange = Schedule & {
   organiserName: string;
   people: PersonLine[];
   myList: OwnListSummary;
+  /** Before the draw (open, joining_closed) or after it (drawn). */
+  state: "open" | "joining_closed" | "drawn";
 };

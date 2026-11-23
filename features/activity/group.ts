@@ -22,13 +22,20 @@ export function toActivityItem(row: ActivityRow, now: Date, timeZone: string): A
   const name = firstName(row.subjectName);
   const time = formatTime(at, timeZone);
   const asked = row.kind === "join_requested";
+  const drawn = row.kind === "names_drawn";
   return {
     id: row.id,
     exchangeId: row.exchangeId,
     exchangeName: row.exchangeName,
     exchangeTint: row.exchangeTint,
-    title: asked ? ACTIVITY_COPY.asked(name, row.exchangeName) : ACTIVITY_COPY.joined(name, row.exchangeName),
-    sub: asked ? ACTIVITY_COPY.askedSub(time) : time,
+    title: drawn
+      ? ACTIVITY_COPY.drawn(row.exchangeName)
+      : asked
+        ? ACTIVITY_COPY.asked(name, row.exchangeName)
+        : ACTIVITY_COPY.joined(name, row.exchangeName),
+    sub: drawn ? ACTIVITY_COPY.drawnSub(time) : asked ? ACTIVITY_COPY.askedSub(time) : time,
+    // WHY Reveal: the event is the prompt to see who you got (GC-007). Every person who gets it takes part, so they have an assignment.
+    href: drawn ? `/exchanges/${row.exchangeId}/reveal` : `/exchanges/${row.exchangeId}`,
     isUnread: row.isUnread,
     dayKey: wallClockIn(at, timeZone).ymd,
     dayLabel: dayLabel(at, now, timeZone),

@@ -4,7 +4,7 @@ import { budgetLabel, BUDGET_PRESETS } from "../../lib/money/budget.ts";
 import { formatDayTime, zoneShortName, formatDay } from "../../lib/dates/format.ts";
 import { budgetText, formatGiftDay, formatMoment } from "../../supabase/functions/_shared/emails/dates.ts";
 import { escapeHtml, firstName, oneLine } from "../../supabase/functions/_shared/emails/escape.ts";
-import { cleanBaseUrl, exchangeLink, inviteLink, notificationsLink, participantsLink } from "../../supabase/functions/_shared/emails/links.ts";
+import { cleanBaseUrl, exchangeLink, inviteLink, notificationsLink, participantsLink, revealLink } from "../../supabase/functions/_shared/emails/links.ts";
 import { renderEmail } from "../../supabase/functions/_shared/emails/render.ts";
 import { EMAIL_TEMPLATES, type EmailTemplate, type RenderInput } from "../../supabase/functions/_shared/emails/types.ts";
 import { bearerToken, secretsMatch } from "../../supabase/functions/send-emails/auth.ts";
@@ -15,7 +15,8 @@ const EX = "0b9d6e0e-6b4b-4a3c-9d57-1d3f6a1d2c11";
 const JOIN_BY = "2026-11-27T17:00:00Z";
 const TOKEN = "0123456789abcdef0123456789abcdef";
 
-const noOther = (t: EmailTemplate) => t === "E09" || t === "E12";
+const noOther = (t: EmailTemplate) => t === "E09" || t === "E12" || t === "E21";
+const hasDetails = (t: EmailTemplate) => t === "E06" || t === "E19" || t === "E21";
 
 function input(template: EmailTemplate, over: Partial<RenderInput> = {}): RenderInput {
   return {
@@ -27,12 +28,13 @@ function input(template: EmailTemplate, over: Partial<RenderInput> = {}): Render
     otherName: noOther(template) ? null : "Chidi Okeke",
     inviteToken: template === "E06" ? TOKEN : null,
     toTimezone: "Africa/Lagos",
-    budgetPreset: template === "E06" ? "10k_20k" : null,
+    budgetPreset: hasDetails(template) ? "10k_20k" : null,
     joinByAt: template === "E06" ? JOIN_BY : null,
-    giftDay: template === "E06" ? "2026-12-24" : null,
+    giftDay: hasDetails(template) ? "2026-12-24" : null,
     note: template === "E06" ? "Let's keep it fun this year." : null,
     scheduleMode: template === "E10" ? "at_join_by" : null,
     scheduleAt: template === "E10" ? JOIN_BY : null,
+    peopleCount: template === "E21" ? 6 : null,
     ...over,
   };
 }
@@ -263,6 +265,56 @@ describe("E10 Nudge (GCO-008, board Email-E10)", () => {
     });
     expect(parsed.row?.scheduleMode).toBe("at_join_by");
     expect(parsed.row?.scheduleAt).toBe(JOIN_BY);
+  });
+});
+
+describe("E19 and E21 Names are drawn (GCO-012, boards Email-E19 and Email-E21)", () => {
+  it("E19 is the board's email and links to Reveal", () => {
+    const { subject, preview, html, text } = renderEmail(input("E19"), BASE);
+    expect(subject).toBe("Names are drawn for Family Christmas 2026");
+    expect(preview).toBe("Find out who you're buying for. Only you will see it.");
+    expect(html).toContain("Names have been drawn for Family Christmas 2026. Open Unwrap to see who you&#39;re buying for. Only you will see it, not even Chidi.");
+    expect(html).toContain("Budget per gift");
+    expect(html).toContain("Thu 24 Dec");
+    expect(html).toContain("Reveal who you got");
+    expect(html).toContain(`href="${revealLink(BASE, EX)}"`);
+    expect(html).toContain("Tip: make sure nobody&#39;s looking over your shoulder.");
+    expect(html).toContain(`${BASE}/profile/notifications`);
+    expect(text).toContain("Reveal who you got: " + revealLink(BASE, EX));
+  });
+
+  it("E19 to the organiser says only 'Only you will see it.'", () => {
+    const { html } = renderEmail(input("E19", { toName: "Chidi Okeke", otherName: "Chidi Okeke" }), BASE);
+    expect(html).toContain("Only you will see it.");
+    expect(html).not.toContain("not even");
+  });
+
+  it("E21 links to the exchange and never claims a count of people told", () => {
+    const { subject, preview, html } = renderEmail(input("E21"), BASE);
+    expect(subject).toBe("Names are drawn for Family Christmas 2026");
+    expect(preview).toBe("Everyone has someone to buy for.");
+    expect(html).toContain("Everyone taking part has someone to buy for.");
+    expect(html).not.toContain("have been told");
+    expect(html).not.toContain("All 6 people");
+    expect(html).toContain("Nobody can see who got whom, not even you.");
+    expect(html).toContain("View exchange");
+    expect(html).toContain(`href="${exchangeLink(BASE, EX)}"`);
+    expect(html).not.toContain("/reveal");
+  });
+
+  it("E21 reads the same without a count", () => {
+    const { html } = renderEmail(input("E21", { peopleCount: null }), BASE);
+    expect(html).toContain("Everyone taking part has someone to buy for.");
+  });
+
+  it("the sender reads the people count from the claim", () => {
+    const parsed = parseDueRow({
+      id: "r1", template: "E21", to_email: "chidi@example.com", to_name: "Chidi Okeke", to_timezone: "Africa/Lagos",
+      exchange_id: EX, exchange_name: "Family Christmas 2026", attempts: 0, budget_preset: "10k_20k", gift_day: "2026-12-24",
+      people_count: 6,
+    });
+    expect(parsed.row?.peopleCount).toBe(6);
+    expect(parsed.row?.budgetPreset).toBe("10k_20k");
   });
 });
 

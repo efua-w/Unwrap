@@ -17,6 +17,8 @@ export type EmailContent = {
   /** Label and value rows (E06), shown after the first paragraph. A value may hold line breaks. */
   details?: readonly { label: string; value: string }[];
   cta?: { label: string; url: string };
+  /** A short muted line after the button and its fallback link (E19). */
+  tip?: string;
   signoff: string;
   /** Footer reason line, then the optional settings link (E07, E08), then the product line. */
   reason: string;
@@ -68,6 +70,7 @@ export function renderHtml(c: EmailContent): string {
       ),
     );
   }
+  if (c.tip) rows.push(cell("0 40px 16px", body("#414347"), escapeHtml(c.tip)));
   rows.push(cell("8px 40px 32px", body("#191a1c"), `${escapeHtml(c.signoff)}<br>The Unwrap team`));
 
   const footerStyle = `font-family:${SANS}; font-size:14px; line-height:1.5; color:#6b6b6e;`;
@@ -121,6 +124,7 @@ export function renderText(c: EmailContent): string {
     if (i === 0 && c.details) for (const d of c.details) lines.push(`${d.label}: ${d.value}`, "");
   });
   if (c.cta) lines.push(`${c.cta.label}: ${c.cta.url}`, "");
+  if (c.tip) lines.push(c.tip, "");
   lines.push(c.signoff, "The Unwrap team", "", c.reason);
   if (c.settings) lines.push(`${c.settings.label}: ${c.settings.url}`);
   lines.push(PRODUCT_LINE, "");

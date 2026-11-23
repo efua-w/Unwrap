@@ -461,13 +461,15 @@ select is(
   '10k_20k/true/true/true', 'E06 carries the budget preset, join-by, gift day and the note field');
 select ok(
   (select bool_and(c ->> 'budget_preset' is null and c ->> 'join_by_at' is null and c ->> 'gift_day' is null and c ->> 'note' is null)
-   from jsonb_array_elements(current_setting('test.claim1')::jsonb) c where c ->> 'template' <> 'E06'),
-  'no other template carries the exchange details');
+   from jsonb_array_elements(current_setting('test.claim1')::jsonb) c where c ->> 'template' not in ('E06', 'E19', 'E21'))
+  and coalesce((select bool_and(c ->> 'join_by_at' is null and c ->> 'note' is null)
+       from jsonb_array_elements(current_setting('test.claim1')::jsonb) c where c ->> 'template' in ('E19', 'E21')), true),
+  'no other template carries the exchange details; E19 and E21 (slice 10) carry the budget and gift day only');
 select is(
   (select count(*)::int from jsonb_array_elements(current_setting('test.claim1')::jsonb) c,
           jsonb_object_keys(c) k
    where k not in ('id', 'template', 'to_email', 'to_name', 'to_timezone', 'exchange_id', 'exchange_name', 'other_name',
-                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at')),
+                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count')),
   0, 'a claimed row has no column for a draw result, a pair, an assignment, a reservation or a second address');
 -- Slice 8 (owner decision 2026-11-18 4): the claim also carries the draw mode and time, for E10 only, and E10 is a known
 -- template. They fail until the readiness_and_nudges migration is applied.

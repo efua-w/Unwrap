@@ -322,7 +322,7 @@ isOneToOne: false
                            },
 "claim_due_emails":
 { Args: { "p_limit"?: number }; Returns: {
-              "attempts": number,"budget_preset": string,"draw_at": string,"draw_mode": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"template": string,"to_email": string,"to_name": string,"to_timezone": string
+              "attempts": number,"budget_preset": string,"draw_at": string,"draw_mode": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"people_count": number,"template": string,"to_email": string,"to_name": string,"to_timezone": string
             }[]
                            },
 "create_exchange":
@@ -334,8 +334,21 @@ isOneToOne: false
 "delete_wishlist":
 { Args: { "p_wishlist_id": string }; Returns: undefined
                            },
+"dismiss_join_request":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
+"draw_names":
+{ Args: { "p_exchange": string }; Returns: {
+              "drawn_now": boolean,"emails_queued": number,"pairs_excluded": number,"people_count": number
+            }[]
+                           },
 "exchange_state":
 { Args: { "p_exchange": string }; Returns: Database["public"]['Enums']["exchange_status"]
+                           },
+"get_draw_summary":
+{ Args: { "p_exchange": string }; Returns: {
+              "drawn_at": string,"emails_queued": number,"people_count": number
+            }[]
                            },
 "get_exchange_invite_token":
 { Args: { "p_exchange": string }; Returns: string
@@ -366,8 +379,18 @@ isOneToOne: false
               "created_at": string,"exchange_id": string,"exchange_name": string,"exchange_tint": Database["public"]['Enums']["exchange_tint"],"id": string,"is_unread": boolean,"kind": Database["public"]['Enums']["activity_kind"],"subject_name": string
             }[]
                            },
+"get_my_assignment":
+{ Args: { "p_exchange": string }; Returns: {
+              "assignment_id": string,"revealed": boolean
+            }[]
+                           },
 "get_my_exchange_list":
 { Args: { "p_exchange": string }; Returns: Json
+                           },
+"get_my_recipient":
+{ Args: { "p_exchange": string }; Returns: {
+              "avatar_path": string,"display_name": string,"list_state": string,"most_wanted": Json
+            }[]
                            },
 "get_participants":
 { Args: { "p_exchange": string }; Returns: {
@@ -407,6 +430,9 @@ isOneToOne: false
                            },
 "mark_all_activity_read":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"mark_assignment_revealed":
+{ Args: { "p_exchange": string }; Returns: string
                            },
 "mark_email_result":
 { Args: { "p_error_code"?: string,"p_id": string }; Returns: undefined
@@ -448,7 +474,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "activity_kind": "member_joined"|"join_requested","exchange_budget_preset": "5k_10k"|"10k_20k"|"20k_50k"|"50k_plus","exchange_draw_mode": "at_join_by"|"organiser_chooses","exchange_member_state": "active"|"left"|"removed","exchange_status": "open"|"joining_closed"|"drawn"|"event_passed"|"complete"|"cancelled","exchange_tint": "clay"|"peach"|"sand"|"mint","join_request_status": "pending"|"approved"|"declined"|"closed","wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
+            "activity_kind": "member_joined"|"join_requested"|"names_drawn","exchange_budget_preset": "5k_10k"|"10k_20k"|"20k_50k"|"50k_plus","exchange_draw_mode": "at_join_by"|"organiser_chooses","exchange_member_state": "active"|"left"|"removed","exchange_status": "open"|"joining_closed"|"drawn"|"event_passed"|"complete"|"cancelled","exchange_tint": "clay"|"peach"|"sand"|"mint","join_request_status": "pending"|"approved"|"declined"|"closed","wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -564,7 +590,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_kind": ["member_joined", "join_requested"],"exchange_budget_preset": ["5k_10k", "10k_20k", "20k_50k", "50k_plus"],"exchange_draw_mode": ["at_join_by", "organiser_chooses"],"exchange_member_state": ["active", "left", "removed"],"exchange_status": ["open", "joining_closed", "drawn", "event_passed", "complete", "cancelled"],"exchange_tint": ["clay", "peach", "sand", "mint"],"join_request_status": ["pending", "approved", "declined", "closed"],"wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
+            "activity_kind": ["member_joined", "join_requested", "names_drawn"],"exchange_budget_preset": ["5k_10k", "10k_20k", "20k_50k", "50k_plus"],"exchange_draw_mode": ["at_join_by", "organiser_chooses"],"exchange_member_state": ["active", "left", "removed"],"exchange_status": ["open", "joining_closed", "drawn", "event_passed", "complete", "cancelled"],"exchange_tint": ["clay", "peach", "sand", "mint"],"join_request_status": ["pending", "approved", "declined", "closed"],"wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
           }
         }
 } as const

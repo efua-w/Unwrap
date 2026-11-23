@@ -1,7 +1,7 @@
 import { firstName } from "@/features/joining/copy";
 import { LocalDateTime } from "@/components/ui/LocalDateTime";
 import { Timeline } from "@/components/ui/Timeline";
-import { formatDay, zoneShortName } from "@/lib/dates/format";
+import { formatDay, formatTime, zoneShortName } from "@/lib/dates/format";
 import { budgetLabel } from "@/lib/money/budget";
 import { EXCHANGE_COPY } from "../copy";
 import { peopleIn } from "../people";
@@ -14,6 +14,8 @@ import { summariseReadiness } from "@/features/participants/readiness";
 import type { ReadinessRow } from "@/features/participants/types";
 import type { ExclusionsEntry } from "@/features/exclusions/types";
 import { cx } from "@/components/ui/cx";
+import { DRAW_COPY } from "@/features/draw/copy";
+import { peopleStillNeeded } from "@/features/draw/format";
 import { ExchangeDetailHeader } from "./ExchangeDetailHeader";
 import { InviteSection } from "./InviteSection";
 import { JoiningClosedCard } from "./JoiningClosedCard";
@@ -62,6 +64,31 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
         ? copy.onlyYou
         : EXCHANGE_COPY.list.rowPeople(peopleIn(exchange.takingPart, exchange.peopleCount));
   const showReadiness = summary !== null && summary.missing.length > 0;
+  // GCO-011 the Draw names now… row (board Exchange-Detail-obefore): while people can still be managed, which is exactly
+  // when names can still be drawn (open or joining closed). WHY the sub: the board's line for an automatic draw, the
+  // "Needs 3 people" line below three (Org-Draw-few, -fewtwo), and a pending line for "When I choose".
+  const peopleTakingPart = peopleIn(exchange.takingPart, exchange.peopleCount);
+  const draw = exchange.canManagePeople
+    ? {
+        sub:
+          peopleTakingPart < 3
+            ? DRAW_COPY.rowSubFew(peopleStillNeeded(peopleTakingPart))
+            : drawDay && exchange.drawAt
+              ? DRAW_COPY.rowSubAuto(drawDay, formatTime(new Date(exchange.drawAt), timeZone))
+              : DRAW_COPY.rowSubManual,
+        sheet: {
+          exchangeId: exchange.id,
+          exchangeName: exchange.name,
+          peopleIn: peopleTakingPart,
+          takingPart: exchange.takingPart,
+          otherNames: others.map((p) => firstName(p.name)),
+          wishlists: summary ? { inCount: summary.inCount, missingNames: summary.missing.map((m) => firstName(m.name)) } : null,
+          exclusions:
+            exclusions && exclusions.count !== null ? { count: exclusions.count, onlyPair: exclusions.onlyPair } : null,
+          lastJoinDay: exchange.isOpen ? lastJoinDay(exchange, timeZone) : null,
+        },
+      }
+    : null;
   const showRequests = waitingNames.length > 0;
   return (
     <div className="flex flex-col gap-32 md:max-w-reading-max">
@@ -136,7 +163,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
         seeAllHref={`/exchanges/${exchange.id}/participants`}
       />
 
-      {inviteUrl || exclusions ? (
+      {inviteUrl || exclusions || draw ? (
         <OrganiserTools
           exchangeId={exchange.id}
           exchangeName={exchange.name}
@@ -145,6 +172,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
           approvalRequired={exchange.approvalRequired}
           waitingNames={waitingNames}
           exclusions={exclusions}
+          draw={draw}
         />
       ) : null}
     </div>

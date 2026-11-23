@@ -4,22 +4,22 @@ UI copy that isn't in a story's Content section. It is used only once approved. 
 
 | Copy | Where | Source | Status |
 |---|---|---|---|
-| "Create list" | New wishlist main button (GC-019, S20) | Design canvas | Awaiting approval |
-| "Send nudge" | Nudge confirmation main button (GCO-008, S32) | Design canvas | Awaiting approval |
-| "Reopen joining" | Reopen joining main button (GCO-007, S38) | Design canvas | Awaiting approval |
-| "Keep list" | Delete wishlist cancel button (GC-019, GC-030, S24) | Design canvas | Awaiting approval |
-| "Back" | Back button accessible name (Header) | Not in stories | Awaiting approval |
-| "Main" | Navigation landmark name | Not in stories | Awaiting approval |
-| "Profile and settings" | Profile link accessible name (Header) | Not in stories | Awaiting approval |
-| "{Tab}, {n} unread" | Activity tab accessible name when there are unread items | Plan GC-006 C | Awaiting approval |
-| "9+" | Count chip above 9 | Board 12 | Awaiting approval |
-| "Skip to content" | Skip link in the root layout | Not in stories | Awaiting approval |
-| "Something went wrong on our side." | Error alert (with "Try again") on Sign up, Log in, Verify code and Profile setup when the service fails in a way no design covers (slice 1) | Adapted from GC-018 ("Something went wrong on our side.") | Awaiting approval |
-| "We've sent a few codes already. Wait a few minutes, then try again." | Alert on Log in (no S04 frame for too many codes) and on Verify code when a resend is refused | Design S03 "too many codes" line, reused on two more screens | Awaiting approval |
-| "That email looks incomplete. Check the part after the @." | Also shown for an empty email on Sign up and Log in (the board shows only an incomplete address) | Design S03/S04 line, reused for the empty case | Awaiting approval |
-| "Profile" | Back-header title on the minimal Profile page (slice 1) | GC-024 story title; S42 not read | Awaiting approval |
-| "Log out" | Log out button on the minimal Profile page (slice 1) | GC-024 In scope ("Log out"); no Content line | Awaiting approval |
-| "Try again" | Link in the error Alerts on Sign up, Log in, Verify code and Profile setup | GC-029 Content ("Try again"), same label as the offline banner | Awaiting approval |
+| "Create list" | New wishlist main button (GC-019, S20) | Design canvas | Approved 2026-11-23 |
+| "Send nudge" | Nudge confirmation main button (GCO-008, S32) | Design canvas | Approved 2026-11-23 |
+| "Reopen joining" | Reopen joining main button (GCO-007, S38) | Design canvas | Approved 2026-11-23 |
+| "Keep list" | Delete wishlist cancel button (GC-019, GC-030, S24) | Design canvas | Approved 2026-11-23 |
+| "Back" | Back button accessible name (Header) | Not in stories | Approved 2026-11-23 |
+| "Main" | Navigation landmark name | Not in stories | Approved 2026-11-23 |
+| "Profile and settings" | Profile link accessible name (Header) | Not in stories | Approved 2026-11-23 |
+| "{Tab}, {n} unread" | Activity tab accessible name when there are unread items | Plan GC-006 C | Approved 2026-11-23 |
+| "9+" | Count chip above 9 | Board 12 | Approved 2026-11-23 |
+| "Skip to content" | Skip link in the root layout | Not in stories | Approved 2026-11-23 |
+| "Something went wrong on our side." | Error alert (with "Try again") on Sign up, Log in, Verify code and Profile setup when the service fails in a way no design covers (slice 1) | Adapted from GC-018 ("Something went wrong on our side.") | Approved 2026-11-23 |
+| "We've sent a few codes already. Wait a few minutes, then try again." | Alert on Log in (no S04 frame for too many codes) and on Verify code when a resend is refused | Design S03 "too many codes" line, reused on two more screens | Approved 2026-11-23 |
+| "That email looks incomplete. Check the part after the @." | Also shown for an empty email on Sign up and Log in (the board shows only an incomplete address) | Design S03/S04 line, reused for the empty case | Approved 2026-11-23 |
+| "Profile" | Back-header title on the minimal Profile page (slice 1) | GC-024 story title; S42 not read | Approved 2026-11-23 |
+| "Log out" | Log out button on the minimal Profile page (slice 1) | GC-024 In scope ("Log out"); no Content line | Approved 2026-11-23 |
+| "Try again" | Link in the error Alerts on Sign up, Log in, Verify code and Profile setup | GC-029 Content ("Try again"), same label as the offline banner | Approved 2026-11-23 |
 | "Something went wrong on our side." | Also inside the New wishlist / Edit list, Add an item / Edit item and Delete list sheets when the server fails (slice 2) | Same line as the slice 1 row above, reused | Approved 2026-11-08 (Tobechukwu Olih) |
 | "Couldn't save your change." + "Retry" | When a bin remove fails, and when Undo of a deleted list fails (slice 2). Nothing is put back in either case | GC-020 Content, without "so we put it back" | Approved 2026-11-08 (Tobechukwu Olih) |
 | "Couldn't save your change, so we put it back." + "Retry" | Only where something really is put back: a failed Undo of an item removal sends the row away again (slice 2) | GC-020 Content | Approved (GC-020 Content) |
@@ -39,7 +39,7 @@ UI copy that isn't in a story's Content section. It is used only once approved. 
 | "A wishlist on Unwrap" | Page title and link preview of every shared wishlist (GC-023) | Owner answer (generic, no list contents) | Approved 2026-11-08 (Tobechukwu Olih) |
 | "Privacy" / "Changes save as you make them." / "Default for new wishlists" / "Only you, until you share it." / "People you send the link to can see it." | Privacy page and the "Privacy" row on Profile (GC-027, S45) | Boards Acc-Privacy-* | Approved 2026-11-08 (Tobechukwu Olih) |
 | "Saved. New wishlists start as Anyone with the link." / "Saved. New wishlists start as Private." / "We couldn't save your default, so it's still Private. Try again." / "...still Anyone with the link. Try again." | Privacy default toasts and error (GC-027) | Board + owner answers for the Private outcomes | Approved 2026-11-08 (Tobechukwu Olih) |
-| "We couldn't load your privacy settings." + "Something went wrong on our side. Nothing you've added is lost." | Privacy page when the setting cannot be read (slice 3) | Same pattern as the wishlist load errors; no board | Awaiting approval |
+| "We couldn't load your privacy settings." + "Something went wrong on our side. Nothing you've added is lost." | Privacy page when the setting cannot be read (slice 3) | Same pattern as the wishlist load errors; no board | Approved 2026-11-23 |
 | Every line of S26 Basics, S27 Budget and dates, S28 Rules and review (titles, labels, helpers, errors, summary, review labels, Discard sheet, failure alert), S14 just-started page, S08 Exchanges and S47 Not available | Slice 4 screens (GCO-001..004, GC-008, GC-013, GC-029) | Boards Org-Basics-*, Org-Budget-*, Org-Review-*, Exchange-Detail-*, Exchanges-*, Acc-NA-exchange (exact), plus the owner decisions of 2026-11-09: budget labels with "to", Review "When you're ready", the two "has to be in the future" lines, the two load errors, the time zone line | Approved 2026-11-09 (Tobechukwu Olih, "Accept all slice 4 recommendations") |
 | "Choose a date." / "Choose a time." | Under Join by, Gift day and Draw time when left empty (S27). Gift time removed 2026-11-09 (Tobechukwu Olih): the gift day is a date only | Board placeholders ("Choose a date", "Choose a time"); the boards show no error line for an empty date | Approved 2026-11-09 (Tobechukwu Olih) |
 | "The note can be at most 280 characters." | Under the note field (S26). The field stops typing at 280, so this shows only if the server refuses | Not on a board | Approved 2026-11-09 (Tobechukwu Olih) |
@@ -164,6 +164,24 @@ UI copy that isn't in a story's Content section. It is used only once approved. 
 | "With these pairs, names can't be drawn fairly. Remove {A} and {B}, or invite more people. You can still save, and the draw checks again later." and the "Remove that pair" button | Exclusions impossible alert when one pair fixes it (GCO-009, Q3a) | Board Org-Excl-impossible-m | Approved (board) |
 | Sheet step 1: title "Add a pair", body "Who's the first person?"; step 2: title "Who shouldn't {first} draw?", body "{first} won't draw them, and they won't draw {first}." Buttons "Next", "Add pair", "Back", "Cancel" | Exclusions sheet (GCO-009) | Boards Org-Excl-pairfirst-m, -pairsecond-m | Approved (board) |
 | "Pairs saved." | Toast after Save pairs (GCO-009) | Board Org-Excl-saved-m | Approved (board) |
-| "Someone in these pairs is no longer taking part. The list is up to date now, so check the pairs and save again." | Exclusions save refused because the people changed (GCO-009, Q9 "stale list") | No board | Awaiting approval |
+| "Someone in these pairs is no longer taking part. The list is up to date now, so check the pairs and save again." | Exclusions save refused because the people changed (GCO-009, Q9 "stale list") | No board | Approved 2026-11-23 |
 | "Names are drawn, so pairs can't change now." / "No pairs were set." | Exclusions locked view and save refused after the draw (GCO-009, Q5a) | Board Org-Excl-locked-m | Approved (board) |
-| "We couldn't load the pairs for this exchange." | Exclusions load error when the exchange itself could not be read | Derived from the approved "{exchange}" line | Awaiting approval |
+| "We couldn't load the pairs for this exchange." | Exclusions load error when the exchange itself could not be read | Derived from the approved "{exchange}" line | Approved 2026-11-23 |
+| "{n} people are taking part and every wishlist is in. This can't be undone." (and "{n} people are taking part. This can't be undone." when wishlists could not be read, or only the organiser's own is missing) | Draw names sheet body when no other wishlist is missing (GCO-011, slice 10, Q11) | Board Org-Draw-default has only the "some are missing" body | Approved 2026-11-23 |
+| "Exclusions: {n} pairs won't draw each other." | Draw names sheet note for 2 or more pairs (GCO-011, Q11) | Board shows one pair only | Approved 2026-11-23 |
+| "Draw them when you're ready." | Draw names now… row subline in "When I choose" mode while joining is open (GCO-011, Q11) | No board | Approved 2026-11-23 |
+| "Names need at least 3 people to draw. {A, B} are in, so {k} more people need to join. People can join until {day}." and "...You and {A} are in..." / "Only you are in..." (the "Share the invite link" / "Invite people" buttons follow the boards) | Not enough people yet sheet when the organiser only organises with one or two others, and when the organiser takes part alone (GCO-011, Q11) | Boards Org-Draw-few and -fewtwo cover nobody-yet and two-people only | Approved 2026-11-23 |
+| "The draw was interrupted before it finished. No names were drawn, so it's safe to try again." with "Try again" | Draw names sheet generic failure for every refusal that is not too few, exclusions or ended (GCO-011, Q11) | Board Org-Draw-error, reused as the generic line | Approved 2026-11-23 |
+| "This exchange has ended, so names can't be drawn." | Draw names sheet when the database refuses a cancelled or finished exchange (GCO-011) | No board | Approved 2026-11-23 |
+| "Everyone has someone to buy for, and {told} of {n} people were told by email. Nobody can see who got whom, not even you." | Names drawn section on the organiser's exchange page when some people have Names are drawn emails off (GCO-012, Q3) | Board Exchange-Detail-odrawn says "all {n} people"; the {told} of {n} form is derived | Approved 2026-11-23 |
+| "{told} of {n} people, by email" | Names drawn page "Everyone told" row (GCO-012, Q3) | Board shows "8 of 8 people, by email"; the count is the emails actually queued | Approved 2026-11-23 |
+| "Everyone has someone to buy for. We emailed the people who have these emails on, so they can open Unwrap and see who they got." | Names drawn page body when not everyone was emailed (GCO-012, Q3) | Board body says "We emailed them" | Approved 2026-11-23 |
+| E21 "All {n} people taking part have been told and have someone to buy for." when some people have the email off | E21 body (GCO-012, Q3). Not built: E21 always says "Everyone taking part has someone to buy for." because the count line can be false when some people have the email off. The count line is deferred until the claim carries the queued count (review R1-2) | Board Email-E21 | Approved 2026-11-23 (wording approved; still not built until the claim carries the queued count) |
+| E19 to the organiser who takes part: "...Only you will see it." (no "not even {organiser}") | E19 body (GCO-012, Q11). The renderer decides "the reader is the organiser" by comparing the two display names, because the claim has no flag | Board Email-E19 shows the participant version | Approved 2026-11-23 |
+| "Hidden on this device" + "Show"; "Hidden until you reveal it." | Who you're buying for row after the draw (GC-013, GC-014) | Boards Exchange-Detail-hidden and -odrawn | Approved 2026-11-23 |
+| "{first} hasn't added a wishlist yet." | Reveal when the person has no wishlist attached (GC-014, Q9) | No board; the empty-list line is on Exchange-Reveal-empty | Approved 2026-11-23 |
+| "Opening your person's name" (hidden heading) | Reveal loading state for a giver who revealed before (GC-014) | No board; screen-reader text only, the screen shows skeletons | Approved 2026-11-23 |
+| "We couldn't dismiss that. Try again." | Toast when Dismiss on a closed request fails (GC-006) | No board | Approved 2026-11-23 |
+| "Names are drawn for {exchange}." with "{time} · See who you're buying for" | Activity row (GC-007) | Board Activity-default | Approved 2026-11-23 |
+| "Needs you" (hidden label) | Accessible name of the ActionCard region on Exchanges and the drawn exchange page (GC-006, GC-013) | No board; screen-reader text only | Approved 2026-11-23 |
+| "Dismiss" (hidden label) | Accessible name of the close control on the desktop ActionCard banner (owner request 2026-11-23, mid-slice change to slice 10) | No board shows it; the control is an X icon, so the name is screen-reader text only | Approved 2026-11-23 |

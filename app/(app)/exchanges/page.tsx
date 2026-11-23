@@ -1,7 +1,8 @@
-import { Plus } from "@phosphor-icons/react/dist/ssr";
+import { Envelope, Gift, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeading } from "@/components/layout/PageHeading";
+import type { ActionCardPlacement } from "@/components/ui/ActionCard";
 import { Button } from "@/components/ui/Button";
 import { ExchangeTag } from "@/components/ui/ExchangeTag";
 import { ListRow } from "@/components/ui/ListRow";
@@ -11,7 +12,7 @@ import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
 import { ExchangeBlock } from "@/features/exchanges/components/ExchangeBlock";
 import { LoadError } from "@/features/exchanges/components/LoadError";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
-import { listMyExchanges } from "@/features/exchanges/queries";
+import { getExchangeStates, listMyExchanges } from "@/features/exchanges/queries";
 import type { ExchangeListItem } from "@/features/exchanges/types";
 import type { MyPendingRequest } from "@/features/participants/types";
 import { peopleIn, joinedToday } from "@/features/exchanges/people";
@@ -19,24 +20,34 @@ import { lastJoinDay } from "@/features/exchanges/timeline";
 import { firstName } from "@/features/joining/copy";
 import { JoinRequestBlock } from "@/features/participants/components/JoinRequestBlock";
 import { getJoinRequests, listMyPendingRequests } from "@/features/participants/queries";
+import { DRAW_COPY } from "@/features/draw/copy";
+import { cardKey } from "@/features/draw/card-dismiss";
+import { CardReset } from "@/features/draw/components/CardDismiss";
+import { DismissibleActionCard } from "@/features/draw/components/DismissibleActionCard";
+import { DismissRequestButton } from "@/features/draw/components/DismissRequestButton";
+import { getMyAssignment } from "@/features/draw/queries";
 import { HowItWorks } from "@/features/onboarding/HowItWorks";
 import { requireProfile } from "@/lib/auth/session";
-import { formatDay } from "@/lib/dates/format";
+import { formatDay, formatYmdDay } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 
 type SearchParams = Promise<{ view?: string | string[] }>;
 
 // S08 Exchanges (GC-008). Boards: Exchanges-first, -started, -active, -joined, -pastempty, -loading, -error,
 // -offline (m and d). Slices 4 to 6: exchanges the person organises or has joined, the organiser's request
-// blocks and the asker's pending rows; the closed-request row and the personal action arrive with slices 7 to 10.
+// blocks and the asker's pending rows. Slice 10 adds the drawn row line, the reveal ActionCard and the closed-request row
+// with Dismiss (GC-006, owner Q4 and Q5, 2026-11-22).
 export default async function ExchangesPage({ searchParams }: { searchParams: SearchParams }) {
   const { view } = await searchParams;
   const past = view === "past";
   const profile = await requireProfile(past ? "/exchanges?view=past" : "/exchanges");
   return (
     <AppShell profile={{ name: profile.displayName }} top="heading">
-      <div className="flex flex-col gap-24 md:max-w-reading-max">
-        <PageHeading profile={{ name: profile.displayName }}>{EXCHANGE_COPY.list.title}</PageHeading>
+      {/* WHY no cap here: the reveal banner is as wide as the content area, so each part below caps itself at the reading column (boards Exchanges-active, d). */}
+      <div className="flex flex-col gap-24">
+        <div className="md:max-w-reading-max">
+          <PageHeading profile={{ name: profile.displayName }}>{EXCHANGE_COPY.list.title}</PageHeading>
+        </div>
         <Suspense fallback={<ExchangesLoading />}>
           <ExchangesContent viewerId={profile.id} past={past} />
         </Suspense>
@@ -44,6 +55,8 @@ export default async function ExchangesPage({ searchParams }: { searchParams: Se
     </AppShell>
   );
 }
+
+const COLUMN = "flex flex-col gap-24 md:max-w-reading-max";
 
 function Tabs({ past }: { past: boolean }) {
   const copy = EXCHANGE_COPY.list;
@@ -62,19 +75,23 @@ function Tabs({ past }: { past: boolean }) {
 // Board Exchanges-loading: rows stand in for the list.
 function ExchangesLoading() {
   return (
-    <SkeletonRegion>
-      <Skeleton shape="row" />
-      <Skeleton shape="row" />
-      <Skeleton shape="row" />
-    </SkeletonRegion>
+    <div className={COLUMN}>
+      <SkeletonRegion>
+        <Skeleton shape="row" />
+        <Skeleton shape="row" />
+        <Skeleton shape="row" />
+      </SkeletonRegion>
+    </div>
   );
 }
 
 // GC-008: one written sentence per row (boards Exchanges-joined, Exchanges-active). "Names are drawn {date}."
 // names the draw day in the viewer's zone; the organiser-draws variants are pending copy. Before the draw
 // there are no readiness counts (slice 8), so an organiser's row says how many people are in.
-function rowSub(item: ExchangeListItem, timeZone: string): string {
+function rowSub(item: ExchangeListItem, timeZone: string, drawn: boolean): string {
   const copy = EXCHANGE_COPY.list;
+  // Board Exchanges-active: "Names are drawn. Gifts on Sat 19 Dec." once names are drawn.
+  if (drawn) return DRAW_COPY.rowDrawn(formatYmdDay(item.giftDay) ?? "");
   const when =
     item.drawMode === "at_join_by" && item.drawAt
       ? copy.rowNamesDrawn(formatDay(new Date(item.drawAt), timeZone))
@@ -104,10 +121,10 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
     waiting = new Map(organised.map((item, i) => [item.id, (lists[i] ?? []).map((r) => r.name)]));
   } catch {
     return (
-      <>
+      <div className={COLUMN}>
         <Tabs past={past} />
         <LoadError>{copy.loadError}</LoadError>
-      </>
+      </div>
     );
   }
 
@@ -115,7 +132,7 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
   // WHY pending requests count as content (Q17): a person whose only exchange is a request is not a first-timer.
   if (items.length === 0 && myRequests.length === 0 && !past) {
     return (
-      <div className="flex flex-col gap-24">
+      <div className={COLUMN}>
         <HowItWorks headingId="how">
           <Button href="/exchanges/new" icon={Plus} fullWidth>
             {copy.start}
@@ -129,12 +146,21 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
   const shown = items.filter((item) => item.isPast === past);
   if (past && shown.length === 0) {
     return (
-      <>
+      <div className={COLUMN}>
         <Tabs past={past} />
         <p className="py-16 text-body-sm-regular text-text-muted">{copy.pastEmpty}</p>
-      </>
+      </div>
     );
   }
+
+  // GC-008, GC-013: which exchanges are drawn, and the first one whose giver has not revealed yet gets the ActionCard. WHY an
+  // assignment read per drawn exchange and not a list: each is the caller's own row (id and flag, no name), and a read that
+  // fails only loses the card, never the list.
+  const states = past ? new Map<string, string>() : await getExchangeStates(shown.map((item) => item.id));
+  const isDrawn = (item: ExchangeListItem) => states.get(item.id) === "drawn";
+  const drawnTaking = past ? [] : shown.filter((item) => isDrawn(item) && item.takingPart);
+  const assignments = await Promise.all(drawnTaking.map((item) => getMyAssignment(item.id).catch(() => null)));
+  const unrevealed = drawnTaking.find((_, i) => assignments[i] && !assignments[i].revealed);
 
   // Dates in the viewer's own zone (product rules).
   const timeZone = await readViewerTimeZone();
@@ -155,54 +181,92 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
     ...requestItems.map((item) => ({ kind: "requests" as const, item })),
     ...(aloneItem ? [{ kind: "alone" as const, item: aloneItem }] : []),
   ].slice(0, 2);
+  const pendingRequests = myRequests.filter((r) => r.status === "pending");
+  const closedRequests = myRequests.filter((r) => r.status === "closed");
+  // WHY two placements: a banner first and a tray last, so the focus order matches what is on screen at each size (WCAG 2.4.3).
+  // WHY the assignment id: the same key as the exchange page's card, so one Dismiss hides it on both pages, and a new assignment brings it back.
+  const unrevealedAssignment = unrevealed ? assignments[drawnTaking.indexOf(unrevealed)] : null;
+  const card = (placement: ActionCardPlacement) =>
+    unrevealed && unrevealedAssignment ? (
+      <DismissibleActionCard
+        cardKey={cardKey("reveal", unrevealedAssignment.assignmentId)}
+        label={DRAW_COPY.needsYou}
+        placement={placement}
+        icon={Gift}
+        title={DRAW_COPY.rowCardTitle(unrevealed.name)}
+        sub={DRAW_COPY.rowCardSub}
+        action={
+          <Button variant="brand" icon={Envelope} href={`/exchanges/${unrevealed.id}/reveal`} fullWidth className="md:w-auto">
+            {DRAW_COPY.reveal}
+          </Button>
+        }
+      />
+    ) : null;
   return (
     <>
-      <Tabs past={past} />
-      {blocks.map(({ kind, item }) =>
-        kind === "alone" ? (
-          <ExchangeBlock key={`alone-${item.id}`} item={item} timeZone={timeZone} />
-        ) : (
-          <JoinRequestBlock
-            key={`requests-${item.id}`}
-            exchangeId={item.id}
-            names={waiting.get(item.id) ?? []}
-            lastJoinDay={lastJoinDay(item, timeZone)}
-            // WHY the join-by instant: the list has no status, and joining is open exactly until it.
-            joiningOpen={new Date(item.joinByAt) > now}
-            exchange={{ name: item.name, tint: item.tint }}
-          />
-        ),
-      )}
-      <ul aria-label={copy.title} className="flex flex-col">
-        {shown.map((item, index) => (
-          <ListRow
-            key={item.id}
-            href={`/exchanges/${item.id}`}
-            leading={<ExchangeTag name={item.name} tint={item.tint} />}
-            title={item.name}
-            sub={rowSub(item, timeZone)}
-            divider={index > 0}
-          />
-        ))}
-        {/* GC-008 Q7: requests still waiting. Not links: there is nothing to open until the organiser decides. */}
-        {myRequests.map((request, index) => (
-          <ListRow
-            key={request.requestId}
-            leading={<ExchangeTag name={request.exchangeName} tint={request.exchangeTint} />}
-            title={request.exchangeName}
-            sub={copy.rowRequestSent(firstName(request.organiserName))}
-            divider={shown.length + index > 0}
-          />
-        ))}
-      </ul>
-      {past ? null : (
-        <div>
-          {/* GC-008: primary, unless an organiser block above already shows a primary button. */}
-          <Button href="/exchanges/new" icon={Plus} variant={blocks.length > 0 ? "secondary" : "primary"} fullWidth className="md:w-auto">
-            {copy.start}
-          </Button>
-        </div>
-      )}
+      {card("banner")}
+      {/* WHY: a revealed assignment's card is gone, so an old Dismiss must not hide a later card for it. */}
+      {assignments.map((a) => (a && a.revealed ? <CardReset key={a.assignmentId} cardKey={cardKey("reveal", a.assignmentId)} /> : null))}
+      <div className={COLUMN}>
+        <Tabs past={past} />
+        {blocks.map(({ kind, item }) =>
+          kind === "alone" ? (
+            <ExchangeBlock key={`alone-${item.id}`} item={item} timeZone={timeZone} />
+          ) : (
+            <JoinRequestBlock
+              key={`requests-${item.id}`}
+              exchangeId={item.id}
+              names={waiting.get(item.id) ?? []}
+              lastJoinDay={lastJoinDay(item, timeZone)}
+              // WHY the join-by instant: the list has no status, and joining is open exactly until it.
+              joiningOpen={new Date(item.joinByAt) > now}
+              exchange={{ name: item.name, tint: item.tint }}
+            />
+          ),
+        )}
+        <ul aria-label={copy.title} className="flex flex-col">
+          {shown.map((item, index) => (
+            <ListRow
+              key={item.id}
+              href={`/exchanges/${item.id}`}
+              leading={<ExchangeTag name={item.name} tint={item.tint} />}
+              title={item.name}
+              sub={rowSub(item, timeZone, isDrawn(item))}
+              divider={index > 0}
+            />
+          ))}
+          {/* GC-008 Q7: requests still waiting. Not links: there is nothing to open until the organiser decides. */}
+          {pendingRequests.map((request, index) => (
+            <ListRow
+              key={request.requestId}
+              leading={<ExchangeTag name={request.exchangeName} tint={request.exchangeTint} />}
+              title={request.exchangeName}
+              sub={copy.rowRequestSent(firstName(request.organiserName))}
+              divider={shown.length + index > 0}
+            />
+          ))}
+          {/* GC-006 (owner Q5): the draw closed these. Dismiss is a sibling target of the row, never inside it. */}
+          {closedRequests.map((request, index) => (
+            <ListRow
+              key={request.requestId}
+              leading={<ExchangeTag name={request.exchangeName} tint={request.exchangeTint} />}
+              title={request.exchangeName}
+              sub={DRAW_COPY.closedRequest(firstName(request.organiserName))}
+              action={<DismissRequestButton requestId={request.requestId} exchangeName={request.exchangeName} />}
+              divider={shown.length + pendingRequests.length + index > 0}
+            />
+          ))}
+        </ul>
+        {past ? null : (
+          <div>
+            {/* GC-008: primary, unless an organiser block above already shows a primary button. */}
+            <Button href="/exchanges/new" icon={Plus} variant={blocks.length > 0 ? "secondary" : "primary"} fullWidth className="md:w-auto">
+              {copy.start}
+            </Button>
+          </div>
+        )}
+        {card("tray")}
+      </div>
     </>
   );
 }
