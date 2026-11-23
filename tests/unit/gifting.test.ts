@@ -80,11 +80,14 @@ describe("parseRecipientList (GC-015, AC-4)", () => {
     expect(parseRecipientList([answer()])).toBeNull();
   });
 
-  it("refuses a link that is not http or https, so it can never become a script", () => {
-    expect(parseRecipientList(answer({ items: [item({ link: "javascript:alert(1)" })] }))).toBeNull();
-    expect(parseRecipientList(answer({ items: [item({ link: "data:text/html,x" })] }))).toBeNull();
-    expect(parseRecipientList(answer({ items: [item({ link: "not a url" })] }))).toBeNull();
-    expect(parseRecipientList(answer({ items: [item({ link: "http://shop.example" })] }))).not.toBeNull();
+  it("drops a link that is not http or https, so it can never become a script, and keeps the list", () => {
+    for (const link of ["javascript:alert(1)", "data:text/html,x", "not a url", "https://[x"]) {
+      const parsed = parseRecipientList(answer({ items: [item({ link }), item({ ref: "r2" })] }));
+      expect(parsed?.items).toHaveLength(2);
+      expect(parsed?.items[0]?.link).toBeNull();
+    }
+    expect(parseRecipientList(answer({ items: [item({ link: "http://shop.example" })] }))?.items[0]?.link).toBe("http://shop.example");
+    expect(parseRecipientList(answer({ items: [item({ link: 5 })] }))).toBeNull();
   });
 });
 

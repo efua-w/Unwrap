@@ -100,9 +100,29 @@ export function RecipientFlow({ exchangeId, assignmentId, budget, spend, giftDay
   const openRef = params.get("item");
   const openItem = list && openRef ? (list.items.find((i) => i.ref === openRef) ?? null) : null;
 
+  // WHY a ref: a row click pushes ?item=, so Close pops that entry and Back never lands on the same list twice. A sheet opened
+  // by a direct link or from Reveal has no in-page entry to pop, so it replaces instead (never leaves the app).
+  const pushedHere = useRef(false);
   function closeSheet() {
+    if (pushedHere.current) {
+      pushedHere.current = false;
+      router.back();
+      return;
+    }
     router.replace(path, { scroll: false });
   }
+
+  // R1-5: a ?item= that matches no item or taken-off entry (removed since Reveal) says so once and clears the query.
+  const goneRef = useRef<string | null>(null);
+  const known = list ? list.items.some((i) => i.ref === openRef) || list.takenOff.some((t) => t.ref === openRef) : true;
+  useEffect(() => {
+    if (!openRef || known || goneRef.current === openRef) return;
+    goneRef.current = openRef;
+    pushedHere.current = false;
+    toast.show({ message: copy.itemGone });
+    router.replace(path, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRef, known]);
 
   function patchItem(ref: string, got: boolean) {
     setLoad((current) =>
@@ -256,7 +276,14 @@ export function RecipientFlow({ exchangeId, assignmentId, budget, spend, giftDay
             <p>{itemCountLabel(loaded.items.length)}</p>
             <p>{copy.recentFirst}</p>
           </div>
-          <ul>
+          <ul
+            onClickCapture={(e) => {
+              // A plain click on a row link pushes a history entry; a modified click opens elsewhere.
+              if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && (e.target as Element).closest("a")) {
+                pushedHere.current = true;
+              }
+            }}
+          >
             {loaded.items.map((item, i) => (
               <ListRow
                 key={item.ref}

@@ -150,6 +150,7 @@ export function YourListPage({
     try {
       const result = await run();
       if (!result.ok && result.reason === "signed-out") return signedOut();
+      if (!result.ok && result.reason === "attached") return attachedElsewhere();
       ok = result.ok;
     } catch {
       reportNetworkError();
@@ -191,13 +192,17 @@ export function YourListPage({
     setRemoval({ open: true, busy: false, failed: true });
   }
 
+  // WHY one place: another tab attached a list since this page loaded, so a retry can never succeed. Show what is there now.
+  function attachedElsewhere() {
+    toast.show({ message: LIST_COPY.alreadyAttached, above: "actions" });
+    router.refresh();
+  }
+
   async function attach(id: string, name: string): Promise<UseOutcome> {
     try {
       const result = await attachWishlistToExchange(exchange.id, id);
       if (!result.ok && result.reason === "attached") {
-        // WHY: another tab attached a list since this page loaded. Show what is there now.
-        toast.show({ message: LIST_COPY.alreadyAttached, above: "actions" });
-        router.refresh();
+        attachedElsewhere();
         return "ok";
       }
       if (result.ok) {
@@ -254,6 +259,10 @@ export function YourListPage({
       const result = await startExchangeIdeas(exchange.id);
       if (result.ok) listId = result.listId;
       else if (result.reason === "signed-out") return signedOut();
+      else if (result.reason === "attached") {
+        setBusy(null);
+        return attachedElsewhere();
+      }
     } catch {
       reportNetworkError();
     }
@@ -295,6 +304,10 @@ export function YourListPage({
       if (screen !== "ideas" || !listId) {
         const started = await startExchangeIdeas(exchange.id);
         if (!started.ok) {
+          if (started.reason === "attached") {
+            attachedElsewhere();
+            setItemSheet({ open: false });
+          }
           return { ok: false, reason: started.reason === "signed-out" || started.reason === "not-found" ? started.reason : "failed" };
         }
         listId = started.listId;

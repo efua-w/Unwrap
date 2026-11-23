@@ -24,7 +24,7 @@ const ANSWER_KEYS = ["display_name", "avatar_path", "list_state", "items", "take
 const ITEM_KEYS = ["ref", "name", "priority", "note", "price_kobo", "link", "updated", "got"] as const;
 const TAKEN_OFF_KEYS = ["ref", "name"] as const;
 
-// WHY only http and https: the link becomes an href, and a stranger typed it. Anything else (javascript:, data:) refuses.
+// WHY only http and https: the link becomes an href, and a stranger typed it. Anything else (javascript:, data:) is dropped.
 function isShopLink(value: string): boolean {
   try {
     const { protocol } = new URL(value);
@@ -42,9 +42,11 @@ function parseItem(raw: unknown): RecipientItem | null {
   if (typeof priority !== "string" || !(PRIORITIES as readonly string[]).includes(priority)) return null;
   if (note !== null && typeof note !== "string") return null;
   if (price_kobo !== null && (typeof price_kobo !== "number" || !Number.isInteger(price_kobo) || price_kobo < 0)) return null;
-  if (link !== null && (typeof link !== "string" || !isShopLink(link))) return null;
+  if (link !== null && typeof link !== "string") return null;
   if (typeof updated !== "boolean" || typeof got !== "boolean") return null;
-  return { ref, name, priority: priority as ItemPriority, note, priceKobo: price_kobo, link, updated, got };
+  // WHY the link alone goes null: one odd link must not refuse the whole list and leave the giver on the error screen.
+  const shopLink = typeof link === "string" && isShopLink(link) ? link : null;
+  return { ref, name, priority: priority as ItemPriority, note, priceKobo: price_kobo, link: shopLink, updated, got };
 }
 
 function parseTakenOff(raw: unknown): TakenOffItem | null {
