@@ -25,6 +25,7 @@ Each decision below is rewritten into the stories it affects, which carry an **U
 | One screen before joining (2026-11-18) | A person sees one screen before joining, not two: S10 Join exchange at `/i/[inviteToken]` (boards Join-Exchange-guest, -default, -alone, -approval, -busy, -error, -loading, -offline). Signed out it shows public data only: the inviter, the count, the dates and How it works; no faces, names or organiser note until signed in (GC-002 context C stands). Signed in it adds the people in, the organiser's note and "Joining as {name}, {email}", and Join exchange or Ask to join acts in place. After signing up or logging in from an invite: sign-up, code, name (Profile setup), then joined automatically and on to Attach wishlist; an approval exchange sends the request instead; a returning person skips the name step. If the exchange closed, filled or cancelled, or the person was removed or already asked, the existing unavailable or ask screen shows and nothing is automatic. The automatic step needs a sign-in that started from the invite; opening `/i/[inviteToken]/join` any other way goes to the invite screen. Decided by Tobechukwu Olih. | GC-002, GC-003, GC-004, GC-005, GC-009, GC-012 |
 | Draw, names drawn and reveal (2026-11-22) | Owner accepted Q1 to Q12 as recommended. The schema is approved (`private.assignments`, `exchange_status` returns `drawn`, E19 and E21, a Names drawn Activity kind). Drawing before join-by is allowed and closes joining at once. The Names drawn page says "{told} of {n} people, by email". The action card shows on the exchange page and the Exchanges rows. A request the draw closed shows on Exchanges with Dismiss. Activity gets a Names drawn event. "View their wishlist" is not shown until slice 11 and Most wanted rows are plain. After the draw Organiser tools shows only Exclusions. Most wanted is up to 3, recently changed first. `/drawn` is organiser-only and `/reveal` is giver-only. Copy with no board goes to docs/copy-pending.md. Unsent "your list is missing" nudges are cancelled at the draw. | GCO-011, GCO-012, GC-014, GC-013, GC-006, GC-007, GC-026 |
 | Invite page after an early draw (2026-11-23) | An exchange closed by the draw reports the draw day as the day joining closed, not the join-by date. | GC-002, GCO-011 |
+| Recipient wishlist and got-it marks (2026-11-23) | Owner accepted Q1 to Q9 as recommended and decided four board conflicts. The schema is approved (`private.gift_marks`, `open_recipient_list`, `set_gift_mark`, `detach_wishlist`, a state check on `get_my_recipient`, attach and ideas after the draw). The list is at `/exchanges/[id]/recipient`: giver-only, after the reveal, while names are drawn or after the gift day; refused once the exchange is complete or cancelled. The recipient's name and items are never in the page the server sends, and the loading state has a neutral heading with no name. A device that has hidden the person shows "Hidden on this device" with Show, which goes to Reveal, and loads nothing. The hint on the list and the item sheet reads "Only you can see what you mark. {first} never will." (Reveal keeps "Only you can see this. {first} never will."). "Over budget" is a trailing badge on the row, one badge per row, in the order You got this, Over budget, Updated; the budget note is in range form. "Updated" means changed since you last opened the list. The no-list body reads "The budget is your best guide for now." (the board's reminder clause is dropped because nudges are refused after the draw). The revealed card on the exchange page has no Dismiss. After the draw a list can be attached only when nothing is attached, and "Remove wishlist…" is for personal lists only (ideas are removed item by item). Decided by Tobechukwu Olih. | GC-010, GC-013, GC-014, GC-015 |
 
 ## What changed in v1.1
 
@@ -465,6 +466,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-010 · Joining: Attach wishlist
 
+**Updated 2026-11-23 (decided by Tobechukwu Olih, slice 11 owner decisions Q1 to Q9, docs/tasks/slice-11.md):** after the draw a list can be attached, or ideas started, only when nothing is attached; an ideas list with no items counts as nothing. If a list is already attached the app refreshes the page without explaining. The attach page has no Skip, and no "Choose a wishlist instead" on an ideas list. "Remove wishlist…" appears only for a personal list that is attached; an ideas list is emptied item by item (Q7) and a list kept from a deleted wishlist cannot be removed. Removing keeps the list and the giver's got-it marks, and Undo brings both back. The exchange page's list row now links to this page.
+
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** built as `/exchanges/[id]/list` (S11). Skip for now shows only when reached from Join (`?from=join`, Q11); from the exchange page the page has Back and no Skip. Choose a wishlist opens a picker ("Use this wishlist"); Add items instead makes an ideas list for this exchange (add, edit, remove with Undo, names in single quotes, Q9). A chosen wishlist replaces the ideas; the ideas are kept and return when the person switches back. Ideas never appear in My wishlists, cannot be shared and cannot be attached elsewhere. Nobody sees whether another person has added a list. A failed attach shows "We couldn't attach '{name}'. Nothing has changed, so you can try again." with Try again. After the draw (slice 11) and deleting an attached list (slice 16) are out of this slice. Toasts "Wishlist attached. Your giver will see it after the draw." and "Your list is ready. Your giver will see it after the draw." show on the exchange page.
 
 **Updated in v1.1:** whatever is attached shows as one "Your list for this exchange" with a source subline. Skip for now is backed by the join-by reminder email.
@@ -492,7 +495,7 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 - Ideas never show in my Wishlists, can't be shared by link and can't be attached to another exchange.
 - Your part (exchange detail) shows "Your list for this exchange" with its source subline and item count: "{N} items. Your giver will see them after the draw." before the draw, "{N} items. Only your giver can see them." after. After the draw the row opens Attach wishlist.
 - Say that the list picked is visible only to my giver, after the draw — not to everyone in the exchange.
-- After the draw, with nothing attached: Your part shows "Add your wishlist / Your giver has nothing to go on yet." The attach page says "Your giver will see the list you pick as soon as you attach it.", has no Skip, and returns to the exchange with "Wishlist attached. Your giver can see it now."
+- After the draw, with nothing attached: Your part shows "Add your wishlist / Your giver has nothing to go on yet." The attach page says "Your giver will see the list you pick as soon as you attach it.", has no Skip, and shows "Wishlist attached. Your giver can see it now." on that page; Done returns to the exchange page
 - After the draw, with a list attached: "Remove wishlist…" → "Remove your wishlist from {exchange}? Your giver won't see it any more. The list stays in your Wishlists, and you can attach it again later." → toast "Wishlist removed from {exchange}." with Undo. To change lists after the draw, remove then add.
 
 #### Edge cases — Non-standard scenarios
@@ -590,6 +593,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-013 · Exchange detail
 
+**Updated 2026-11-23 (decided by Tobechukwu Olih, slice 11 owner decisions Q1 to Q9 and B1 to B4, docs/tasks/slice-11.md):** once the person is revealed, the page shows the revealed card "You're buying for {first}." with "Spend {range}. Gifts are exchanged on {day}." and the button "View their wishlist", which goes to the recipient's list (banner from 768 up, tray below). It is on the exchange page only, not on the Exchanges rows, it has no Dismiss (B1), and it is not shown while this device has the person hidden. The name is read after the page loads, never in the page the server sends. The person row goes to the list once revealed and to Reveal before. With no list attached after the draw, Your part shows the list row only and no extra card (Q9).
+
 **Updated 2026-11-22 (decided by Tobechukwu Olih, slice 10 owner decisions Q1 to Q12, docs/tasks/slice-10.md):** after the draw the page is built for a participant, an organiser taking part and an organiser only organising. Until the first reveal an action card says "Names are drawn for {exchange}." (a tray on mobile, a banner from 768 up); the "Who you're buying for" row links to Reveal and reads "Hidden until you reveal it." or "Hidden on this device" with Show. A member without a wishlist before the draw gets the "Add your wishlist" card. The organiser sees a Names drawn section and Organiser tools with the Exclusions row only (Q8; Edit details, Hand over and Cancel wait for slices 13 and 15). Members do not see the draw date, there is no "See all" People link and no Leave exchange after the draw yet (slice 14). The revealed card ("You're buying for {name}." with View their wishlist) comes with slice 11. Built; click-through still owed.
 
 **Updated 2026-11-13 (decided by Tobechukwu Olih, slice 5 owner decisions Q1 to Q14):** before the draw, a participant's `/exchanges/[id]` shows: "Names are drawn on {date}." (or "when {first name} is ready"), "Organised by {name} · Everyone spends {budget}", "You're all set" once a list is attached, Your part (the list row to `/exchanges/[id]/list` with its source line, and "Who you're buying for" with the draw date), Dates (join by, names drawn, gifts exchanged, time zone line), People (faces and names only, never list status), and "From {first name}" for the organiser's note. A participant's page has no invite link, no organiser tools, no Leave (slice 14) and no "Add your wishlist" card (slice 10). The organiser's page gains Your part (the S49 row, only when taking part), People (header "{N} people in." once someone has joined, Q14) and Organiser tools > Invite people. Every date shows in the viewer's zone; the gift day shows as stored.
@@ -644,6 +649,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-014 · Draw & gifting: Reveal
 
+**Updated 2026-11-23 (decided by Tobechukwu Olih, slice 11 owner decisions Q1 to Q9, docs/tasks/slice-11.md):** "View their wishlist" is now shown on the revealed page and goes to the recipient's list. The Most wanted rows are links that open that item on the list. Hide again also hides the list: on this device `/recipient` shows "Hidden on this device" with Show, which goes back to Reveal, and loads nothing.
+
 **Updated 2026-11-22 (decided by Tobechukwu Olih, slice 10 owner decisions Q1 to Q12, docs/tasks/slice-10.md):** built as `/exchanges/[id]/reveal`, open to a giver with a current assignment while names are drawn or the gift day has passed (Q10); everyone else gets Not available. The privacy check shows until the first reveal, then the opening moment, then the person, the spend and the gift day, and up to 3 Most wanted items, recently changed first (Q9), as plain rows with no chevron. "View their wishlist" is not shown until slice 11 (Q7). The person's name is never in the page the server sends: the app reads it after the viewer asks, and records the reveal only after that read succeeds. "Hide again" works per device (stored against the assignment on that device, not on the account) and also hides the name on the exchange page. The changed-person and offline-after-change variants wait for slice 14. Built; click-through with a real wishlist and the offline states are still owed.
 
 **Updated in v1.1:** "Hide again" also hides the name on the exchange page. Adds the "Your person has changed" state.
@@ -681,6 +688,8 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 
 ### GC-015 · Draw & gifting: Recipient's wishlist
 
+**Updated 2026-11-23 (decided by Tobechukwu Olih, slice 11 owner decisions Q1 to Q9 and B1 to B4, docs/tasks/slice-11.md):** built as `/exchanges/[id]/recipient` (boards S16 and S17). It opens only for a giver whose current assignment is revealed, while names are drawn or after the gift day; everyone else gets Not available, and a complete or cancelled exchange reads nothing. The person's name, photo and items are loaded by the app after the page opens, never in the page the server sends, and the loading state has a neutral heading with no name. A device that has hidden the person shows "Hidden on this device" with Show and loads nothing. "Over budget" is a trailing badge on the row, not under the price; a row shows one badge, in the order "You got this", "Over budget", "Updated". The budget note uses the range, for example "Within the ₦15,000 to ₦25,000 budget." "Updated" means changed since the last time you opened the list (a first open shows none). The hint on the list and the item sheet reads "Only you can see what you mark. {first} never will." With no list the body reads "The budget is your best guide for now." The taken-off note has an Unmark control and also covers marked items on a list the person removed. Offline, marking is off and the shop link and Copy link still work. Home's "Gift bought" waits for the Home slice.
+
 **Updated in v1.1:** the giver sees one list whatever its source; ideas no longer get a separate heading.
 
 **As Participant, I want to** browse my recipient's wishlist, open items and privately mark one as bought, **so that** I pick something they want, within budget.
@@ -693,16 +702,16 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 #### In scope — Dev tasks
 
 - Recipient's wishlist: "{N} items" / "Recently changed first"; each item with name, Most wanted / Nice to have badge, owner note and ₦ price; budget + event date reminder ("You're buying for {name}. Spend … Gifts are exchanged on …"; no time since 2026-11-09, Tobechukwu Olih).
-- Badges on a row: "Updated" (changed since you last opened the list), "You got this" (your own mark only), "Over budget" under the price.
-- Item detail (sheet on mobile, dialog on desktop): price with "Within / Over / Under the {budget} budget."; note; Open the shop (new tab); Copy link; "I got this" → "Marked “{name}” as got. Only you can see this." with Undo; "I haven't got it after all".
+- Badges on a row: "Updated" (changed since you last opened the list), "You got this" (your own mark only), "Over budget" as a trailing badge on the row (one badge per row: You got this, then Over budget, then Updated).
+- Item detail (sheet on mobile, dialog on desktop): price with "Within / Over / Under the {budget} budget." in range form (for example "Within the ₦15,000 to ₦25,000 budget."); note; Open the shop (new tab); Copy link; "I got this" → "Marked “{name}” as got. Only you can see this." with Undo; "I haven't got it after all".
 - A giver may mark several items. Marks are visible to that giver only — never to the owner, the organiser or anyone else.
 - Home: "Gift bought · Exchange {date}" on that exchange's row.
 - The list reaches the giver the same way whether it's an attached wishlist, ideas or items kept from a deleted list (GC-010). The giver never sees which source it is or the wishlist's own name.
 
 #### Edge cases — Non-standard scenarios
 
-- Empty list → "They haven't added anything yet". No list → "{first name} hasn't added a wishlist yet." Ask for a hint (GC-016): not in v1.
-- Item taken off the list after it was marked got it → note on the recipient's wishlist naming it; the giver can still unmark it.
+- Empty list → "They haven't added anything yet". No list → "{first name} hasn't added a wishlist yet." with the body "The budget is your best guide for now." Ask for a hint (GC-016): not in v1.
+- Item taken off the list after it was marked got it → note on the recipient's wishlist naming it, with an Unmark control; the giver can still unmark it.
 - No link → name + note only ("No shop link. The name and note are all there is."); no price → no budget flag.
 - Recipient has two givers after a blind assignment (GC-017) → each giver sees the list and their own marks only; neither is told.
 
@@ -713,7 +722,9 @@ Every signed-in user. Anyone can be a participant in one exchange and an organis
 #### Content
 
 - "They haven't added anything yet"
-- "Only you can see this. {name} never will."
+- "Only you can see this. {name} never will." (Reveal)
+- "Only you can see what you mark. {first} never will." (the list and the item sheet)
+- "The budget is your best guide for now."
 
 ### GC-016 · Draw & gifting: Ask for a hint
 
