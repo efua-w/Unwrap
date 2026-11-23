@@ -143,7 +143,7 @@ AC-1 through AC-17 (see planner output for full list). Key ones:
   - A run on 45ae067 showed both CI jobs SUCCESS (verified). That run covered the committed database layer and types only, not the app code.
   - Tester round 1: PASS. No Critical or High. typecheck, lint, tokens:check, 446 unit tests, 51 email tests passed; Playwright with `E2E_ALLOW_DRAW` unset at 390, 768 and 1440: 141 passed, 6 skipped (the opt-in draw tests), 0 failed. Defects T1-1 (Medium, E21 "All {n} people… have been told" can be false) and T1-2 (Low, "unless someone leaves").
   - Reviewer round 1: CHANGES REQUIRED. Pair secrecy checked, nothing found. Findings and status:
-    - R1-1 High (invite preview `closed_at` is the future join-by date after an early draw): fixed by migration `invite_preview_drawn` and test 330; applied as 20261123090758, drift check passed 23/23 (verified). 330 itself has not run (assumed pending CI).
+    - R1-1 High (invite preview `closed_at` is the future join-by date after an early draw): fixed by migration `invite_preview_drawn` and test 330; applied as 20261123090758, drift check passed 23/23 (verified). 330 passed in the CI security job on 61f58ce after a fixture fix (verified).
     - R1-2 Medium (E21 wording): fixed, E21 always says "Everyone taking part has someone to buy for."; count line deferred (item 113).
     - R1-3 Medium (ActionCard focus order): fixed by rendering a banner and a tray switched with `max-md:hidden` / `md:hidden`; not seen in a browser for the drawn states (assumed).
     - R1-4 Medium (docs): this note, progress.md and user-stories.md.
