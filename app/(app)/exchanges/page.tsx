@@ -1,7 +1,8 @@
-import { Plus } from "@phosphor-icons/react/dist/ssr";
+import { Envelope, Gift, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { PageHeading } from "@/components/layout/PageHeading";
+import { ActionCard, type ActionCardPlacement } from "@/components/ui/ActionCard";
 import { Button } from "@/components/ui/Button";
 import { ExchangeTag } from "@/components/ui/ExchangeTag";
 import { ListRow } from "@/components/ui/ListRow";
@@ -11,7 +12,7 @@ import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
 import { ExchangeBlock } from "@/features/exchanges/components/ExchangeBlock";
 import { LoadError } from "@/features/exchanges/components/LoadError";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
-import { listMyExchanges } from "@/features/exchanges/queries";
+import { getExchangeStates, listMyExchanges } from "@/features/exchanges/queries";
 import type { ExchangeListItem } from "@/features/exchanges/types";
 import type { MyPendingRequest } from "@/features/participants/types";
 import { peopleIn, joinedToday } from "@/features/exchanges/people";
@@ -19,16 +20,20 @@ import { lastJoinDay } from "@/features/exchanges/timeline";
 import { firstName } from "@/features/joining/copy";
 import { JoinRequestBlock } from "@/features/participants/components/JoinRequestBlock";
 import { getJoinRequests, listMyPendingRequests } from "@/features/participants/queries";
+import { DRAW_COPY } from "@/features/draw/copy";
+import { DismissRequestButton } from "@/features/draw/components/DismissRequestButton";
+import { getMyAssignment } from "@/features/draw/queries";
 import { HowItWorks } from "@/features/onboarding/HowItWorks";
 import { requireProfile } from "@/lib/auth/session";
-import { formatDay } from "@/lib/dates/format";
+import { formatDay, formatYmdDay } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 
 type SearchParams = Promise<{ view?: string | string[] }>;
 
 // S08 Exchanges (GC-008). Boards: Exchanges-first, -started, -active, -joined, -pastempty, -loading, -error,
 // -offline (m and d). Slices 4 to 6: exchanges the person organises or has joined, the organiser's request
-// blocks and the asker's pending rows; the closed-request row and the personal action arrive with slices 7 to 10.
+// blocks and the asker's pending rows. Slice 10 adds the drawn row line, the reveal ActionCard and the closed-request row
+// with Dismiss (GC-006, owner Q4 and Q5, 2026-11-22).
 export default async function ExchangesPage({ searchParams }: { searchParams: SearchParams }) {
   const { view } = await searchParams;
   const past = view === "past";
@@ -73,8 +78,10 @@ function ExchangesLoading() {
 // GC-008: one written sentence per row (boards Exchanges-joined, Exchanges-active). "Names are drawn {date}."
 // names the draw day in the viewer's zone; the organiser-draws variants are pending copy. Before the draw
 // there are no readiness counts (slice 8), so an organiser's row says how many people are in.
-function rowSub(item: ExchangeListItem, timeZone: string): string {
+function rowSub(item: ExchangeListItem, timeZone: string, drawn: boolean): string {
   const copy = EXCHANGE_COPY.list;
+  // Board Exchanges-active: "Names are drawn. Gifts on Sat 19 Dec." once names are drawn.
+  if (drawn) return DRAW_COPY.rowDrawn(formatYmdDay(item.giftDay) ?? "");
   const when =
     item.drawMode === "at_join_by" && item.drawAt
       ? copy.rowNamesDrawn(formatDay(new Date(item.drawAt), timeZone))
@@ -136,6 +143,15 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
     );
   }
 
+  // GC-008, GC-013: which exchanges are drawn, and the first one whose giver has not revealed yet gets the ActionCard. WHY an
+  // assignment read per drawn exchange and not a list: each is the caller's own row (id and flag, no name), and a read that
+  // fails only loses the card, never the list.
+  const states = past ? new Map<string, string>() : await getExchangeStates(shown.map((item) => item.id));
+  const isDrawn = (item: ExchangeListItem) => states.get(item.id) === "drawn";
+  const drawnTaking = past ? [] : shown.filter((item) => isDrawn(item) && item.takingPart);
+  const assignments = await Promise.all(drawnTaking.map((item) => getMyAssignment(item.id).catch(() => null)));
+  const unrevealed = drawnTaking.find((_, i) => assignments[i] && !assignments[i].revealed);
+
   // Dates in the viewer's own zone (product rules).
   const timeZone = await readViewerTimeZone();
   // GCO-006 / Q17: an exchange with people waiting leads with its request block, and that wins over "Only you
@@ -155,8 +171,27 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
     ...requestItems.map((item) => ({ kind: "requests" as const, item })),
     ...(aloneItem ? [{ kind: "alone" as const, item: aloneItem }] : []),
   ].slice(0, 2);
+  const pendingRequests = myRequests.filter((r) => r.status === "pending");
+  const closedRequests = myRequests.filter((r) => r.status === "closed");
+  // WHY two placements: a banner first and a tray last, so the focus order matches what is on screen at each size (WCAG 2.4.3).
+  const card = (placement: ActionCardPlacement) =>
+    unrevealed ? (
+      <ActionCard
+        label={DRAW_COPY.needsYou}
+        placement={placement}
+        icon={Gift}
+        title={DRAW_COPY.rowCardTitle(unrevealed.name)}
+        sub={DRAW_COPY.rowCardSub}
+        action={
+          <Button variant="brand" icon={Envelope} href={`/exchanges/${unrevealed.id}/reveal`} fullWidth className="md:w-auto">
+            {DRAW_COPY.reveal}
+          </Button>
+        }
+      />
+    ) : null;
   return (
     <>
+      {card("banner")}
       <Tabs past={past} />
       {blocks.map(({ kind, item }) =>
         kind === "alone" ? (
@@ -180,18 +215,29 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
             href={`/exchanges/${item.id}`}
             leading={<ExchangeTag name={item.name} tint={item.tint} />}
             title={item.name}
-            sub={rowSub(item, timeZone)}
+            sub={rowSub(item, timeZone, isDrawn(item))}
             divider={index > 0}
           />
         ))}
         {/* GC-008 Q7: requests still waiting. Not links: there is nothing to open until the organiser decides. */}
-        {myRequests.map((request, index) => (
+        {pendingRequests.map((request, index) => (
           <ListRow
             key={request.requestId}
             leading={<ExchangeTag name={request.exchangeName} tint={request.exchangeTint} />}
             title={request.exchangeName}
             sub={copy.rowRequestSent(firstName(request.organiserName))}
             divider={shown.length + index > 0}
+          />
+        ))}
+        {/* GC-006 (owner Q5): the draw closed these. Dismiss is a sibling target of the row, never inside it. */}
+        {closedRequests.map((request, index) => (
+          <ListRow
+            key={request.requestId}
+            leading={<ExchangeTag name={request.exchangeName} tint={request.exchangeTint} />}
+            title={request.exchangeName}
+            sub={DRAW_COPY.closedRequest(firstName(request.organiserName))}
+            action={<DismissRequestButton requestId={request.requestId} exchangeName={request.exchangeName} />}
+            divider={shown.length + pendingRequests.length + index > 0}
           />
         ))}
       </ul>
@@ -203,6 +249,7 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
           </Button>
         </div>
       )}
+      {card("tray")}
     </>
   );
 }

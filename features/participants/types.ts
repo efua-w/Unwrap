@@ -28,9 +28,11 @@ export type ParticipantLine = {
   isOrganiser: boolean;
 };
 
-/** The asker's own pending request (Exchanges). WHY no request id: the row is not a control (AC-9). */
+/** The asker's own request (Exchanges). WHY a request id: Dismiss on a closed request needs it (GC-006); a pending row is not a control (AC-9). */
 export type MyPendingRequest = {
   requestId: string;
+  /** pending: still waiting. closed: the draw happened first (GC-006), shown until dismissed. */
+  status: "pending" | "closed";
   exchangeName: string;
   exchangeTint: ExchangeTint;
   organiserName: string;

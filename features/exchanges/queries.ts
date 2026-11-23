@@ -11,6 +11,7 @@ import type { ExchangeListItem, MemberExchange, OrganiserExchange, OwnListSummar
 // columns signed-in people may read, so the invite token is out by construction and no column string
 // here has to match the grants. pgTAP 140 fails if the view and the grants ever disagree.
 type VisibleRow = Database["public"]["Views"]["exchanges_visible"]["Row"];
+type ExchangeStatus = Database["public"]["Enums"]["exchange_status"];
 
 // WHY: Postgres reports every view column as nullable, but these are NOT NULL columns of
 // public.exchanges seen through a plain projection. A null here means the view is broken, so it fails
@@ -146,9 +147,9 @@ async function readOwnList(id: string): Promise<OwnListSummary> {
   return { source: parsed.source, name: parsed.name, itemCount: parsed.itemCount };
 }
 
-// One exchange for an active member who is not the organiser, before the draw, or null. WHY one answer:
-// missing, cancelled, not a member, left, removed and already-drawn all give "isn't available to you"
-// (GC-029). Draw and later states arrive with slices 10 to 15.
+// One exchange for an active member who is not the organiser, before or after the draw, or null. WHY one answer:
+// missing, cancelled, not a member, left and removed all give "isn't available to you" (GC-029). The states after
+// the draw (event passed, complete) arrive with slice 15.
 export async function getMemberExchange(id: string, viewerId: string): Promise<MemberExchange | null> {
   if (!isUuid(id)) return null;
   const supabase = await createClient();
@@ -165,7 +166,7 @@ export async function getMemberExchange(id: string, viewerId: string): Promise<M
   // WHY: get_exchange_people answers active members only, so an empty or me-less answer is "not a member".
   const lines = toPersonLines(people.data);
   if (!lines.some((p) => p.isMe)) return null;
-  if (state.data !== "open" && state.data !== "joining_closed") return null;
+  if (state.data !== "open" && state.data !== "joining_closed" && state.data !== "drawn") return null;
   const organiser = lines.find((p) => p.isOrganiser);
   if (!organiser) throw new Error("Could not read the exchange.");
 
@@ -183,5 +184,20 @@ export async function getMemberExchange(id: string, viewerId: string): Promise<M
     organiserName: organiser.name,
     people: lines,
     myList: await readOwnList(id),
+    state: state.data,
   };
+}
+
+// The calculated status of each exchange, for the Exchanges rows after the draw (GC-008). WHY one call each: the status
+// is computed in the database (plan §3) and no view carries it. An exchange whose status cannot be read is left out, so
+// its row shows as it did before the draw rather than failing the page.
+export async function getExchangeStates(ids: readonly string[]): Promise<Map<string, ExchangeStatus>> {
+  const supabase = await createClient();
+  const answers = await Promise.all(
+    ids.map(async (id) => {
+      const { data, error } = await supabase.rpc("exchange_state", { p_exchange: id });
+      return error || !data ? null : ([id, data] as const);
+    }),
+  );
+  return new Map(answers.filter((a): a is readonly [string, ExchangeStatus] => a !== null));
 }

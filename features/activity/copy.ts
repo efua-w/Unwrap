@@ -12,6 +12,9 @@ export const ACTIVITY_COPY = {
   joined: (name: string, exchange: string) => `${name} joined ${exchange}.`,
   asked: (name: string, exchange: string) => `${name} asked to join ${exchange}.`,
   askedSub: (time: string) => `${time} · Approve or decline`,
+  // Board Activity-default (GC-007): the Names drawn event links to Reveal.
+  drawn: (exchange: string) => `Names are drawn for ${exchange}.`,
+  drawnSub: (time: string) => `${time} · See who you're buying for`,
   chooseEmails: "Choose which emails you get",
   older: "Load older activity",
   olderBusy: "Loading older activity",

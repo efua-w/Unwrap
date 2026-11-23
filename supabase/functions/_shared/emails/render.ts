@@ -1,10 +1,10 @@
 import { budgetText, formatGiftDay, formatMoment } from "./dates.ts";
 import { firstName, oneLine } from "./escape.ts";
 import { renderHtml, renderText, type EmailContent } from "./layout.ts";
-import { exchangeLink, inviteLink, notificationsLink, participantsLink } from "./links.ts";
+import { exchangeLink, inviteLink, notificationsLink, participantsLink, revealLink } from "./links.ts";
 import type { RenderedEmail, RenderInput } from "./types.ts";
 
-// The emails slices 7 and 8 send, from boards Email-E06, -E07, -E08, -E09, -E10 and -E12 (canvas "Unwrap").
+// The emails slices 7, 8 and 10 send, from boards Email-E06, -E07, -E08, -E09, -E10, -E12, -E19 and -E21 (canvas "Unwrap").
 // Left out, by owner decisions Q9 and the round 3 decision (2026-11-17): the draw date ("Names drawn"), auto-close,
 // "Wishlists in {n} of {m}" and the E07 counts, and anything that promises the draw or a reminder. E06 shows the
 // budget, join-by, gift day and the organiser's note, with moments in the recipient's zone and its label.
@@ -27,6 +27,16 @@ function inviteDetails(input: RenderInput, other: string): { label: string; valu
   if (gift) rows.push({ label: "Gift day", value: gift });
   const note = input.note ? input.note.trim() : "";
   if (note) rows.push({ label: other ? `A note from ${other}` : "A note from the organiser", value: note });
+  return rows;
+}
+
+// The budget and gift-day rows of E19 and E21 (boards Email-E19, -E21). A missing value leaves its row out.
+function drawDetails(input: RenderInput): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  const budget = input.budgetPreset ? budgetText(input.budgetPreset) : null;
+  if (budget) rows.push({ label: "Budget per gift", value: budget });
+  const gift = input.giftDay ? formatGiftDay(input.giftDay) : null;
+  if (gift) rows.push({ label: "Gift day", value: gift });
   return rows;
 }
 
@@ -120,6 +130,49 @@ function content(input: RenderInput, base: string): EmailContent & { subject: st
         cta: { label: "Add my wishlist", url: exchangeLink(base, input.exchangeId) },
         signoff: "Happy gifting,",
         reason: `You're getting this because ${organiser} sent you a reminder in ${exchange}.`,
+      };
+    }
+    case "E19": {
+      // WHY no name but the organiser's, and that only as "not even {organiser}" (GCO-012, board Email-E19): the email
+      // never says who gives to whom. WHY a name match decides "the recipient is the organiser" (Q11): the claim
+      // carries no such flag; two people with the same name only lose the words "not even {name}", which is safe.
+      const organiserIsReader =
+        !other || (input.toName !== null && input.otherName !== null && oneLine(input.toName) === oneLine(input.otherName));
+      return {
+        subject: `Names are drawn for ${exchange}`,
+        preview: "Find out who you're buying for. Only you will see it.",
+        details: drawDetails(input),
+        heading: "Names are drawn",
+        greeting: greeting(input.toName),
+        paragraphs: [
+          `Names have been drawn for ${exchange}. Open Unwrap to see who you're buying for. ${
+            organiserIsReader ? "Only you will see it." : `Only you will see it, not even ${other}.`
+          }`,
+        ],
+        cta: { label: "Reveal who you got", url: revealLink(base, input.exchangeId) },
+        tip: "Tip: make sure nobody's looking over your shoulder.",
+        signoff: "Happy gifting,",
+        reason: `You're getting this because you're taking part in ${exchange}.`,
+        settings: { label: "Manage email settings", url: notificationsLink(base) },
+      };
+    }
+    case "E21": {
+      // WHY no count (GCO-012, Q3): "All {n} people taking part have been told" can be false when some people have the
+      // email off, and the claim carries the people count, not how many were queued. Deferred: docs/copy-pending.md.
+      return {
+        subject: `Names are drawn for ${exchange}`,
+        preview: "Everyone has someone to buy for.",
+        details: drawDetails(input),
+        heading: "Names are drawn",
+        greeting: greeting(input.toName),
+        paragraphs: [
+          `Names have been drawn for ${exchange}. Everyone taking part has someone to buy for.`,
+          "Nobody can see who got whom, not even you. You don't need to do anything else unless someone leaves.",
+        ],
+        cta: { label: "View exchange", url: exchangeLink(base, input.exchangeId) },
+        signoff: "Happy gifting,",
+        reason: `You're getting this because you're organising ${exchange}.`,
+        settings: { label: "Manage email settings", url: notificationsLink(base) },
       };
     }
     case "E12":

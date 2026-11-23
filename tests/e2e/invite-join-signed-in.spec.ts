@@ -431,7 +431,7 @@ for (const { name: width, viewport } of VIEWPORTS) {
 
           // S14 participant view.
           await expect(page.getByRole("heading", { level: 1, name: "Church choir swap" })).toBeVisible();
-          await expect(page.getByText(`Names are drawn on ${DRAW_DAY}.`)).toBeVisible();
+          await expect(page.getByText(`Names are drawn on ${DRAW_DAY}.`, { exact: true })).toBeVisible();
           await expect(page.getByText("Organised by Ngozi · Everyone spends ₦5,000 to ₦10,000")).toBeVisible();
           await expect(page.getByRole("heading", { name: "You're all set" })).toBeVisible();
           await expect(page.getByText("Only for this exchange. 1 item. You can change it until the draw.")).toBeVisible();
@@ -512,7 +512,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await page.getByRole("link", { name: "Go to exchange" }).click();
           await expect(page.getByText("Nothing yet. Your giver has nothing to go on.")).toBeVisible();
           await expect(page.getByRole("heading", { name: "You're all set" })).toHaveCount(0);
-          await expect(page.getByText("Names are drawn when Ngozi is ready.")).toBeVisible();
+          // WHY exact: the "Add your wishlist" card (slice 10) repeats the sentence inside a longer line.
+          await expect(page.getByText("Names are drawn when Ngozi is ready.", { exact: true })).toBeVisible();
           await page.getByRole("link", { name: "Your list for this exchange" }).click();
           await expect(page).toHaveURL(new RegExp(`/exchanges/${exchange.id}/list$`));
           await expect(page.getByText("Skip for now")).toHaveCount(0);
@@ -559,9 +560,11 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByRole("heading", { name: "People (3)" })).toBeVisible();
         await expect(page.getByText("You, Femi and Bisi.")).toBeVisible();
         await expect(page.getByText("Nothing yet. Add one so your giver has ideas.")).toBeVisible();
-        for (const hidden of ["Edit details", "Draw names now…", "Cancel exchange…", "Invite by email"]) {
+        for (const hidden of ["Edit details", "Cancel exchange…", "Invite by email"]) {
           await expect(page.getByText(hidden)).toHaveCount(0);
         }
+        // Slice 10 (GCO-011): the Draw names now… row is built.
+        await expect(page.getByRole("button", { name: /Draw names now/ })).toBeVisible();
         await expectNoAxeViolations(page);
         await page.screenshot({ path: `test-results/screenshots/exchange-organiser-people-${width}.png`, fullPage: true });
 

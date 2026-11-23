@@ -1,3 +1,7 @@
+import { ListHeart, Plus } from "@phosphor-icons/react/dist/ssr";
+import { ActionCard, type ActionCardPlacement } from "@/components/ui/ActionCard";
+import { Button } from "@/components/ui/Button";
+import { DRAW_COPY } from "@/features/draw/copy";
 import { DetailRows } from "@/features/joining/components/DetailRows";
 import { firstName, JOIN_COPY } from "@/features/joining/copy";
 import { formatDay, formatDayTime, formatTime, formatYmdDay, zoneShortName } from "@/lib/dates/format";
@@ -15,9 +19,9 @@ type Props = {
 };
 
 // S14 participant view before the draw (GC-013). Boards: Exchange-Detail-before and -nolist (m, d). Left out
-// on purpose: the invite link (organiser-only, AC-24), Leave exchange (slice 14), the "Add your wishlist"
-// action card (slice 10, owner Q12), and any list status of other people (AC-20). WHY no "not available"
-// here: the page only renders this for an active member.
+// on purpose: the invite link (organiser-only, AC-24), Leave exchange (slice 14) and any list status of other
+// people (AC-20). The "Add your wishlist" action card shows while the member has no list (owner Q4, 2026-11-22).
+// WHY no "not available" here: the page only renders this for an active member.
 export function ExchangeMemberView({ exchange, timeZone }: Props) {
   const copy = EXCHANGE_COPY.detail;
   const manual = exchange.drawMode === "organiser_chooses" || exchange.drawAt === null;
@@ -26,8 +30,26 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
   const drawDay = !manual && drawAt ? formatDay(drawAt, timeZone) : null;
   const hasList = exchange.myList.source !== "none";
 
+  // WHY two placements: a banner first and a tray last, so the focus order matches what is on screen at each size (WCAG 2.4.3).
+  const card = (placement: ActionCardPlacement) =>
+    hasList ? null : (
+      <ActionCard
+        label={DRAW_COPY.needsYou}
+        placement={placement}
+        icon={ListHeart}
+        title={DRAW_COPY.cardListTitle}
+        sub={DRAW_COPY.cardListSub(drawDay ? DRAW_COPY.cardListWhenDay(drawDay) : DRAW_COPY.cardListWhenManual(organiserFirst))}
+        action={
+          <Button icon={Plus} href={`/exchanges/${exchange.id}/list`} fullWidth className="md:w-auto">
+            {DRAW_COPY.cardListTitle}
+          </Button>
+        }
+      />
+    );
+
   return (
     <div className="flex flex-col gap-32 md:max-w-reading-max">
+      {card("banner")}
       <ExchangeDetailHeader name={exchange.name} tint={exchange.tint}>
         <p className="text-body-base-regular text-text-default">
           {drawDay ? copy.namesDrawnOn(drawDay) : copy.namesDrawnWhenReady(organiserFirst)}
@@ -77,6 +99,8 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
           <p className="whitespace-pre-line break-words text-body-base-regular text-text-secondary">{exchange.note}</p>
         </section>
       ) : null}
+
+      {card("tray")}
     </div>
   );
 }

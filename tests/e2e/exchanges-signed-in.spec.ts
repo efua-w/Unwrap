@@ -326,9 +326,11 @@ for (const { name: width, viewport } of VIEWPORTS) {
         await expect(page.getByText("Only you so far. People show here as they join.")).toBeVisible();
         await expect(page.getByRole("heading", { name: "Organiser tools" })).toBeVisible();
         // Owner decision 5: nothing whose feature is not built yet.
-        for (const hidden of ["Invite by email", "Add your wishlist", "Cancel exchange…", "Edit details", "Draw names now…"]) {
+        for (const hidden of ["Invite by email", "Add your wishlist", "Cancel exchange…", "Edit details"]) {
           await expect(page.getByText(hidden)).toHaveCount(0);
         }
+        // Slice 10 (GCO-011): the Draw names now… row is built. Alone, it says how many more people are needed.
+        await expect(page.getByRole("button", { name: /Draw names now/ })).toContainText("Needs 3 people. 2 more to go.");
         await expectNoAxeViolations(page);
         await page.screenshot({ path: `test-results/screenshots/exchange-started-${width}.png`, fullPage: true });
 

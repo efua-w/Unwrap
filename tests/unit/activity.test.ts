@@ -42,6 +42,17 @@ describe("parseActivityRows (GC-006 S09)", () => {
     expect(rows?.[1]?.isUnread).toBe(true);
   });
 
+  it("reads Names drawn, whose subject is null (GC-007)", () => {
+    const rows = parseActivityRows([raw({ kind: "names_drawn", subject_name: null })]);
+    expect(rows?.[0]?.kind).toBe("names_drawn");
+    expect(rows?.[0]?.subjectName).toBe("");
+  });
+
+  it("refuses Names drawn with a subject, and a people event with none", () => {
+    expect(parseActivityRows([raw({ kind: "names_drawn", subject_name: "Tolu Bello" })])).toBeNull();
+    expect(parseActivityRows([raw({ kind: "member_joined", subject_name: null })])).toBeNull();
+  });
+
   it("accepts an empty list", () => {
     expect(parseActivityRows([])).toEqual([]);
   });
@@ -151,13 +162,24 @@ describe("toActivityItem (GC-006 S09)", () => {
     expect(item.dayLabel).toBe("Today");
   });
 
+  it("words Names drawn with no name and links to Reveal (GC-007)", () => {
+    const item = toActivityItem(row({ kind: "names_drawn", subjectName: "" }), now, "Africa/Lagos");
+    expect(item.title).toBe("Names are drawn for Family Christmas 2026.");
+    expect(item.sub).toBe("6:40 pm · See who you're buying for");
+    expect(item.href).toBe(`/exchanges/${EX}/reveal`);
+  });
+
+  it("sends the people events to the exchange page", () => {
+    expect(toActivityItem(row(), now, "Africa/Lagos").href).toBe(`/exchanges/${EX}`);
+  });
+
   it("shows the time in the viewer's zone", () => {
     expect(toActivityItem(row(), now, "Pacific/Auckland").sub).toBe("6:40 am");
   });
 
   it("carries no field a pair could ride on", () => {
     expect(Object.keys(toActivityItem(row(), now, "Africa/Lagos")).sort()).toEqual(
-      ["dayKey", "dayLabel", "exchangeId", "exchangeName", "exchangeTint", "id", "isUnread", "sub", "title"],
+      ["dayKey", "dayLabel", "exchangeId", "exchangeName", "exchangeTint", "href", "id", "isUnread", "sub", "title"],
     );
   });
 });

@@ -110,7 +110,7 @@ export function ActivityFeed({ initialItems, initialCursor, unreadCount }: Props
               {day.items.map((item, index) => (
                 <ListRow
                   key={item.id}
-                  href={`/exchanges/${item.exchangeId}`}
+                  href={item.href}
                   leading={
                     <>
                       {/* WHY a word beside the dot: colour alone must not say "unread" (CLAUDE.md UI rules). */}

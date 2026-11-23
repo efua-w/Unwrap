@@ -141,3 +141,21 @@ export function yourListSubline(
       return mode === "organiser" ? EXCHANGE_COPY.detail.listNoneOrganiser : EXCHANGE_COPY.detail.listNoneParticipant;
   }
 }
+
+// The same row after names are drawn (boards Exchange-Detail-drawn, -odrawn, -revealed): the list can no longer change
+// from the exchange page (owner Q7, slice 11 owns the list after the draw), so it says who sees it instead.
+// WHY the participant's "nothing yet" line for both modes: "Add one" would be untrue once names are drawn.
+export function drawnListSubline(list: { source: ListSource; name: string | null; itemCount: number }): string {
+  const count = itemCountLabel(list.itemCount);
+  const seen = `Only your giver can see ${list.itemCount === 1 ? "it" : "them"}.`;
+  switch (list.source) {
+    case "wishlist":
+      return `From ${q(list.name ?? "")}. ${count}. ${seen}`;
+    case "ideas":
+      return `Only for this exchange. ${count}. ${seen}`;
+    case "kept":
+      return sourceSubline("kept", list.name) ?? "";
+    case "none":
+      return EXCHANGE_COPY.detail.listNoneParticipant;
+  }
+}

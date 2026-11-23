@@ -17,5 +17,8 @@ export type PairCheck = {
   relax: { firstId: string; secondId: string } | null;
 };
 
-/** The pair count for the Organiser tools row, or null when it could not be read (the row then has no subtitle). */
-export type ExclusionsEntry = { count: number | null };
+/**
+ * The pair count for the Organiser tools row, or null when it could not be read (the row then has no subtitle).
+ * `onlyPair` holds the two first names when there is exactly one pair, for the Draw names sheet's note (GCO-011).
+ */
+export type ExclusionsEntry = { count: number | null; onlyPair: { first: string; second: string } | null };

@@ -2,12 +2,15 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
+import { ExchangeDrawn } from "@/features/exchanges/components/ExchangeDrawn";
 import { ExchangeJustStarted } from "@/features/exchanges/components/ExchangeJustStarted";
 import { ExchangeMemberView } from "@/features/exchanges/components/ExchangeMemberView";
 import { LoadError } from "@/features/exchanges/components/LoadError";
 import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { getMemberExchange, getOrganiserExchange } from "@/features/exchanges/queries";
+import { getDrawSummary, getMyAssignment } from "@/features/draw/queries";
+import type { DrawSummary, MyAssignment } from "@/features/draw/types";
 import { getExclusions } from "@/features/exclusions/queries";
 import type { ExclusionsEntry } from "@/features/exclusions/types";
 import { RemovedFromExchange } from "@/features/participants/components/RemovedFromExchange";
@@ -19,7 +22,8 @@ import { buildInviteUrl } from "@/lib/site-url";
 // S14 Exchange detail before the draw (GC-013, GCO-004): the organiser's page (boards Exchange-Detail-started,
 // -ostarted, -oattached, -oideas, -copied, -loading, -error, -offline, Exchange-Detail-obefore) and the participant's (Exchange-Detail-before,
 // -nolist); S47 Acc-NA-exchange, Acc-NA-removed (GC-029). Back goes to Exchanges (owner decision 2026-11-03: in-app Back goes to the parent
-// page). The draw and later states arrive with slices 10 to 16.
+// page). Slice 10 adds the page after the draw (GC-013, GCO-012; boards Exchange-Detail-drawn, -odrawn, Org-Drawn-justexchange):
+// the later states arrive with slices 13 to 16.
 export default async function ExchangePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await requireProfile(`/exchanges/${encodeURIComponent(id)}`);
@@ -54,6 +58,8 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
   let readiness: Awaited<ReturnType<typeof getReadiness>> | null = null;
   let inviteUrl: string | null = null;
   let exclusions: ExclusionsEntry | null = null;
+  let assignment: MyAssignment | null = null;
+  let drawSummary: DrawSummary | null = null;
   try {
     detail = await getOrganiserExchange(id, viewerId);
     // WHY only when not the organiser: a member's page has no token and no organiser tools (GC-013, AC-24).
@@ -68,7 +74,21 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
     // WHY only while pairs can be set or are shown (owner Q5b, Q6): open, joining closed and drawn. WHY its own catch: the
     // count is an extra on the row, so the row shows without it rather than failing the page.
     if (detail && (detail.exchange.state === "open" || detail.exchange.state === "joining_closed" || detail.exchange.state === "drawn")) {
-      exclusions = { count: await getExclusions(id).then((pairs) => pairs.length).catch(() => null) };
+      const pairs = await getExclusions(id).catch(() => null);
+      const [only] = pairs ?? [];
+      exclusions = {
+        count: pairs ? pairs.length : null,
+        // WHY the names of a single pair only: the Draw names sheet's note names it (board Org-Draw-default).
+        onlyPair: pairs && pairs.length === 1 && only ? { first: only.firstName, second: only.secondName } : null,
+      };
+    }
+    // GC-013, GC-014: after the draw each giver learns only whether they have an assignment and whether it was revealed,
+    // never the name (that is fetched on Reveal). The organiser's own read is a count and a time. WHY the organiser's
+    // assignment is read too: an organiser who takes part is a giver, and gets zero rows when they only organise (AC-3).
+    const drawn = detail ? detail.exchange.state === "drawn" : member?.state === "drawn";
+    if (drawn) {
+      assignment = await getMyAssignment(id);
+      if (detail) drawSummary = await getDrawSummary(id).catch(() => null);
     }
     // WHY here: the link is built on the server from SITE_URL and the token, and goes only to the
     // organiser's invite section. A closed exchange has no link worth sharing.
@@ -82,8 +102,17 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
   if (!detail && !member) return removedFrom ? <RemovedFromExchange exchangeName={removedFrom} /> : <NotAvailable />;
 
   const timeZone = await readViewerTimeZone();
-  if (member) return <ExchangeMemberView exchange={member} timeZone={timeZone} />;
+  if (member) {
+    return member.state === "drawn" ? (
+      <ExchangeDrawn role="member" exchange={member} assignment={assignment} timeZone={timeZone} />
+    ) : (
+      <ExchangeMemberView exchange={member} timeZone={timeZone} />
+    );
+  }
   if (!detail) return <NotAvailable />;
+  if (detail.exchange.state === "drawn") {
+    return <ExchangeDrawn role="organiser" exchange={detail.exchange} assignment={assignment} summary={drawSummary} exclusions={exclusions} timeZone={timeZone} />;
+  }
   return <ExchangeJustStarted
       exchange={detail.exchange}
       inviteUrl={inviteUrl}
