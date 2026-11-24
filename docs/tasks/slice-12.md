@@ -125,3 +125,101 @@ Boards read from the live canvas by an agent: see docs/tasks/slice-12-boards.md 
 - The board shows auto-complete as gift day + 7 ("closes by itself on Thu 31 Dec"). The plan's boundary `(gift_day + 8)::timestamp at time zone organiser_tz` is midnight at the end of gift day + 7, so the UI date shows gift day + 7.
 - E23 and E24 bodies carry a zone label ("6:00 pm WAT"); the sender needs the recipient's zone abbreviation.
 - Reminder and complete Activity copy, the participant view while blocked, and the Reveal variant of E24 have no board: copy-pending, and nothing dated for participants while blocked (Q6).
+
+---
+
+## Tester — round 1 — 2026-11-24
+- Task: slice-12 — scheduled jobs app layer (GCO-011, GC-026, GCO-015, GC-011, GC-010)
+- Requirements: slice-12.md Q1-Q12, B1-B4, AC-9, AC-10; slice-12-boards.md
+- Files/components: features/draw, features/exchanges, features/exchange-list, features/account, features/activity, supabase/functions/_shared/emails, send-emails/process.ts, tests/e2e/scheduled-jobs-signed-in.spec.ts
+- Work completed: typecheck, lint, tokens, 510 unit tests, Playwright 117 tests at 390/768/1440. AC-9 pair secrecy verified by code read. All slice-12 specs passed.
+- Outstanding issues: T1-1 (pre-existing regression, not slice 12), T1-2 (copy contradiction — owner decided option B)
+- Next action: Builder fixes T1-2 and the "You're in" dated-step suppression; tester re-runs; then reviewer
+
+### Verdict: FAIL (pre-existing T1-1 excluded; T1-2 copy fix required)
+
+### Defects
+- **T1-1 — pre-existing, not slice 12.** `exchanges-signed-in.spec.ts:196` — "Previous month" button enabled in current month. `DateField.tsx` has zero commits in this slice. Logged as open item; does not block slice 12.
+- **T1-2 — copy fix.** `HOW_COPY.allOff` reads "You've turned these emails off, so updates show in Activity only." — false when reminders are off (no Activity row queued without email, per Q8). Owner chose option B: change to "You've turned these emails off. Names drawn still shows in Activity."
+
+### Additional fix queued by owner
+- Suppress the dated "Names are drawn on {day}." step on the "You're in" page when `joining_closed` (state is `joining_closed` or `drawn` with `draw_mode = 'at_join_by'` and draw has not yet run). Decided 2026-11-24.
+
+---
+
+## Builder — round 2 — 2026-11-24
+- Task: slice-12 — two copy/UI fixes from tester round 1
+- Requirements: T1-2 (HOW_COPY.allOff), "You're in" dated-step suppression
+- Files/components: features/exchange-list/joined.ts (HOW_COPY.allOff), features/exchanges/components/JoinedExchangeDetail or YoureIn component (dated step)
+- Work completed: HOW_COPY.allOff changed to "You've turned these emails off. Names drawn still shows in Activity."; draw step suppressed in joinedSteps when drawDatePassed; state: "open"|"joining_closed" added to ExchangeListContext and getExchangeForList; 1 new unit test added.
+- Outstanding issues: None
+- Next action: Tester round 2
+
+---
+
+## Tester — round 2 — 2026-11-24
+- Task: slice-12 — retest T1-2 and dated-step suppression
+- Requirements: GC-011, GC-026; AC-11
+- Files/components: features/exchange-list/joined.ts, types.ts, queries.ts, tests/unit/exchange-list.test.ts
+- Work completed: typecheck, lint, tokens:check, 511 unit tests. Both fixes verified by code read.
+- Outstanding issues: None
+- Next action: Reviewer
+
+### Verdict: PASS
+
+All checks pass. allOff string matches approved copy. Draw step suppressed correctly via drawDatePassed. No defects found.
+
+---
+
+## Reviewer — round 1 — 2026-11-24
+- Task: slice-12 — review of the scheduled-jobs app layer
+- Requirements: Q1–Q12, B1–B4, AC-9, AC-10, AC-11; GC-011 items 77 and 88
+- Files/components: features/exchange-list/*, features/draw/*, features/exchanges/components/*, app/(app)/exchanges/*, _shared/emails/*
+- Work completed: full diff review; all pair-secrecy checks passed
+- Outstanding issues: R1-1 (High), R1-2 (Medium), R1-3 (Medium — fixed in docs), R1-4 (Low)
+- Next action: Builder round 3 fixes R1-1, R1-2, R1-4; tester round 3; reviewer round 2
+
+### Verdict: CHANGES REQUIRED
+
+- **R1-1 (High):** You're in shows join-by reminder lines ("A reminder the day before joining closes…" / "Add one before {day}. We'll email you the day before.") when `joining_closed`. tick() only queues E23 while still open, so these are false promises.
+- **R1-2 (Medium):** Same line is false for anyone who joined within 24h of join-by (tick() requires `joined_at ≤ join_by − 24h`). Owner decided: fix it.
+- **R1-3 (Medium):** copy-pending.md row for allOff had old string. Fixed in docs, no code change needed.
+- **R1-4 (Low):** `queries.ts:71` tags drawn/event_passed exchanges as `state: "open"`. Rename to `joiningClosed: boolean`.
+
+### Passed: pair secrecy AC-9, no unbuilt-feature promises in blocked card/E15, drawDatePassed single definition, HOW_COPY.allOff, Past row copy.
+
+---
+
+## Builder — round 3 — 2026-11-24
+- Task: slice-12 — fix R1-1 (joining_closed join-by promise), R1-2 (24h window), R1-4 (state field rename)
+- Requirements: GC-011, GC-026, Q8
+- Files/components: features/exchange-list/{joined.ts,types.ts,queries.ts,components/JoinedContent.tsx}, tests/unit/exchange-list.test.ts
+- Work completed: joiningClosed: boolean replaces state field (R1-4); join-by reminder lines gated on !joiningClosed (R1-1); isEarlyJoiner helper added, joinedAt added to context, join-by reminder gated on early-joiner check (R1-2); 6 new unit tests; 517 tests pass.
+- Outstanding issues: None
+- Next action: Tester round 3
+
+---
+
+## Tester — round 3 — 2026-11-24
+- Task: slice-12 — retest R1-1, R1-2, R1-4
+- Files: features/exchange-list/types.ts, queries.ts, joined.ts, components/JoinedContent.tsx
+- Work completed: typecheck, lint, tokens:check, 517 unit tests. All three findings verified by code read.
+- Outstanding issues: None
+- Next action: Reviewer round 2
+
+### Verdict: PASS
+
+---
+
+## Reviewer — round 2 — 2026-11-24
+- Task: slice-12 — verify R1-1, R1-2, R1-4 fixes
+- Files: features/exchange-list/{joined.ts, queries.ts, types.ts, components/JoinedContent.tsx}
+- Work completed: read diff + tick() E23 condition; ran 26 exchange-list unit tests and tsc --noEmit.
+- Outstanding issues: None blocking. One low-risk note for slice 13 (see below).
+- Next action: Main session commits and asks owner to merge PR #27.
+
+### Verdict: APPROVED
+
+R1-1, R1-2, R1-4 all resolved and verified. No new false promises. No regressions.
+
+**Slice-13 open item:** tick() measures from `greatest(join_by_at, reopened_join_by_at)` but the app reads only `join_by_at`. When slice 13 adds date reopening, `isEarlyJoiner` and `lastJoinDay` must pass the later date, or late joiners will be shown the join-by reminder incorrectly again.

@@ -9,7 +9,7 @@ import { lastJoinDay } from "@/features/exchanges/timeline";
 import { zoneShortName } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 import { getNotificationSettings } from "@/features/account/queries";
-import { HOW_COPY, JOINED_COPY, howWeTellYou, joinedLine, joinedSteps, listStatus } from "../joined";
+import { HOW_COPY, JOINED_COPY, howWeTellYou, isEarlyJoiner, joinedLine, joinedSteps, listStatus } from "../joined";
 import { LIST_COPY } from "../copy";
 import { getExchangeForList, getMyExchangeList } from "../queries";
 import { InviteFrame } from "@/features/joining/components/InviteFrame";
@@ -50,8 +50,13 @@ export async function JoinedContent({ id, viewerId }: { id: string; viewerId: st
   const timeZone = await readViewerTimeZone();
   // WHY its own catch: the promise lines are an extra, and with no answer about the settings none is made.
   const settings = await getNotificationSettings().catch(() => null);
-  const status = listStatus(myList, lastJoinDay(exchange, timeZone), settings?.joinByReminder === true);
-  const how = howWeTellYou(settings, status.missing);
+  // WHY two extra guards on the join-by reminder (R1-1, R1-2): tick() only queues E23 while
+  // the exchange is open AND the member joined at least 24 h before join-by. Showing the promise
+  // outside those windows is false.
+  const earlyEnough = isEarlyJoiner(exchange.joinedAt, exchange.joinByAt);
+  const joinByReminderOn = settings?.joinByReminder === true && !exchange.joiningClosed && earlyEnough;
+  const status = listStatus(myList, lastJoinDay(exchange, timeZone), joinByReminderOn);
+  const how = howWeTellYou(settings, status.missing, exchange.joiningClosed, earlyEnough);
   const exchangePath = `/exchanges/${exchange.id}`;
   return (
     <InviteFrame

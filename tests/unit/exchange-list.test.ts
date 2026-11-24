@@ -11,7 +11,7 @@ import {
   removedToast,
   sourceSubline,
 } from "../../features/exchange-list/copy.ts";
-import { HOW_COPY, JOINED_COPY, howWeTellYou, joinedLine, joinedSteps, listStatus } from "../../features/exchange-list/joined.ts";
+import { HOW_COPY, JOINED_COPY, howWeTellYou, isEarlyJoiner, joinedLine, joinedSteps, listStatus } from "../../features/exchange-list/joined.ts";
 import { parseMyExchangeList } from "../../features/exchange-list/parse.ts";
 import type { ExchangeListContext } from "../../features/exchange-list/types.ts";
 
@@ -118,6 +118,9 @@ const exchange: ExchangeListContext = {
   isOrganiser: false,
   takingPart: true,
   organiserName: null,
+  joiningClosed: false,
+  // 48 h before join-by — well within the 24-h window (R1-2).
+  joinedAt: "2026-11-25T17:00:00+00:00",
 };
 
 describe("You're in (GC-011)", () => {
@@ -143,6 +146,16 @@ describe("You're in (GC-011)", () => {
     const manual = { ...exchange, drawMode: "organiser_chooses" as const, drawAt: null, organiserName: "Ngozi Eze" };
     expect(joinedSteps(manual, "Africa/Lagos")[0]?.detail).toBe("When Ngozi is ready");
     expect(joinedSteps({ ...manual, organiserName: null }, "Africa/Lagos")[0]?.detail).toBe("When the organiser is ready");
+  });
+
+  it("hides the draw step when joining_closed and at_join_by (the draw date has passed but the draw hasn't run)", () => {
+    const closed = { ...exchange, joiningClosed: true };
+    const steps = joinedSteps(closed, "Africa/Lagos");
+    expect(steps).toHaveLength(1);
+    expect(steps[0]?.title).toBe(JOINED_COPY.stepGifts);
+    // In open state the step is still shown.
+    const open = { ...exchange, joiningClosed: false };
+    expect(joinedSteps(open, "Africa/Lagos")).toHaveLength(2);
   });
 
   it("makes no reminder or email promise on its own: only the settings-aware lines do (slice 12)", () => {
@@ -175,11 +188,43 @@ describe("You're in (GC-011)", () => {
 
     it("says updates show in Activity only when every email is off, and promises nothing", () => {
       const off = { namesDrawn: false, someoneJoins: true, joinByReminder: false, eventReminder: false };
-      expect(howWeTellYou(off, true)).toEqual(["You've turned these emails off, so updates show in Activity only."]);
+      expect(howWeTellYou(off, true)).toEqual([HOW_COPY.allOff]);
     });
 
     it("makes no promise when the settings could not be read", () => {
       expect(howWeTellYou(null, true)).toBeNull();
+    });
+
+    it("suppresses the join-by reminder line when joining has closed (R1-1)", () => {
+      // joiningClosed=true: the join-by reminder email is never queued after joining closes.
+      expect(howWeTellYou(all, true, true)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.event]);
+      expect(howWeTellYou(all, false, true)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.event]);
+    });
+
+    it("suppresses the join-by reminder line for late joiners (R1-2)", () => {
+      // earlyJoiner=false: the member joined less than 24 h before join-by.
+      expect(howWeTellYou(all, true, false, false)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.event]);
+    });
+  });
+
+  describe("isEarlyJoiner (R1-2)", () => {
+    const joinByAt = "2026-11-27T17:00:00+00:00";
+
+    it("returns true when joined exactly 24 h before join-by", () => {
+      expect(isEarlyJoiner("2026-11-26T17:00:00+00:00", joinByAt)).toBe(true);
+    });
+
+    it("returns true when joined more than 24 h before join-by", () => {
+      expect(isEarlyJoiner("2026-11-25T17:00:00+00:00", joinByAt)).toBe(true);
+    });
+
+    it("returns false when joined less than 24 h before join-by", () => {
+      // 23 h before join-by: too late.
+      expect(isEarlyJoiner("2026-11-26T18:00:00+00:00", joinByAt)).toBe(false);
+    });
+
+    it("returns false for null joinedAt", () => {
+      expect(isEarlyJoiner(null, joinByAt)).toBe(false);
     });
   });
 
