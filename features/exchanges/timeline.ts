@@ -1,4 +1,5 @@
 import type { TimelineStep } from "@/components/ui/Timeline";
+import { DRAW_COPY } from "@/features/draw/copy";
 import { formatDay, formatTime, formatYmdDay } from "@/lib/dates/format";
 import { EXCHANGE_COPY } from "./copy";
 import type { Schedule } from "./types";
@@ -23,7 +24,9 @@ export function drawWhen(schedule: Schedule, timeZone: string): string {
   return `${formatDay(at, timeZone)} at ${formatTime(at, timeZone)}.`;
 }
 
-export function timelineSteps(schedule: Schedule, timeZone: string): TimelineStep[] {
+// WHY `drawBlocked` (organiser only, GCO-011): the board shows "Couldn't run on {day}" for the draw step instead of a date that
+// will not happen. The participant's page never passes it, because a member may not know the draw was blocked.
+export function timelineSteps(schedule: Schedule, timeZone: string, drawBlocked = false): TimelineStep[] {
   const copy = EXCHANGE_COPY.detail;
   return [
     {
@@ -32,7 +35,13 @@ export function timelineSteps(schedule: Schedule, timeZone: string): TimelineSte
         ? copy.stepJoinApproval(lastJoinDay(schedule, timeZone))
         : copy.stepJoinAnyone(lastJoinDay(schedule, timeZone)),
     },
-    { title: copy.stepDraw, detail: drawWhen(schedule, timeZone) },
+    {
+      title: copy.stepDraw,
+      detail:
+        drawBlocked && schedule.drawAt
+          ? DRAW_COPY.blocked.couldntRunOn(formatDay(new Date(schedule.drawAt), timeZone))
+          : drawWhen(schedule, timeZone),
+    },
     // WHY the stored date as is, no zone: the gift day is a date only and every viewer sees the same
     // day (owner decision 2026-11-09, Q2).
     { title: copy.stepGifts, detail: `${formatYmdDay(schedule.giftDay) ?? ""}.` },

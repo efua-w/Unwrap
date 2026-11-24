@@ -1,7 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DRAW_COPY } from "@/features/draw/copy";
-import { drawnBody, parseAssignment, parseMostWanted, parseRecipient, parseSummary, peopleStillNeeded } from "@/features/draw/format";
+import {
+  blockedFewBody,
+  drawDatePassed,
+  drawnBody,
+  parseAssignment,
+  parseBlockedReason,
+  parseMostWanted,
+  parseRecipient,
+  parseSummary,
+  peopleStillNeeded,
+} from "@/features/draw/format";
 import { clearHidden, hiddenKey, isHidden, setHidden, type KeyValueStore } from "@/features/draw/storage";
 import { drawnListSubline } from "@/features/exchange-list/copy";
 
@@ -193,5 +203,56 @@ describe("the recipient is read only by Server Actions (AC-12)", () => {
     for (const file of ["features/draw/components/RevealFlow.tsx", "features/draw/components/RecipientRow.tsx"]) {
       expect(readFileSync(file, "utf8").startsWith('"use client"')).toBe(true);
     }
+  });
+});
+
+describe("the scheduled draw's blocked state (GCO-011, slice 12)", () => {
+  it("reads the organiser-only answer: no row is 'not blocked', one row is the reason", () => {
+    expect(parseBlockedReason([])).toBeNull();
+    expect(parseBlockedReason([{ reason: "few" }])).toBe("few");
+    expect(parseBlockedReason([{ reason: "exclusions" }])).toBe("exclusions");
+  });
+
+  it("refuses anything else whole: another reason, an extra key, two rows, a non-array", () => {
+    expect(parseBlockedReason([{ reason: "x" }])).toBeUndefined();
+    expect(parseBlockedReason([{ reason: "few", extra: 1 }])).toBeUndefined();
+    expect(parseBlockedReason([{ reason: "few" }, { reason: "few" }])).toBeUndefined();
+    expect(parseBlockedReason(null)).toBeUndefined();
+    expect(parseBlockedReason({ reason: "few" })).toBeUndefined();
+  });
+
+  it("the date has passed only for an automatic draw once joining has closed, whatever the reason", () => {
+    expect(drawDatePassed("joining_closed", "at_join_by")).toBe(true);
+    expect(drawDatePassed("joining_closed", "organiser_chooses")).toBe(false);
+    for (const state of ["open", "drawn", "event_passed", "complete", "cancelled"]) expect(drawDatePassed(state, "at_join_by")).toBe(false);
+  });
+
+  it("says how many more people are needed, by count", () => {
+    expect(blockedFewBody(2)).toBe("Only 2 people are taking part, and names need at least 3 people. 1 more person is needed.");
+    expect(blockedFewBody(1)).toBe("Only 1 person is taking part, and names need at least 3 people. 2 more people are needed.");
+    expect(blockedFewBody(0)).toBe("Nobody is taking part, and names need at least 3 people. 3 more people are needed.");
+  });
+
+  it("the card promises no retry and no date (owner B1)", () => {
+    const copy = JSON.stringify(DRAW_COPY.blocked) + blockedFewBody(2);
+    expect(copy).not.toMatch(/try again|we'll try|later|we draw them on/i);
+    expect(DRAW_COPY.blocked.title).toBe("Names couldn't be drawn");
+    expect(DRAW_COPY.blocked.couldntRunOn("Fri 4 Dec")).toBe("Couldn't run on Fri 4 Dec");
+  });
+
+  it("only the organiser's function reads the reason: no query or view in the app names the column (Q5)", () => {
+    const files = [
+      "features/exchanges/queries.ts",
+      "features/exchange-list/queries.ts",
+      "features/draw/queries.ts",
+      "features/participants/queries.ts",
+    ];
+    for (const file of files) expect(readFileSync(file, "utf8")).not.toMatch(/(?<!get_)draw_blocked_reason/);
+    expect(readFileSync("features/draw/queries.ts", "utf8")).toContain("get_draw_blocked_reason");
+  });
+
+  it("a member's pages never call the organiser's read", () => {
+    const member = readFileSync("features/exchanges/components/ExchangeMemberView.tsx", "utf8");
+    expect(member).not.toMatch(/getDrawBlockedReason|DrawBlockedCard/);
   });
 });

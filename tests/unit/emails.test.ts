@@ -4,7 +4,7 @@ import { budgetLabel, BUDGET_PRESETS } from "../../lib/money/budget.ts";
 import { formatDayTime, zoneShortName, formatDay } from "../../lib/dates/format.ts";
 import { budgetText, formatGiftDay, formatMoment } from "../../supabase/functions/_shared/emails/dates.ts";
 import { escapeHtml, firstName, oneLine } from "../../supabase/functions/_shared/emails/escape.ts";
-import { cleanBaseUrl, exchangeLink, inviteLink, notificationsLink, participantsLink, revealLink } from "../../supabase/functions/_shared/emails/links.ts";
+import { cleanBaseUrl, exchangeLink, inviteLink, notificationsLink, participantsLink, recipientLink, revealLink } from "../../supabase/functions/_shared/emails/links.ts";
 import { renderEmail } from "../../supabase/functions/_shared/emails/render.ts";
 import { EMAIL_TEMPLATES, type EmailTemplate, type RenderInput } from "../../supabase/functions/_shared/emails/types.ts";
 import { bearerToken, secretsMatch } from "../../supabase/functions/send-emails/auth.ts";
@@ -15,8 +15,8 @@ const EX = "0b9d6e0e-6b4b-4a3c-9d57-1d3f6a1d2c11";
 const JOIN_BY = "2026-11-27T17:00:00Z";
 const TOKEN = "0123456789abcdef0123456789abcdef";
 
-const noOther = (t: EmailTemplate) => t === "E09" || t === "E12" || t === "E21";
-const hasDetails = (t: EmailTemplate) => t === "E06" || t === "E19" || t === "E21";
+const noOther = (t: EmailTemplate) => ["E09", "E12", "E15", "E21", "E23", "E24"].includes(t);
+const hasDetails = (t: EmailTemplate) => t === "E06" || t === "E19" || t === "E21" || t === "E24";
 
 function input(template: EmailTemplate, over: Partial<RenderInput> = {}): RenderInput {
   return {
@@ -29,12 +29,13 @@ function input(template: EmailTemplate, over: Partial<RenderInput> = {}): Render
     inviteToken: template === "E06" ? TOKEN : null,
     toTimezone: "Africa/Lagos",
     budgetPreset: hasDetails(template) ? "10k_20k" : null,
-    joinByAt: template === "E06" ? JOIN_BY : null,
+    joinByAt: template === "E06" || template === "E15" || template === "E23" ? JOIN_BY : null,
     giftDay: hasDetails(template) ? "2026-12-24" : null,
     note: template === "E06" ? "Let's keep it fun this year." : null,
     scheduleMode: template === "E10" ? "at_join_by" : null,
     scheduleAt: template === "E10" ? JOIN_BY : null,
-    peopleCount: template === "E21" ? 6 : null,
+    peopleCount: template === "E21" ? 6 : template === "E15" ? 2 : null,
+    revealed: template === "E24" ? false : null,
     ...over,
   };
 }
@@ -315,6 +316,149 @@ describe("E19 and E21 Names are drawn (GCO-012, boards Email-E19 and Email-E21)"
     });
     expect(parsed.row?.peopleCount).toBe(6);
     expect(parsed.row?.budgetPreset).toBe("10k_20k");
+  });
+});
+
+describe("E15, E23 and E24 (slice 12; boards Email-E15, -E23, -E24)", () => {
+  const FORGE = "Forged Person";
+  // WHY: the layout escapes an apostrophe as &#39;, so compare the readable text.
+  const readable = (html: string) => html.replace(/&#39;/g, "'");
+
+  it("E15 for too few people is the board's body, in the organiser's zone, without a retry promise", () => {
+    const { subject, preview, html, text } = renderEmail(input("E15"), BASE);
+    expect(subject).toBe("Names couldn't be drawn for Family Christmas 2026");
+    expect(preview).toBe("No names were drawn.");
+    for (const out of [readable(html), text]) {
+      expect(out).toContain("We couldn't draw names");
+      expect(out).toContain("Hi Tolu,");
+      expect(out).toContain(
+        "We tried to draw names for Family Christmas 2026 at Fri 27 Nov, 6:00 pm WAT, but couldn't. Only 2 people are taking part, and a draw needs at least 3.",
+      );
+      expect(out).not.toMatch(/try again|we'll try|later/i);
+    }
+    expect(html).toContain(`href="${exchangeLink(BASE, EX)}"`);
+    expect(html).toContain("View exchange");
+  });
+
+  it("E15 switches on the count: 3 or more means the exclusions wording", () => {
+    const { html, text } = renderEmail(input("E15", { peopleCount: 3 }), BASE);
+    expect(readable(html)).toContain("With the exclusion pairs you set, there's no way to give everyone a person.");
+    expect(html).toContain("Fix the draw");
+    expect(html).not.toMatch(/Only \d|at least 3/);
+    expect(text).not.toContain("Only 3");
+  });
+
+  it("E15 reads well for nobody, one person and an unknown count or time", () => {
+    expect(renderEmail(input("E15", { peopleCount: 0 }), BASE).html).toContain("Nobody is taking part, and a draw needs at least 3 people.");
+    expect(renderEmail(input("E15", { peopleCount: 1 }), BASE).html).toContain("Only 1 person is taking part, and a draw needs at least 3.");
+    expect(renderEmail(input("E15", { peopleCount: null }), BASE).html).toContain("Not enough people are taking part");
+    expect(readable(renderEmail(input("E15", { joinByAt: "garbage" }), BASE).html)).toContain(
+      "We tried to draw names for Family Christmas 2026, but couldn't.",
+    );
+  });
+
+  it("E15 is always sent: no settings or unsubscribe link, and it shows the draw time in the reader's own zone", () => {
+    const { html, text } = renderEmail(input("E15", { toTimezone: "Europe/London" }), BASE);
+    expect(html + text).not.toMatch(/notifications|unsubscribe|Manage email settings/i);
+    expect(html).toContain("Fri 27 Nov, 5:00 pm GMT");
+  });
+
+  it("E23 is the board's email: join-by in the reader's zone with its label, link to the exchange, settings link", () => {
+    const { subject, preview, html, text } = renderEmail(input("E23"), BASE);
+    const out = readable(html);
+    expect(subject).toBe("Add your wishlist before tomorrow");
+    expect(preview).toBe("Joining for Family Christmas 2026 closes Fri 27 Nov, 6:00 pm WAT.");
+    expect(out).toContain("One day left to add your wishlist");
+    expect(out).toContain("Joining for Family Christmas 2026 closes on Fri 27 Nov, 6:00 pm WAT, and you haven't added a wishlist yet.");
+    expect(out).toContain("Add a few ideas so whoever draws your name knows what you'd like. It takes a minute, and only they will see it.");
+    expect(out).toContain("Add my wishlist");
+    expect(out).toContain(`href="${exchangeLink(BASE, EX)}"`);
+    expect(out).toContain("You're getting this because you're taking part in Family Christmas 2026 and haven't added a wishlist.");
+    expect(out).toContain(`${BASE}/profile/notifications`);
+    expect(text).toContain("Manage email settings: " + notificationsLink(BASE));
+  });
+
+  it("E23 shows the join-by moment in each reader's zone", () => {
+    expect(renderEmail(input("E23", { toTimezone: "America/New_York" }), BASE).html).toContain("Fri 27 Nov, 12:00 pm GMT-5");
+    expect(renderEmail(input("E23", { toTimezone: "Pacific/Auckland" }), BASE).html).toMatch(/Sat 28 Nov, 6:00 am /);
+    expect(readable(renderEmail(input("E23", { joinByAt: null }), BASE).html)).toContain("closes soon, and you haven't");
+  });
+
+  it("E24 shows the gift day as stored and the budget, whatever the zone", () => {
+    for (const zone of ["Pacific/Auckland", "America/Los_Angeles", "Africa/Lagos"]) {
+      const { subject, preview, html } = renderEmail(input("E24", { toTimezone: zone }), BASE);
+      expect(subject).toBe("Gifts are exchanged tomorrow");
+      expect(preview).toBe("Family Christmas 2026 is on Thu 24 Dec.");
+      expect(readable(html)).toContain("It's nearly gift day");
+      expect(html).toContain("Family Christmas 2026 is tomorrow, Thu 24 Dec. Time to make sure your gift is ready.");
+      expect(html).toContain("₦10,000 to ₦20,000");
+      expect(html).toContain(">Thu 24 Dec<");
+    }
+  });
+
+  it("E24 sends a person who has opened who they got to the wishlist, anyone else to Reveal", () => {
+    const seen = renderEmail(input("E24", { revealed: true }), BASE);
+    expect(seen.html).toContain("View their wishlist");
+    expect(seen.html).toContain(`href="${recipientLink(BASE, EX)}"`);
+    expect(seen.html).not.toContain("Reveal who you got");
+    for (const revealed of [false, null]) {
+      const unseen = renderEmail(input("E24", { revealed }), BASE);
+      expect(unseen.html).toContain("Reveal who you got");
+      expect(unseen.html).toContain(`href="${revealLink(BASE, EX)}"`);
+      expect(unseen.html).not.toContain("View their wishlist");
+    }
+  });
+
+  it("E24 carries a settings link and says nothing about who gives to whom", () => {
+    const { html, text, subject, preview } = renderEmail(input("E24", { revealed: true }), BASE);
+    expect(html).toContain(`${BASE}/profile/notifications`);
+    for (const out of [html, text, subject, preview]) expect(out).not.toMatch(/buying for|you got [A-Z]|your person/i);
+  });
+
+  it("a hostile other name never reaches E15, E23 or E24: the only person in them is the reader", () => {
+    for (const template of ["E15", "E23", "E24"] as const) {
+      const out = renderEmail(input(template, { otherName: FORGE }), BASE);
+      for (const part of Object.values(out)) expect(part).not.toContain(FORGE);
+    }
+  });
+
+  it("the sender reads the new claim columns, and all three codes are known (no unknown_template)", () => {
+    const row = {
+      id: "r1", to_email: "tolu@example.com", to_name: "Tolu Adeyemi", to_timezone: "Africa/Lagos", exchange_id: EX,
+      exchange_name: "Family Christmas 2026", attempts: 0,
+    };
+    for (const template of ["E15", "E23", "E24"]) expect(parseDueRow({ ...row, template }).code).toBe("");
+    expect(parseDueRow({ ...row, template: "E24", revealed: true, gift_day: "2026-12-24", budget_preset: "10k_20k" }).row).toMatchObject({
+      revealed: true, giftDay: "2026-12-24", budgetPreset: "10k_20k",
+    });
+    expect(parseDueRow({ ...row, template: "E15", people_count: 2, join_by_at: JOIN_BY }).row).toMatchObject({ peopleCount: 2, joinByAt: JOIN_BY });
+    expect(parseDueRow({ ...row, template: "E24", revealed: "yes" }).row?.revealed).toBeNull();
+  });
+
+  it("the codes match the database check on email_outbox.template", () => {
+    const sql = readFileSync("supabase/migrations/20261124192342_scheduled_jobs.sql", "utf8");
+    const check = /check \(template in \(([^)]*)\)\)/.exec(sql)?.[1] ?? "";
+    const codes = [...check.matchAll(/'(E\d+)'/g)].map((m) => m[1]).sort();
+    expect(codes).toEqual([...EMAIL_TEMPLATES].sort());
+  });
+
+  it("a sender run sends each of them", async () => {
+    const dbRow = (id: string, template: string) => ({
+      id, template, to_email: "tolu@example.com", to_name: "Tolu Adeyemi", to_timezone: "Africa/Lagos", exchange_id: EX,
+      exchange_name: "Family Christmas 2026", attempts: 0, join_by_at: JOIN_BY, gift_day: "2026-12-24", budget_preset: "10k_20k",
+      people_count: 2, revealed: false,
+    });
+    const marks: Array<[string, string | null]> = [];
+    const summary = await runSender({
+      appBaseUrl: BASE,
+      claim: async () => [dbRow("a", "E15"), dbRow("b", "E23"), dbRow("c", "E24")],
+      mark: async (id, code) => {
+        marks.push([id, code]);
+      },
+      send: async () => ({ ok: true }),
+    });
+    expect(summary).toEqual({ claimed: 3, sent: 3, failed: 0 });
+    expect(marks.every(([, code]) => code === null)).toBe(true);
   });
 });
 

@@ -15,6 +15,12 @@ export const ACTIVITY_COPY = {
   // Board Activity-default (GC-007): the Names drawn event links to Reveal.
   drawn: (exchange: string) => `Names are drawn for ${exchange}.`,
   drawnSub: (time: string) => `${time} · See who you're buying for`,
+  // pending (docs/copy-pending.md, slice 12, Q12): no board draws these three rows; the spec text only lists the kinds.
+  joinByReminder: (exchange: string) => `Joining closes soon for ${exchange}.`,
+  joinByReminderSub: (time: string) => `${time} · Add your wishlist`,
+  eventReminder: (exchange: string) => `${exchange} is tomorrow.`,
+  eventReminderSub: (time: string) => `${time} · Get your gift ready`,
+  completed: (exchange: string) => `${exchange} is complete.`,
   chooseEmails: "Choose which emails you get",
   older: "Load older activity",
   olderBusy: "Loading older activity",

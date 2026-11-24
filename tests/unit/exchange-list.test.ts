@@ -11,7 +11,7 @@ import {
   removedToast,
   sourceSubline,
 } from "../../features/exchange-list/copy.ts";
-import { JOINED_COPY, joinedLine, joinedSteps, listStatus } from "../../features/exchange-list/joined.ts";
+import { HOW_COPY, JOINED_COPY, howWeTellYou, joinedLine, joinedSteps, listStatus } from "../../features/exchange-list/joined.ts";
 import { parseMyExchangeList } from "../../features/exchange-list/parse.ts";
 import type { ExchangeListContext } from "../../features/exchange-list/types.ts";
 
@@ -145,10 +145,42 @@ describe("You're in (GC-011)", () => {
     expect(joinedSteps({ ...manual, organiserName: null }, "Africa/Lagos")[0]?.detail).toBe("When the organiser is ready");
   });
 
-  it("makes no reminder or email promise", () => {
+  it("makes no reminder or email promise on its own: only the settings-aware lines do (slice 12)", () => {
     const steps = joinedSteps(exchange, "Africa/Lagos");
     const missing = listStatus({ source: "none", wishlistId: null, name: null, itemCount: 0 }, "Fri 27 Nov");
     expect(JSON.stringify([steps, JOINED_COPY, missing])).not.toMatch(/email|remind|share/i);
+  });
+
+  it("the skipped list row adds the email sentence only when the join-by reminder is on (GC-011)", () => {
+    const none = { source: "none", wishlistId: null, name: null, itemCount: 0 } as const;
+    expect(listStatus(none, "Fri 27 Nov", true).sub).toBe("Add one before Fri 27 Nov. We'll email you the day before.");
+    expect(listStatus(none, "Fri 27 Nov", false).sub).toBe("Add one before Fri 27 Nov.");
+  });
+
+  describe("How we'll tell you (boards Joining-In-attached, -skipped, -noreminders)", () => {
+    const all = { namesDrawn: true, someoneJoins: true, joinByReminder: true, eventReminder: true };
+
+    it("lists every email that is on, and the join-by line only with no list", () => {
+      expect(howWeTellYou(all, true)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.joinBy, HOW_COPY.event]);
+      expect(howWeTellYou(all, false)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.event]);
+      expect(HOW_COPY.joinBy).toBe("A reminder the day before joining closes, if you still have no list.");
+      expect(HOW_COPY.event).toBe("A reminder the day before gifts are exchanged.");
+    });
+
+    it("leaves out a reminder that is off (items 77, 88)", () => {
+      expect(howWeTellYou({ ...all, joinByReminder: false }, true)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.event]);
+      expect(howWeTellYou({ ...all, eventReminder: false }, true)).toEqual([HOW_COPY.namesDrawn, HOW_COPY.joinBy]);
+      expect(howWeTellYou({ ...all, eventReminder: false, joinByReminder: false }, true)).toEqual([HOW_COPY.namesDrawn]);
+    });
+
+    it("says updates show in Activity only when every email is off, and promises nothing", () => {
+      const off = { namesDrawn: false, someoneJoins: true, joinByReminder: false, eventReminder: false };
+      expect(howWeTellYou(off, true)).toEqual(["You've turned these emails off, so updates show in Activity only."]);
+    });
+
+    it("makes no promise when the settings could not be read", () => {
+      expect(howWeTellYou(null, true)).toBeNull();
+    });
   });
 
   it("describes the list status by source", () => {

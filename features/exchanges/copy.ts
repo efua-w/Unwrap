@@ -178,6 +178,8 @@ export const EXCHANGE_COPY = {
     rowNamesDrawn: (day: string) => `Names are drawn ${day}.`,
     rowNamesDrawnManualMember: "Names are drawn when the organiser is ready.",
     rowNamesDrawnManualOrganiser: "You draw names when you're ready.",
+    // Board Exchanges-past: "Complete. Gifts were exchanged on Wed 24 Dec 2025."
+    rowComplete: (date: string) => `Complete. Gifts were exchanged on ${date}.`,
     pastEmpty: "Nothing here yet. Finished exchanges will move here.",
     inviteHelp: "Got an invite? Open the link you were sent and you'll land in that exchange.",
     // Owner decision 2026-11-09 (item 10), until slice 6 adds Activity.

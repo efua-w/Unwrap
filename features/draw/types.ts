@@ -31,3 +31,9 @@ export type Recipient = {
   listState: ListState;
   mostWanted: MostWantedItem[];
 };
+
+/**
+ * Why a scheduled draw could not run (GCO-011): too few people, or pairs that rule out every fair draw. WHY organiser-only:
+ * "exclusions" tells a reader that exclusions exist, so only the organiser's own function returns it (owner Q5, slice 12).
+ */
+export type DrawBlockReason = "few" | "exclusions";

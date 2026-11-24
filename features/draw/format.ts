@@ -1,6 +1,6 @@
 import { firstName } from "@/features/joining/copy";
 import { DRAW_COPY } from "./copy";
-import type { DrawSummary, ListState, MostWantedItem, MyAssignment, Recipient } from "./types";
+import type { DrawBlockReason, DrawSummary, ListState, MostWantedItem, MyAssignment, Recipient } from "./types";
 
 // Pure helpers for the draw and reveal screens (GCO-011, GCO-012, GC-014).
 
@@ -80,4 +80,34 @@ export function recipientFirst(recipient: Recipient): string {
 /** The Names drawn page body: the board's line when everyone was emailed, the pending one when not (Q3). */
 export function drawnBody(summary: DrawSummary): string {
   return summary.told >= summary.peopleCount ? DRAW_COPY.drawnBody : DRAW_COPY.drawnBodyPartial;
+}
+
+/**
+ * The reason a scheduled draw is blocked, from get_draw_blocked_reason: no row means "not blocked, or not yours to know".
+ * WHY strict: the answer is one word, so a row with any other key or value is refused whole.
+ */
+export function parseBlockedReason(raw: unknown): DrawBlockReason | null | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  if (raw.length === 0) return null;
+  const [row] = raw;
+  if (raw.length !== 1 || !isRecord(row) || !hasExactKeys(row, ["reason"])) return undefined;
+  return row.reason === "few" || row.reason === "exclusions" ? row.reason : undefined;
+}
+
+/**
+ * True when an automatic draw's moment has passed without names being drawn: joining has closed (so the join-by moment, which is
+ * the draw moment, is behind us) and the exchange is not drawn. WHY from the state and the mode only, never from the blocked
+ * reason: a member may not learn that the draw failed or why (Q5, Q6), and this is the same answer whether the draw is
+ * blocked or simply has not run yet. Anything dated about "when names are drawn" is then out of date and is left out.
+ */
+export function drawDatePassed(state: string, drawMode: string): boolean {
+  return state === "joining_closed" && drawMode === "at_join_by";
+}
+
+/** How many more people a blocked draw needs, as a sentence for the organiser's card (board Exchange-Detail-ofailed, counts not names). */
+export function blockedFewBody(peopleIn: number): string {
+  const more = peopleStillNeeded(peopleIn);
+  const moreText = `${more} more ${more === 1 ? "person is" : "people are"} needed.`;
+  if (peopleIn <= 0) return `${DRAW_COPY.blocked.fewNobody} ${moreText}`;
+  return `${DRAW_COPY.blocked.fewSome(peopleIn)} ${moreText}`;
 }

@@ -5,6 +5,7 @@ import { cardKey } from "@/features/draw/card-dismiss";
 import { CardReset } from "@/features/draw/components/CardDismiss";
 import { DismissibleActionCard } from "@/features/draw/components/DismissibleActionCard";
 import { DRAW_COPY } from "@/features/draw/copy";
+import { drawDatePassed } from "@/features/draw/format";
 import { DetailRows } from "@/features/joining/components/DetailRows";
 import { firstName, JOIN_COPY } from "@/features/joining/copy";
 import { formatDay, formatDayTime, formatTime, formatYmdDay, zoneShortName } from "@/lib/dates/format";
@@ -30,7 +31,12 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
   const manual = exchange.drawMode === "organiser_chooses" || exchange.drawAt === null;
   const organiserFirst = firstName(exchange.organiserName);
   const drawAt = exchange.drawAt ? new Date(exchange.drawAt) : null;
-  const drawDay = !manual && drawAt ? formatDay(drawAt, timeZone) : null;
+  // WHY nothing dated once the automatic draw's moment has passed (Q6, slice 12): the draw may have failed, and a member is never
+  // told that or why (the reason is organiser-only). This reads only the public state and mode, so it says nothing about a
+  // failure: it is the same for a draw that is blocked and one that has not run yet. No board shows this view; the sentence
+  // is simply left out (docs/copy-pending.md).
+  const datePassed = drawDatePassed(exchange.state, exchange.drawMode);
+  const drawDay = !manual && drawAt && !datePassed ? formatDay(drawAt, timeZone) : null;
   const hasList = exchange.myList.source !== "none";
 
   // WHY two placements: a banner first and a tray last, so the focus order matches what is on screen at each size (WCAG 2.4.3).
@@ -43,7 +49,11 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
         placement={placement}
         icon={ListHeart}
         title={DRAW_COPY.cardListTitle}
-        sub={DRAW_COPY.cardListSub(drawDay ? DRAW_COPY.cardListWhenDay(drawDay) : DRAW_COPY.cardListWhenManual(organiserFirst))}
+        sub={
+          datePassed
+            ? DRAW_COPY.blocked.cardListSubNoDate
+            : DRAW_COPY.cardListSub(drawDay ? DRAW_COPY.cardListWhenDay(drawDay) : DRAW_COPY.cardListWhenManual(organiserFirst))
+        }
         action={
           <Button icon={Plus} href={`/exchanges/${exchange.id}/list`} fullWidth className="md:w-auto">
             {DRAW_COPY.cardListTitle}
@@ -60,15 +70,17 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
       {hasList ? <CardReset cardKey={key} /> : null}
       <div className="flex flex-col gap-32 md:max-w-reading-max">
         <ExchangeDetailHeader name={exchange.name} tint={exchange.tint}>
-          <p className="text-body-base-regular text-text-default">
-            {drawDay ? copy.namesDrawnOn(drawDay) : copy.namesDrawnWhenReady(organiserFirst)}
-          </p>
+          {datePassed ? null : (
+            <p className="text-body-base-regular text-text-default">
+              {drawDay ? copy.namesDrawnOn(drawDay) : copy.namesDrawnWhenReady(organiserFirst)}
+            </p>
+          )}
           <p className="text-body-sm-regular text-text-muted">
             {copy.organisedBy(exchange.organiserName)} · {copy.spends(budgetLabel(exchange.budget))}
           </p>
         </ExchangeDetailHeader>
 
-        {hasList ? (
+        {hasList && !datePassed ? (
           <section aria-labelledby="set-heading" className="flex flex-col gap-8">
             <h2 id="set-heading" className="text-heading-4">
               {copy.allSetTitle}
@@ -88,10 +100,14 @@ export function ExchangeMemberView({ exchange, timeZone }: Props) {
           <DetailRows
             rows={[
               { label: copy.joinByLabel, value: formatDayTime(new Date(exchange.joinByAt), timeZone) },
-              {
-                label: copy.namesDrawnLabel,
-                value: !manual && drawAt ? formatDayTime(drawAt, timeZone) : JOIN_COPY.drawWhenReady(organiserFirst),
-              },
+              ...(datePassed
+                ? []
+                : [
+                    {
+                      label: copy.namesDrawnLabel,
+                      value: !manual && drawAt ? formatDayTime(drawAt, timeZone) : JOIN_COPY.drawWhenReady(organiserFirst),
+                    },
+                  ]),
               { label: copy.giftsLabel, value: formatYmdDay(exchange.giftDay) ?? "" },
             ]}
             zoneLine={copy.zoneLine(zoneShortName(new Date(exchange.joinByAt), timeZone))}

@@ -27,6 +27,10 @@ export function revealLink(base: string, id: string): string {
   return `${cleanBaseUrl(base)}/exchanges/${exchangeId(id)}/reveal`;
 }
 
+export function recipientLink(base: string, id: string): string {
+  return `${cleanBaseUrl(base)}/exchanges/${exchangeId(id)}/recipient`;
+}
+
 export function participantsLink(base: string, id: string): string {
   return `${cleanBaseUrl(base)}/exchanges/${exchangeId(id)}/participants`;
 }

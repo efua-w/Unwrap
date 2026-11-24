@@ -1,7 +1,6 @@
-// GC-026 Notifications. Two emails can be turned off in v1; the Join-by and Event reminder columns exist but
-// stay hidden until slice 12 (owner Q2, 2026-11-17). WHY a key and not a column name from the browser: the
-// action maps the key to a column itself.
-export const NOTIFICATION_KEYS = ["namesDrawn", "someoneJoins"] as const;
+// GC-026 Notifications. Four emails can be turned off: the two from slice 7 and, since slice 12, the Join-by and Event
+// reminders. WHY a key and not a column name from the browser: the action maps the key to a column itself.
+export const NOTIFICATION_KEYS = ["namesDrawn", "someoneJoins", "joinByReminder", "eventReminder"] as const;
 export type NotificationKey = (typeof NOTIFICATION_KEYS)[number];
 
 export type NotificationSettings = Record<NotificationKey, boolean>;
