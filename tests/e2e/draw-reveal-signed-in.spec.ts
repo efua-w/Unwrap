@@ -215,8 +215,8 @@ for (const { name: width, viewport } of VIEWPORTS) {
           await expect(page.getByText("You're buying for")).toBeVisible();
           await expect(page.getByRole("heading", { level: 1 })).toContainText(/Ife|Emeka|Tolu/);
           await expect(page.getByRole("button", { name: "Hide again" })).toBeVisible();
-          // Q7: no wishlist link yet.
-          await expect(page.getByRole("link", { name: "View their wishlist" })).toHaveCount(0);
+          // Slice 11 (GC-015): the revealed page links to the person's wishlist.
+          await expect(page.getByRole("link", { name: "View their wishlist" })).toHaveAttribute("href", `/exchanges/${exchange.id}/recipient`);
 
           await page.getByRole("button", { name: "Hide again" }).click();
           await expect(page.getByRole("heading", { name: "Make sure no one's looking" })).toBeVisible();

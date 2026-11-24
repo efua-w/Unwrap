@@ -3,13 +3,13 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 import { formatUpdated } from "@/lib/dates/format-updated";
-import { currentRow, LIST_COPY } from "../copy";
+import { currentRow, LIST_COPY, sourceSubline } from "../copy";
 import { getExchangeForList, getMyExchangeList, getMyIdeas, getMyPersonalLists } from "../queries";
 import type { ListMode } from "../types";
 import { YourListPage } from "./YourListPage";
 
 // The data side of Attach list (S11, S49), shared by /list and /my-list. Every refusal is the same
-// "This exchange isn't available to you" page (GC-029): not a member, left, cancelled, already drawn, or
+// "This exchange isn't available to you" page (GC-029): not a member, left, cancelled, complete, or
 // an organiser who is only organising. The organiser's own route is /my-list (owner Q11), so a taking-part
 // organiser who opens /list is sent there.
 export async function ListContent({
@@ -25,7 +25,7 @@ export async function ListContent({
 }) {
   let loaded;
   try {
-    const exchange = await getExchangeForList(id, viewerId);
+    const exchange = await getExchangeForList(id, viewerId, { afterDraw: true });
     loaded = exchange
       ? {
           exchange,
@@ -50,10 +50,16 @@ export async function ListContent({
     <YourListPage
       mode={mode}
       fromJoin={fromJoin}
-      exchange={{ id: exchange.id, name: exchange.name, tint: exchange.tint, budget: exchange.budget }}
+      exchange={{ id: exchange.id, name: exchange.name, tint: exchange.tint, budget: exchange.budget, afterDraw: exchange.afterDraw }}
       myList={myList}
       ideas={ideas}
-      current={currentRow(myList, attached ? formatUpdated(new Date(attached.updatedAt), new Date(), timeZone) : null)}
+      current={
+        // WHY after the draw the row says who sees it and that it follows the list (board Joining-Attach-drawnlist); the
+        // "updated" date was for the person still choosing.
+        exchange.afterDraw && myList.source === "wishlist" && myList.name
+          ? { title: myList.name, sub: sourceSubline("wishlist", myList.name) ?? "" }
+          : currentRow(myList, attached ? formatUpdated(new Date(attached.updatedAt), new Date(), timeZone) : null)
+      }
       wishlistCount={lists.length}
       currentWishlistId={myList.source === "wishlist" ? myList.wishlistId : null}
       timeZone={timeZone}

@@ -1,11 +1,13 @@
 "use client";
 
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useNetworkStatus } from "@/components/layout/NetworkStatusProvider";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { ListRow } from "@/components/ui/ListRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { SkeletonRegion } from "@/components/ui/SkeletonRegion";
@@ -37,7 +39,8 @@ type Props = {
 // sends this component everything except the person, and the person arrives only after the giver taps (or, for a giver who
 // revealed before and has not hidden it on this device, as soon as the page mounts). WHY "Hide again" is per device and in
 // localStorage keyed by the assignment id: it is a courtesy against shoulder-surfing, not access control (the database
-// still answers the giver). Q7: no "View their wishlist" yet, and Most wanted items are plain rows.
+// still answers the giver). Slice 11 (GC-015): "View their wishlist" opens the recipient's list, and each Most wanted row opens that
+// item's sheet there.
 export function RevealFlow({ exchangeId, exchangeName, assignmentId, revealedBefore, spend, giftDay, zoneLine, closeHref }: Props) {
   const copy = DRAW_COPY;
   const router = useRouter();
@@ -142,9 +145,14 @@ export function RevealFlow({ exchangeId, exchangeName, assignmentId, revealedBef
       <InviteFrame
         close={close}
         footer={
-          <Button variant="text" fullWidth onClick={hideAgain}>
-            {copy.hideAgain}
-          </Button>
+          <>
+            <Button fullWidth href={`/exchanges/${exchangeId}/recipient`}>
+              {copy.viewList}
+            </Button>
+            <Button variant="text" fullWidth onClick={hideAgain}>
+              {copy.hideAgain}
+            </Button>
+          </>
         }
       >
         <div className="flex flex-col items-center gap-12 text-center">
@@ -178,9 +186,11 @@ export function RevealFlow({ exchangeId, exchangeName, assignmentId, revealedBef
             <ul>
               {recipient.mostWanted.map((item, i) => (
                 <ListRow
-                  key={`${i}-${item.name}`}
+                  key={item.ref}
                   title={item.name}
                   sub={copy.mostWantedSub(item.priceKobo === null ? null : formatNaira(item.priceKobo))}
+                  href={`/exchanges/${exchangeId}/recipient?item=${item.ref}`}
+                  meta={<Icon icon={CaretRight} className="text-text-muted" />}
                   divider={i > 0}
                 />
               ))}

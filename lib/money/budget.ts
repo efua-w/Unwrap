@@ -21,3 +21,23 @@ export function budgetLabel(preset: BudgetPreset): string {
   const { min, max } = RANGE_KOBO[preset];
   return max === null ? `Above ${formatNaira(min)}` : `${formatNaira(min)} to ${formatNaira(max)}`;
 }
+
+export type BudgetFit = "within" | "over" | "under";
+
+// GC-015: where an item's price sits against the exchange's preset. WHY inclusive at both ends: "₦15,000 to ₦25,000"
+// includes both figures, so a ₦25,000 item is Within. The top preset has no ceiling, so nothing is Over it. Integer kobo
+// only, never floats. No price means no flag (null), per the story ("no price → no budget flag").
+export function budgetFit(preset: BudgetPreset, priceKobo: number | null): BudgetFit | null {
+  if (priceKobo === null) return null;
+  const { min, max } = RANGE_KOBO[preset];
+  if (priceKobo < min) return "under";
+  if (max !== null && priceKobo > max) return "over";
+  return "within";
+}
+
+// The range as it follows "Within the" and "Over the" in the item sheet: "₦15,000 to ₦25,000", and "₦50,000 and above"
+// for the top preset (budgetLabel's "Above ₦50,000" does not read after "the"). Pending copy, see copy-pending.
+export function budgetRangePhrase(preset: BudgetPreset): string {
+  const { min, max } = RANGE_KOBO[preset];
+  return max === null ? `${formatNaira(min)} and above` : `${formatNaira(min)} to ${formatNaira(max)}`;
+}

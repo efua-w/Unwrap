@@ -12,8 +12,15 @@ import type { ExchangeListContext, MyExchangeList, MyIdeas, OwnerWishlistSummary
 
 // One exchange for one of its active members, or null. WHY one answer for every refusal: a missing,
 // cancelled, someone else's or already-drawn exchange all give the same "isn't available to you" page
-// (GC-029). Only open and joining-closed exchanges can be attached to before the draw; slice 11 widens it.
-export async function getExchangeForList(id: string, viewerId: string): Promise<ExchangeListContext | null> {
+// (GC-029). Open and joining-closed exchanges can be attached to before the draw. `afterDraw` (slice 11, GC-010) also lets
+// drawn and gift-day-passed exchanges through, for the list page only: You're in stays a before-the-draw page, so its
+// caller leaves it off. WHY the page may open after the draw but the database still decides what a person can change
+// (attach only when nothing is attached, Remove wishlist only for a personal list).
+export async function getExchangeForList(
+  id: string,
+  viewerId: string,
+  options: { afterDraw?: boolean } = {},
+): Promise<ExchangeListContext | null> {
   if (!isUuid(id)) return null;
   const supabase = await createClient();
   const { data: viewRow, error } = await supabase.from("exchanges_visible").select("*").eq("id", id).maybeSingle();
@@ -33,7 +40,8 @@ export async function getExchangeForList(id: string, viewerId: string): Promise<
   ]);
   if (member.error || state.error) throw new Error("Could not read the exchange.");
   if (!member.data) return null;
-  if (state.data !== "open" && state.data !== "joining_closed") return null;
+  const drawn = state.data === "drawn" || state.data === "event_passed";
+  if (state.data !== "open" && state.data !== "joining_closed" && !(drawn && options.afterDraw)) return null;
 
   // WHY only for organiser-draws: step 1 of You're in names who will draw. The name comes from
   // get_exchange_people, which answers active members only and gives names, never emails.
@@ -56,6 +64,7 @@ export async function getExchangeForList(id: string, viewerId: string): Promise<
     approvalRequired: row.approvalRequired,
     isOrganiser: row.organiserId === viewerId,
     takingPart: member.data.taking_part,
+    afterDraw: drawn,
     organiserName,
   };
 }

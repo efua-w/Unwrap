@@ -334,6 +334,9 @@ isOneToOne: false
 "delete_wishlist":
 { Args: { "p_wishlist_id": string }; Returns: undefined
                            },
+"detach_wishlist":
+{ Args: { "p_exchange": string }; Returns: undefined
+                           },
 "dismiss_join_request":
 { Args: { "p_id": string }; Returns: undefined
                            },
@@ -437,6 +440,11 @@ isOneToOne: false
 "mark_email_result":
 { Args: { "p_error_code"?: string,"p_id": string }; Returns: undefined
                            },
+"open_recipient_list":
+{ Args: { "p_exchange": string }; Returns: {
+              "avatar_path": string,"display_name": string,"items": Json,"list_state": string,"taken_off": Json
+            }[]
+                           },
 "remove_member":
 { Args: { "p_member": string }; Returns: undefined
                            },
@@ -465,6 +473,9 @@ isOneToOne: false
 { Args: { "p_exchange": string,"p_members": (string)[] }; Returns: {
               "display_name": string,"member_id": string
             }[]
+                           },
+"set_gift_mark":
+{ Args: { "p_exchange": string,"p_got": boolean,"p_ref": string }; Returns: undefined
                            },
 "undo_nudge":
 { Args: { "p_exchange": string }; Returns: number

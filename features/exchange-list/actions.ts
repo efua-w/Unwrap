@@ -11,7 +11,9 @@ import type { OwnerWishlistSummary } from "./types";
 // throwing. The rules (who may attach what, in which state) live in the database; these only map its
 // answers. Pair secrecy: nothing here reads or returns another person's data.
 
-type Failure = { ok: false; reason: "signed-out" | "not-found" | "not-available" | "failed" };
+// attached: after the draw, attaching is refused because a list is already attached (slice 11, GC-010). The caller knows what
+// it attached, so naming the refusal tells it nothing new.
+type Failure = { ok: false; reason: "signed-out" | "not-found" | "not-available" | "attached" | "failed" };
 
 export type AttachResult = { ok: true } | Failure;
 export type IdeasResult = { ok: true; listId: string } | Failure;
@@ -19,6 +21,9 @@ export type IdeasResult = { ok: true; listId: string } | Failure;
 type ItemFailure = { ok: false; reason: "signed-out" | "not-found" | "failed" };
 export type AddIdeaResult = { ok: true; id: string } | { ok: false; reason: "invalid"; errors: ItemErrors } | ItemFailure;
 export type UpdateIdeaResult = { ok: true } | { ok: false; reason: "invalid"; errors: ItemErrors } | ItemFailure;
+export type DetachResult =
+  | { ok: true }
+  | { ok: false; reason: "signed-out" | "not-found" | "not-available" | "kept" | "ideas" | "failed" };
 export type PickerResult = { ok: true; wishlists: OwnerWishlistSummary[] } | Failure;
 
 // WHY P0002 is "not-found": attach_wishlist raises it for a list that is gone or not yours, and for an
@@ -27,8 +32,9 @@ const NOT_FOUND = "P0002";
 const SIGNED_OUT = "42501";
 const NOT_TAKING_PART = "22023";
 
-function failureFor(code: string | undefined): Failure {
+function failureFor(code: string | undefined, hint?: string): Failure {
   if (code === SIGNED_OUT) return { ok: false, reason: "signed-out" };
+  if (code === NOT_FOUND && hint === "attached") return { ok: false, reason: "attached" };
   if (code === NOT_FOUND) return { ok: false, reason: "not-found" };
   if (code === NOT_TAKING_PART) return { ok: false, reason: "not-available" };
   return { ok: false, reason: "failed" };
@@ -61,7 +67,27 @@ export async function attachWishlistToExchange(exchangeId: unknown, wishlistId: 
   const supabase = await signedInClient();
   if (!supabase) return { ok: false, reason: "signed-out" };
   const { error } = await supabase.rpc("attach_wishlist", { p_exchange: exchangeId, p_wishlist: wishlistId });
-  if (error) return failureFor(error.code);
+  if (error) return failureFor(error.code, error.hint);
+  revalidateExchange(exchangeId);
+  return { ok: true };
+}
+
+// "Remove wishlist…" after the draw (GC-010): the personal list leaves the exchange; the list, its items and the giver's marks
+// stay, so Undo (attach it again) puts everything back. The database refuses a kept list (22023 kept) and an ideas list
+// (22023 ideas); the page hides the control for both, so these only answer a stale page or a direct call.
+export async function detachWishlistFromExchange(exchangeId: unknown): Promise<DetachResult> {
+  if (!isUuid(exchangeId)) return { ok: false, reason: "not-found" };
+  const supabase = await signedInClient();
+  if (!supabase) return { ok: false, reason: "signed-out" };
+  const { error } = await supabase.rpc("detach_wishlist", { p_exchange: exchangeId });
+  if (error) {
+    if (error.code === SIGNED_OUT) return { ok: false, reason: "signed-out" };
+    if (error.code === NOT_FOUND) return { ok: false, reason: "not-found" };
+    if (error.code === NOT_TAKING_PART && error.hint === "kept") return { ok: false, reason: "kept" };
+    if (error.code === NOT_TAKING_PART && error.hint === "ideas") return { ok: false, reason: "ideas" };
+    if (error.code === NOT_TAKING_PART) return { ok: false, reason: "not-available" };
+    return { ok: false, reason: "failed" };
+  }
   revalidateExchange(exchangeId);
   return { ok: true };
 }
@@ -74,7 +100,7 @@ export async function startExchangeIdeas(exchangeId: unknown): Promise<IdeasResu
   const supabase = await signedInClient();
   if (!supabase) return { ok: false, reason: "signed-out" };
   const { data, error } = await supabase.rpc("use_exchange_ideas", { p_exchange: exchangeId });
-  if (error || !data) return failureFor(error?.code);
+  if (error || !data) return failureFor(error?.code, error?.hint);
   revalidateExchange(exchangeId);
   return { ok: true, listId: data };
 }

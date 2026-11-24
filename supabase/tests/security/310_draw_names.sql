@@ -6,7 +6,7 @@
 -- refused, and nothing is written on any refusal; the draw writes exactly one current row per person taking part forming a
 -- permutation with no self and no excluded pair, bumps draw_round and clears draw_blocked_reason, works before join-by
 -- (Q2) and is idempotent: a second call writes and queues nothing (AC-7); afterwards the state is 'drawn' and join, ask,
--- approve, remove, save pairs, nudge, invite and attach are all refused (AC-8); pending requests close with decided_at and
+-- approve, remove, save pairs, nudge and invite are all refused, and attach and ideas follow the slice 11 rule: they work only while nothing is attached (AC-8); pending requests close with decided_at and
 -- unsent E10 nudges are cancelled (AC-9, Q12); E19 is queued for each person taking part who has the toggle on, E21 for an
 -- organiser just organising, and no email row names anyone but the reader and the organiser (AC-10); a names_drawn
 -- activity event goes to each person taking part and carries no subject (Q6); the asker sees a closed request and can
@@ -397,16 +397,22 @@ select is(
   'err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed/err:22023:closed',
   'after the draw join, ask, approve, remove, save pairs and nudge are refused (22023, closed)');
 
--- 15. AC-8: attaching a list or switching to ideas is refused too (P0002, as for any closed exchange), and nothing changes.
+-- 15. AC-8, as changed by slice 11 (owner decision 2026-11-23 Q1): after the draw a list can be attached ONLY when nothing is
+-- attached (test 360 covers the whole rule). Bola has nothing attached, so attaching works; then she has something attached
+-- and switching to ideas is refused (P0002, hint attached). WHY this assertion changed: slice 10 refused every attach after the
+-- draw as a placeholder; slice 11 replaces that on purpose. The refusal itself is still proved, for a member who has a list.
+-- WHY the two calls are in a do-block: the count below must see their writes, and a select cannot see a write made in the
+-- same statement.
 do $fx$ begin
   insert into public.wishlists (owner_id, name) values (pg_temp.u(2), 'T310 Bola list');
+  perform set_config('test.t15a', pg_temp.run_as(pg_temp.u(2), format('select public.attach_wishlist(%L, %L)', current_setting('test.ex_p'),
+    (select id from public.wishlists where name = 'T310 Bola list'))), true);
+  perform set_config('test.t15b', pg_temp.run_as(pg_temp.u(2), format('select public.use_exchange_ideas(%L)', current_setting('test.ex_p'))), true);
 end $fx$;
 select is(
-  pg_temp.run_as(pg_temp.u(2), format('select public.attach_wishlist(%L, %L)', current_setting('test.ex_p'),
-    (select id from public.wishlists where name = 'T310 Bola list')))
-  || '/' || pg_temp.run_as(pg_temp.u(2), format('select public.use_exchange_ideas(%L)', current_setting('test.ex_p')))
+  current_setting('test.t15a') || '/' || current_setting('test.t15b')
   || '/' || (select count(*)::text from public.exchange_members where exchange_id = current_setting('test.ex_p')::uuid and attached_wishlist_id is not null),
-  'err:P0002:/err:P0002:/0', 'attaching a list or using ideas after the draw is refused and attaches nothing');
+  '1/err:P0002:attached/1', 'after the draw a member with nothing attached can attach a list; with a list attached, ideas are refused');
 
 -- 16. AC-9: the request that was pending is closed with a decision time; the unsent nudge is cancelled, the sent one is
 -- left alone, and another exchange's nudge is untouched.

@@ -105,6 +105,7 @@ describe("list copy", () => {
 });
 
 const exchange: ExchangeListContext = {
+  afterDraw: false,
   id: ID,
   name: "Church choir Kris Kringle",
   tint: "mint",
