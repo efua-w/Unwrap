@@ -451,8 +451,10 @@ select is(
   'a nudge to a person who added a list or left is cancelled as not_needed and never claimed');
 select is(
   (select count(*)::int from jsonb_array_elements(current_setting('test.claim1')::jsonb) c, jsonb_object_keys(c) k
+   -- WHY 'revealed' is allowed (slice 12, owner decision Q1 2026-11-24): the claim gains one column, E24 only, the reader's own
+   -- reveal flag. Test 370 pins the exact column list.
    where k not in ('id', 'template', 'to_email', 'to_name', 'to_timezone', 'exchange_id', 'exchange_name', 'other_name',
-                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count')),
+                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count', 'revealed')),
   0, 'a claimed row has no other column: no pair, no list, no second address');
 select ok(
   (select bool_and((c ->> 'to_email') = (select u.email::text from auth.users u where u.id = o.recipient_user_id))
