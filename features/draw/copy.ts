@@ -67,6 +67,26 @@ export const DRAW_COPY = {
   fewInvite: "Invite people",
   close: "Close",
 
+  // The organiser's blocked card when the scheduled draw could not run (boards Exchange-Detail-ofailed; owner B1 and B2,
+  // slice 12). WHY the board's "Or we draw them on {date}." and "We'll try again then." are left out: nothing tries again until
+  // slice 13 lets the organiser change the date. Lines marked "pending" are in docs/copy-pending.md.
+  blocked: {
+    status: "Names couldn't be drawn.",
+    meta: "Needs you now",
+    title: "Names couldn't be drawn",
+    // pending: the board names who joined ("Only Nkem and Chika joined, and names need at least 3 people. Change the join-by date
+    // to give people more time. We'll try again then."); this form counts people, and drops the date change and the retry.
+    fewNobody: "Nobody is taking part, and names need at least 3 people.",
+    fewSome: (n: number) => `Only ${n} ${n === 1 ? "person is" : "people are"} taking part, and names need at least 3 people.`,
+    // pending: no board for the exclusions cause (owner B2). Built from the Org-Draw-excl sheet's wording.
+    exclusionsBody: "With the pairs you've set, there's no way to give everyone a person. Remove a pair, then draw names yourself.",
+    editExclusions: "Edit exclusions",
+    // Board Exchange-Detail-ofailed, Dates: "Names drawn: Couldn't run on Fri 4 Dec".
+    couldntRunOn: (day: string) => `Couldn't run on ${day}`,
+    // pending: the participant's action card has no date once the draw moment has passed (Q6).
+    cardListSubNoDate: "Your giver has nothing to go on yet.",
+  },
+
   // Names drawn page (boards Org-Drawn-part, -just; Q3 wording).
   drawnTitle: "Names are drawn",
   drawnBody: "Everyone has someone to buy for. We emailed them to open Unwrap and see who they got.",

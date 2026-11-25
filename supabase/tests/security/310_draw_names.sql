@@ -203,7 +203,9 @@ do $fx$ begin
   insert into public.exchange_members (exchange_id, user_id, taking_part, joined_at)
     select current_setting('test.ex_q')::uuid, pg_temp.u(n), true, now() - make_interval(days => 20 - n) from unnest(array[7, 8, 9, 10]) n;
   -- Q has already closed joining; P is still open (the draw may come before join-by, owner decision Q2).
-  update public.exchanges set join_by_at = now() - interval '1 hour', draw_blocked_reason = 'x' where id = current_setting('test.ex_q')::uuid;
+  -- WHY 'exclusions' and not 'x' (slice 12, owner decision Q1 2026-11-24): draw_blocked_reason may now hold only few or exclusions
+  -- (check exchanges_draw_blocked_reason_known). Any value is cleared by the draw in assertion 21, so what it proves is unchanged.
+  update public.exchanges set join_by_at = now() - interval '1 hour', draw_blocked_reason = 'exclusions' where id = current_setting('test.ex_q')::uuid;
   update public.user_settings set notify_names_drawn = false where user_id = pg_temp.u(5);
 end $fx$;
 
@@ -522,8 +524,10 @@ select ok(
   coalesce((select bool_and(c ->> 'people_count' is null) from jsonb_array_elements(current_setting('test.claim_draw')::jsonb) c
    where c ->> 'template' not in ('E19', 'E21')), true)
   and not exists (select 1 from jsonb_array_elements(current_setting('test.claim_draw')::jsonb) c, jsonb_object_keys(c) k
+   -- WHY 'revealed' is allowed (slice 12, owner decision Q1 2026-11-24): the claim gains one column, E24 only, the reader's own
+   -- reveal flag. Test 370 pins the exact column list.
    where k not in ('id', 'template', 'to_email', 'to_name', 'to_timezone', 'exchange_id', 'exchange_name', 'other_name',
-                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count')),
+                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count', 'revealed')),
   'only E19 and E21 carry a people count, and a claimed row has no column for a pair or an assignment');
 
 -- 26. Q6: a names_drawn event for each person taking part (Eze too: the email toggle does not stop it), none for the
@@ -625,12 +629,21 @@ select is(
   '0/0/complete', 'refused draws left X undrawn (still complete, no rows, round 0)');
 
 -- 35. AC-7, never-do 7: no retry loop. The engine is called once, under the exchange row lock the other writers take.
+-- WHY this now reads private.run_draw as well (slice 12, owner decision Q1 2026-11-24): the draw moved into private.run_draw so
+-- the scheduled job can call it too. The engine call and the retry guarantee live there; draw_names authorises, takes the row
+-- lock, calls run_draw and never calls the engine itself. The assertion is the same one, aimed at where the code now is, and
+-- adds that draw_names has no engine call of its own.
 select ok(
   (select (length(p.prosrc) - length(replace(p.prosrc, 'compute_matching', ''))) / length('compute_matching') = 1
           and p.prosrc ilike '%for update%'
           and p.prosrc not ilike '%while%'
-   from pg_proc p where p.oid = 'public.draw_names(uuid)'::regprocedure),
-  'draw_names calls the engine exactly once, takes the row lock and has no retry loop');
+   from pg_proc p where p.oid = 'private.run_draw(uuid)'::regprocedure)
+  and (select p.prosrc ilike '%private.run_draw%'
+              and p.prosrc ilike '%for update%'
+              and p.prosrc not ilike '%compute_matching%'
+              and p.prosrc not ilike '%while%'
+       from pg_proc p where p.oid = 'public.draw_names(uuid)'::regprocedure),
+  'the draw calls the engine exactly once (in run_draw), takes the row lock and has no retry loop; draw_names only calls run_draw');
 
 -- 36. A refused draw never half-writes: Q's pending request and nudge went through the draw atomically, and X shows no
 -- closed requests or cancelled nudges from the refusals.

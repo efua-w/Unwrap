@@ -116,6 +116,12 @@ describe("timeline sentences (GCO-004, GC-013)", () => {
     ]);
   });
 
+  it("shows 'Couldn't run on {day}' for the draw step when the organiser's draw was blocked (board Exchange-Detail-ofailed)", () => {
+    expect(timelineSteps(automatic, LAGOS, true)[1]).toEqual({ title: "Names are drawn", detail: "Couldn't run on Fri 4 Dec" });
+    expect(timelineSteps(automatic, LAGOS, false)[1]?.detail).toBe("Fri 4 Dec at 6:00 pm.");
+    expect(timelineSteps(manual, LAGOS, true)[1]?.detail).toBe("When you're ready.");
+  });
+
   it("writes the steps for a manual draw: the last joining day is the day BEFORE the closing midnight", () => {
     const steps = timelineSteps(manual, LAGOS);
     expect(steps[0]?.detail).toBe("Anyone with the link can join until Fri 4 Dec.");

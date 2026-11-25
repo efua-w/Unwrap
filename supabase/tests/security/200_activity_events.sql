@@ -202,9 +202,12 @@ select ok(
   'private.add_activity_event is not executable by anon or signed-in people');
 
 -- 4. The kinds, in order: the two people events (AC-20) and, from slice 10, names_drawn (no subject, GC-007).
+-- WHY three more (slice 12, owner decision Q1 2026-11-24): join_by_reminder, event_reminder and exchange_completed, each with
+-- no subject. Tests 390 and 400 prove who gets them.
 select is(
   (select string_agg(enumlabel, ',' order by enumsortorder) from pg_enum where enumtypid = 'public.activity_kind'::regtype),
-  'member_joined,join_requested,names_drawn', 'the only event kinds are member_joined, join_requested and names_drawn');
+  'member_joined,join_requested,names_drawn,join_by_reminder,event_reminder,exchange_completed',
+  'the only event kinds are member_joined, join_requested, names_drawn, join_by_reminder, event_reminder and exchange_completed');
 
 -- 5-6. RLS is on and nobody has a grant, so a direct read or write is refused outright (AC-18, AC-19).
 select ok(

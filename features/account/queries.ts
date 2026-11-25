@@ -28,16 +28,21 @@ export async function getDefaultVisibilityOrPrivate(): Promise<WishlistVisibilit
   }
 }
 
-// GC-026: the two email toggles, under the person's own Row Level Security (their own row only).
+// GC-026: the four email toggles, under the person's own Row Level Security (their own row only).
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) throw new Error("Not signed in.");
   const { data, error } = await supabase
     .from("user_settings")
-    .select("notify_names_drawn, notify_someone_joins")
+    .select("notify_names_drawn, notify_someone_joins, notify_join_by_reminder, notify_event_reminder")
     .eq("user_id", auth.user.id)
     .single();
   if (error) throw new Error("Could not read the notification settings.");
-  return { namesDrawn: data.notify_names_drawn, someoneJoins: data.notify_someone_joins };
+  return {
+    namesDrawn: data.notify_names_drawn,
+    someoneJoins: data.notify_someone_joins,
+    joinByReminder: data.notify_join_by_reminder,
+    eventReminder: data.notify_event_reminder,
+  };
 }

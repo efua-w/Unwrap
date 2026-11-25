@@ -15,7 +15,9 @@ import type { ReadinessRow } from "@/features/participants/types";
 import type { ExclusionsEntry } from "@/features/exclusions/types";
 import { cx } from "@/components/ui/cx";
 import { DRAW_COPY } from "@/features/draw/copy";
-import { peopleStillNeeded } from "@/features/draw/format";
+import { drawDatePassed, peopleStillNeeded } from "@/features/draw/format";
+import type { DrawBlockReason } from "@/features/draw/types";
+import { DrawBlockedCard } from "./DrawBlockedCard";
 import { ExchangeDetailHeader } from "./ExchangeDetailHeader";
 import { InviteSection } from "./InviteSection";
 import { JoiningClosedCard } from "./JoiningClosedCard";
@@ -37,6 +39,8 @@ type Props = {
   organiserName: string;
   /** Null when pairs cannot be set any more: no Exclusions row (GCO-009). Organiser-only. */
   exclusions: ExclusionsEntry | null;
+  /** Why the scheduled draw could not run, from the organiser-only function. Null when it is not blocked (GCO-011). */
+  blocked: DrawBlockReason | null;
 };
 
 // S14 Exchange-Detail-started (GC-013, GCO-004) with the owner's decisions of 2026-11-09: header
@@ -44,26 +48,31 @@ type Props = {
 // next", and no control whose feature is not built yet (Invite by email, Edit, Draw, Cancel). Slice 5
 // adds Your part (S49 row), People and Organiser tools > Invite people (boards Exchange-Detail-oattached,
 // -oideas, -ostarted, Org-People-default; owner Q14).
-export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingNames, readiness, organiserName, exclusions }: Props) {
+export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingNames, readiness, organiserName, exclusions, blocked }: Props) {
   const copy = EXCHANGE_COPY.detail;
   // WHY others, not the count: "alone" is about people other than the viewer, who may only be organising.
   const others = exchange.people.filter((p) => !p.isMe);
   const alone = others.length === 0;
+  // WHY no day once the automatic draw's moment has passed (GCO-011, owner B1): "names are drawn on {day}" and "or we draw them on
+  // {day}" would name a day that is behind us, and nothing retries until slice 13. A manual draw still works.
+  const datePassed = drawDatePassed(exchange.state, exchange.drawMode);
   const drawDay =
-    exchange.drawMode === "at_join_by" && exchange.drawAt ? formatDay(new Date(exchange.drawAt), timeZone) : null;
+    exchange.drawMode === "at_join_by" && exchange.drawAt && !datePassed ? formatDay(new Date(exchange.drawAt), timeZone) : null;
   // WHY only while people can still be managed: nudging is for before the draw (GCO-008). The database refuses it after.
   const summary = readiness && exchange.canManagePeople ? summariseReadiness(readiness) : null;
   const nudge = NUDGE_COPY;
   // Boards Exchange-Detail-obefore and -ojust: the header leads with readiness once someone else is in.
-  const headerLine =
-    summary && !alone
+  const headerLine = blocked
+    ? DRAW_COPY.blocked.status
+    : summary && !alone
       ? `${exchange.takingPart ? nudge.headerWishlists(summary.inCount, summary.total) : nudge.headerPeople(summary.total)} ${
           drawDay ? nudge.headerDrawOn(drawDay) : nudge.headerDrawManual
         }`
       : alone
         ? copy.onlyYou
         : EXCHANGE_COPY.list.rowPeople(peopleIn(exchange.takingPart, exchange.peopleCount));
-  const showReadiness = summary !== null && summary.missing.length > 0;
+  // WHY not while blocked: the card above is what needs the organiser, and a nudge before a draw that cannot run helps no one.
+  const showReadiness = summary !== null && summary.missing.length > 0 && blocked === null;
   // GCO-011 the Draw names now… row (board Exchange-Detail-obefore): while people can still be managed, which is exactly
   // when names can still be drawn (open or joining closed). WHY the sub: the board's line for an automatic draw, the
   // "Needs 3 people" line below three (Org-Draw-few, -fewtwo), and a pending line for "When I choose".
@@ -128,9 +137,11 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
         </div>
       ) : null}
 
+      {blocked ? <DrawBlockedCard exchangeId={exchange.id} reason={blocked} peopleIn={peopleTakingPart} /> : null}
+
       {inviteUrl ? (
         <InviteSection exchangeName={exchange.name} lastJoinDay={lastJoinDay(exchange, timeZone)} inviteUrl={inviteUrl} />
-      ) : !exchange.isOpen ? (
+      ) : !exchange.isOpen && !blocked ? (
         // WHY lowest priority (owner, 2026-11-14): this card shows only when no other card applies. Slice 10's
         // draw and readiness cards take this slot first; add them above this branch.
         <JoiningClosedCard />
@@ -140,7 +151,7 @@ export function ExchangeJustStarted({ exchange, inviteUrl, timeZone, waitingName
         <h2 id="next-heading" className="text-heading-4">
           {copy.nextTitle}
         </h2>
-        <Timeline steps={timelineSteps(exchange, timeZone)} />
+        <Timeline steps={timelineSteps(exchange, timeZone, blocked !== null)} />
         {/* WHY the zone at join-by: the gift day has no time, so join-by and draw are the only times shown. */}
         <p className="text-body-sm-regular text-text-muted">{copy.zoneLine(zoneShortName(new Date(exchange.joinByAt), timeZone))}</p>
       </section>

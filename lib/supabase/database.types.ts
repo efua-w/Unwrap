@@ -288,14 +288,14 @@ isOneToOne: false
           Views: {
             "exchanges_visible": {
                   Row: {
-                    "approval_required": boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at": string | null,"completed_at": string | null,"created_at": string,"draw_at": string | null,"draw_blocked_reason": string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round": number,"gift_day": string,"id": string,"join_by_at": string,"name": string,"note": string | null,"organiser_id": string,"organiser_tz": string,"reopened_join_by_at": string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at": string
+                    "approval_required": boolean,"budget_preset": Database["public"]['Enums']["exchange_budget_preset"],"cancelled_at": string | null,"completed_at": string | null,"created_at": string,"draw_at": string | null,"draw_mode": Database["public"]['Enums']["exchange_draw_mode"],"draw_round": number,"gift_day": string,"id": string,"join_by_at": string,"name": string,"note": string | null,"organiser_id": string,"organiser_tz": string,"reopened_join_by_at": string | null,"tint": Database["public"]['Enums']["exchange_tint"],"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                           "approval_required"?: boolean | null,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"] | null,"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string | null,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"] | null,"draw_round"?: number | null,"gift_day"?: string | null,"id"?: string | null,"join_by_at"?: string | null,"name"?: string | null,"note"?: string | null,"organiser_id"?: string | null,"organiser_tz"?: string | null,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"] | null,"updated_at"?: string | null
+                           "approval_required"?: boolean | null,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"] | null,"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string | null,"draw_at"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"] | null,"draw_round"?: number | null,"gift_day"?: string | null,"id"?: string | null,"join_by_at"?: string | null,"name"?: string | null,"note"?: string | null,"organiser_id"?: string | null,"organiser_tz"?: string | null,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"] | null,"updated_at"?: string | null
                          }
                         Update: {
-                           "approval_required"?: boolean | null,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"] | null,"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string | null,"draw_at"?: string | null,"draw_blocked_reason"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"] | null,"draw_round"?: number | null,"gift_day"?: string | null,"id"?: string | null,"join_by_at"?: string | null,"name"?: string | null,"note"?: string | null,"organiser_id"?: string | null,"organiser_tz"?: string | null,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"] | null,"updated_at"?: string | null
+                           "approval_required"?: boolean | null,"budget_preset"?: Database["public"]['Enums']["exchange_budget_preset"] | null,"cancelled_at"?: string | null,"completed_at"?: string | null,"created_at"?: string | null,"draw_at"?: string | null,"draw_mode"?: Database["public"]['Enums']["exchange_draw_mode"] | null,"draw_round"?: number | null,"gift_day"?: string | null,"id"?: string | null,"join_by_at"?: string | null,"name"?: string | null,"note"?: string | null,"organiser_id"?: string | null,"organiser_tz"?: string | null,"reopened_join_by_at"?: string | null,"tint"?: Database["public"]['Enums']["exchange_tint"] | null,"updated_at"?: string | null
                          }
                         Relationships: [
                     {
@@ -322,7 +322,7 @@ isOneToOne: false
                            },
 "claim_due_emails":
 { Args: { "p_limit"?: number }; Returns: {
-              "attempts": number,"budget_preset": string,"draw_at": string,"draw_mode": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"people_count": number,"template": string,"to_email": string,"to_name": string,"to_timezone": string
+              "attempts": number,"budget_preset": string,"draw_at": string,"draw_mode": string,"exchange_id": string,"exchange_name": string,"gift_day": string,"id": string,"invite_token": string,"join_by_at": string,"note": string,"other_name": string,"people_count": number,"revealed": boolean,"template": string,"to_email": string,"to_name": string,"to_timezone": string
             }[]
                            },
 "create_exchange":
@@ -347,6 +347,11 @@ isOneToOne: false
                            },
 "exchange_state":
 { Args: { "p_exchange": string }; Returns: Database["public"]['Enums']["exchange_status"]
+                           },
+"get_draw_blocked_reason":
+{ Args: { "p_exchange": string }; Returns: {
+              "reason": string
+            }[]
                            },
 "get_draw_summary":
 { Args: { "p_exchange": string }; Returns: {
@@ -485,7 +490,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "activity_kind": "member_joined"|"join_requested"|"names_drawn","exchange_budget_preset": "5k_10k"|"10k_20k"|"20k_50k"|"50k_plus","exchange_draw_mode": "at_join_by"|"organiser_chooses","exchange_member_state": "active"|"left"|"removed","exchange_status": "open"|"joining_closed"|"drawn"|"event_passed"|"complete"|"cancelled","exchange_tint": "clay"|"peach"|"sand"|"mint","join_request_status": "pending"|"approved"|"declined"|"closed","wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
+            "activity_kind": "member_joined"|"join_requested"|"names_drawn"|"join_by_reminder"|"event_reminder"|"exchange_completed","exchange_budget_preset": "5k_10k"|"10k_20k"|"20k_50k"|"50k_plus","exchange_draw_mode": "at_join_by"|"organiser_chooses","exchange_member_state": "active"|"left"|"removed","exchange_status": "open"|"joining_closed"|"drawn"|"event_passed"|"complete"|"cancelled","exchange_tint": "clay"|"peach"|"sand"|"mint","join_request_status": "pending"|"approved"|"declined"|"closed","wishlist_item_priority": "most_wanted"|"nice_to_have","wishlist_kind": "personal"|"exchange_ideas","wishlist_visibility": "private"|"link"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -601,7 +606,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "activity_kind": ["member_joined", "join_requested", "names_drawn"],"exchange_budget_preset": ["5k_10k", "10k_20k", "20k_50k", "50k_plus"],"exchange_draw_mode": ["at_join_by", "organiser_chooses"],"exchange_member_state": ["active", "left", "removed"],"exchange_status": ["open", "joining_closed", "drawn", "event_passed", "complete", "cancelled"],"exchange_tint": ["clay", "peach", "sand", "mint"],"join_request_status": ["pending", "approved", "declined", "closed"],"wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
+            "activity_kind": ["member_joined", "join_requested", "names_drawn", "join_by_reminder", "event_reminder", "exchange_completed"],"exchange_budget_preset": ["5k_10k", "10k_20k", "20k_50k", "50k_plus"],"exchange_draw_mode": ["at_join_by", "organiser_chooses"],"exchange_member_state": ["active", "left", "removed"],"exchange_status": ["open", "joining_closed", "drawn", "event_passed", "complete", "cancelled"],"exchange_tint": ["clay", "peach", "sand", "mint"],"join_request_status": ["pending", "approved", "declined", "closed"],"wishlist_item_priority": ["most_wanted", "nice_to_have"],"wishlist_kind": ["personal", "exchange_ideas"],"wishlist_visibility": ["private", "link"]
           }
         }
 } as const

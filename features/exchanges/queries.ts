@@ -95,6 +95,9 @@ export async function getOrganiserExchange(id: string, viewerId: string): Promis
     supabase.rpc("get_exchange_invite_token", { p_exchange: id }),
   ]);
   if (people.error || state.error) throw new Error("Could not read the exchange.");
+  // WHY "not available" once complete (slice 12, GCO-015; plan Q9): an exchange closes by itself after the gift day, and its page
+  // arrives with slice 15. Until then the organiser gets the same answer a member already gets, not the pre-draw page.
+  if (state.data === "complete") return null;
   if (token.error) {
     if (token.error.code === NOT_FOUND) return null;
     throw new Error("Could not read the invite link.");

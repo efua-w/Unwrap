@@ -3,8 +3,8 @@ import { fromView } from "@/features/exchanges/queries";
 import type { BudgetPreset } from "@/lib/money/budget";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/validation/wishlist";
-import { parseAssignment, parseSummary } from "./format";
-import type { DrawSummary, MyAssignment } from "./types";
+import { parseAssignment, parseBlockedReason, parseSummary } from "./format";
+import type { DrawBlockReason, DrawSummary, MyAssignment } from "./types";
 
 // Reads for the draw (GCO-012, GC-013, GC-014). Each is a narrow database function. WHY mapped by a strict parser: the
 // organiser's answer is a count and a moment, the giver's is an id and a flag, and neither can carry a person.
@@ -21,6 +21,19 @@ export async function getDrawSummary(exchangeId: string): Promise<DrawSummary | 
   const parsed = parseSummary(row);
   if (!parsed) throw new Error("Could not read the draw.");
   return parsed;
+}
+
+// Why the scheduled draw could not run, or null when it is not blocked or the caller is not the organiser (the database gives
+// every one of those the same empty answer). WHY the only read of the reason: members cannot read the column any more, so a
+// member's page never calls this and never knows (owner Q5, slice 12). Throws when the read or the shape fails.
+export async function getDrawBlockedReason(exchangeId: string): Promise<DrawBlockReason | null> {
+  if (!isUuid(exchangeId)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_draw_blocked_reason", { p_exchange: exchangeId });
+  if (error) throw new Error("Could not read the draw.");
+  const reason = parseBlockedReason(data);
+  if (reason === undefined) throw new Error("Could not read the draw.");
+  return reason;
 }
 
 // The caller's own current assignment, or null for everyone who gives to nobody here (an organiser who only organises,

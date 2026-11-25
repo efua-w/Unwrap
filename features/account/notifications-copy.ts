@@ -13,10 +13,20 @@ export const NOTIFICATION_COPY = {
       hint: "Find out who you're buying for. Also sent if names are drawn again or your person changes.",
     },
     someoneJoins: { label: "Someone joins", hint: "Only for exchanges you organise." },
+    // Board Acc-Notif-default (slice 12).
+    joinByReminder: {
+      label: "Join-by reminder",
+      hint: "If you haven't added a wishlist, we'll remind you the day before joining closes.",
+    },
+    eventReminder: { label: "Event reminder", hint: "We'll remind you the day before gifts are exchanged." },
   },
   alwaysTitle: "Always sent",
-  // pending: the board lists emails for a cancelled exchange and a new organiser, which are not built yet.
-  alwaysBody: "You can't turn these off: you were removed from an exchange, and sign-in codes.",
+  // pending (owner B4, slice 12): the board lists emails for a cancelled exchange and a new organiser, which are not built yet,
+  // and not the could-not-draw email, which is.
+  alwaysBody:
+    "You can't turn these off: you were removed from an exchange, names couldn't be drawn for an exchange you organise, and sign-in codes.",
+  // Board Acc-Notif-default: the muted line under "Always sent".
+  remindersInActivity: "Reminders also show in Activity.",
   loadError: "We couldn't load your notification settings.",
 } as const satisfies Record<string, unknown>;
 

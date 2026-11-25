@@ -181,10 +181,12 @@ select ok(
 
 -- WHY an exact column list: a column that could hold a pair, a reservation or a free-text body must be added on
 -- purpose, with this test changed in the open.
+-- WHY for_at is on the list (slice 12, owner decision Q1 2026-11-24): the moment a reminder is about (the join-by moment, or the
+-- start of the gift day in the person's zone). One timestamp; it holds no person, no pair and no text.
 select is(
   (select string_agg(column_name, ',' order by ordinal_position)
    from information_schema.columns where table_schema = 'private' and table_name = 'email_outbox'),
-  'id,template,recipient_user_id,recipient_email,exchange_id,sender_id,payload,send_after,sent_at,cancelled_at,claimed_until,attempts,last_error_code,dedupe_key,created_at',
+  'id,template,recipient_user_id,recipient_email,exchange_id,sender_id,payload,send_after,sent_at,cancelled_at,claimed_until,attempts,last_error_code,dedupe_key,created_at,for_at',
   'the outbox holds exactly the planned columns: no pair, no reservation, no body');
 
 select ok(
@@ -468,8 +470,10 @@ select ok(
 select is(
   (select count(*)::int from jsonb_array_elements(current_setting('test.claim1')::jsonb) c,
           jsonb_object_keys(c) k
+   -- WHY 'revealed' is allowed (slice 12, owner decision Q1 2026-11-24): the claim gains one column, true or false for E24 only,
+   -- the reader's OWN reveal flag (no receiver, no giver, no pair). Test 370 pins the exact column list.
    where k not in ('id', 'template', 'to_email', 'to_name', 'to_timezone', 'exchange_id', 'exchange_name', 'other_name',
-                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count')),
+                   'invite_token', 'attempts', 'budget_preset', 'join_by_at', 'gift_day', 'note', 'draw_mode', 'draw_at', 'people_count', 'revealed')),
   0, 'a claimed row has no column for a draw result, a pair, an assignment, a reservation or a second address');
 -- Slice 8 (owner decision 2026-11-18 4): the claim also carries the draw mode and time, for E10 only, and E10 is a known
 -- template. They fail until the readiness_and_nudges migration is applied.

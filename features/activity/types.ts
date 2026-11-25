@@ -3,7 +3,17 @@ import type { ExchangeTint } from "@/components/ui/ExchangeTag";
 // What the Activity screen may carry (GC-006 S09). WHY no user id and no pair field: an event names one
 // person and one exchange only, and the type has no room for a giver or a recipient (AC-20).
 // names_drawn (slice 10, GC-007) names nobody: its subject is empty and the row says only that names are drawn.
-export type ActivityKind = "member_joined" | "join_requested" | "names_drawn";
+// join_by_reminder, event_reminder and exchange_completed (slice 12, GC-026, GCO-015) name nobody either.
+export type ActivityKind =
+  | "member_joined"
+  | "join_requested"
+  | "names_drawn"
+  | "join_by_reminder"
+  | "event_reminder"
+  | "exchange_completed";
+
+/** The kinds with no subject: the row says what happened and names no person (a reminder, a draw, a completion). */
+export const SUBJECTLESS_KINDS: readonly ActivityKind[] = ["names_drawn", "join_by_reminder", "event_reminder", "exchange_completed"];
 
 /** One event as get_my_activity returns it. `createdAt` stays the database's own string so a keyset
  *  cursor built from it keeps its microseconds. */
@@ -13,7 +23,7 @@ export type ActivityRow = {
   exchangeId: string;
   exchangeName: string;
   exchangeTint: ExchangeTint;
-  /** Empty for names_drawn, which has no subject. */
+  /** Empty for the kinds in SUBJECTLESS_KINDS. */
   subjectName: string;
   createdAt: string;
   isUnread: boolean;

@@ -9,8 +9,9 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { NotAvailable } from "@/features/exchanges/components/NotAvailable";
 import { EXCHANGE_COPY } from "@/features/exchanges/copy";
 import { getMemberExchange, getOrganiserExchange } from "@/features/exchanges/queries";
-import { getDrawSummary, getMyAssignment } from "@/features/draw/queries";
-import type { DrawSummary, MyAssignment } from "@/features/draw/types";
+import { drawDatePassed } from "@/features/draw/format";
+import { getDrawBlockedReason, getDrawSummary, getMyAssignment } from "@/features/draw/queries";
+import type { DrawBlockReason, DrawSummary, MyAssignment } from "@/features/draw/types";
 import { getExclusions } from "@/features/exclusions/queries";
 import type { ExclusionsEntry } from "@/features/exclusions/types";
 import { RemovedFromExchange } from "@/features/participants/components/RemovedFromExchange";
@@ -60,6 +61,7 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
   let exclusions: ExclusionsEntry | null = null;
   let assignment: MyAssignment | null = null;
   let drawSummary: DrawSummary | null = null;
+  let blocked: DrawBlockReason | null = null;
   try {
     detail = await getOrganiserExchange(id, viewerId);
     // WHY only when not the organiser: a member's page has no token and no organiser tools (GC-013, AC-24).
@@ -81,6 +83,12 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
         // WHY the names of a single pair only: the Draw names sheet's note names it (board Org-Draw-default).
         onlyPair: pairs && pairs.length === 1 && only ? { first: only.firstName, second: only.secondName } : null,
       };
+    }
+    // GCO-011: why the scheduled draw could not run. WHY organiser only, and only once the automatic draw's moment has passed: the
+    // reason is organiser-only in the database (owner Q5) and a member's page never asks. WHY its own catch: the card is an
+    // extra, so the page loads without it rather than failing.
+    if (detail && drawDatePassed(detail.exchange.state, detail.exchange.drawMode)) {
+      blocked = await getDrawBlockedReason(id).catch(() => null);
     }
     // GC-013, GC-014: after the draw each giver learns only whether they have an assignment and whether it was revealed,
     // never the name (that is fetched on Reveal). The organiser's own read is a count and a time. WHY the organiser's
@@ -121,5 +129,6 @@ async function DetailContent({ id, viewerId, viewerName }: { id: string; viewerI
       readiness={readiness}
       organiserName={viewerName}
       exclusions={exclusions}
+      blocked={blocked}
     />;
 }

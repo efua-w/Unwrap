@@ -31,7 +31,7 @@ export async function getExchangeForList(
   const [member, state] = await Promise.all([
     supabase
       .from("exchange_members")
-      .select("taking_part")
+      .select("taking_part, joined_at")
       .eq("exchange_id", id)
       .eq("user_id", viewerId)
       .eq("state", "active")
@@ -66,6 +66,10 @@ export async function getExchangeForList(
     takingPart: member.data.taking_part,
     afterDraw: drawn,
     organiserName,
+    // WHY GC-011 / R1-4: computed once here so callers never inspect the raw state string.
+    joiningClosed: state.data === "joining_closed",
+    // WHY R1-2: tick() only queues E23 when the member joined at least 24 h before join-by.
+    joinedAt: member.data.joined_at,
   };
 }
 

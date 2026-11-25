@@ -53,6 +53,16 @@ describe("parseActivityRows (GC-006 S09)", () => {
     expect(parseActivityRows([raw({ kind: "member_joined", subject_name: null })])).toBeNull();
   });
 
+  it.each(["join_by_reminder", "event_reminder", "exchange_completed"])("reads %s with no subject (GC-026, GCO-015)", (kind) => {
+    const rows = parseActivityRows([raw({ kind, subject_name: null })]);
+    expect(rows?.[0]?.kind).toBe(kind);
+    expect(rows?.[0]?.subjectName).toBe("");
+  });
+
+  it.each(["join_by_reminder", "event_reminder", "exchange_completed"])("refuses %s with a subject", (kind) => {
+    expect(parseActivityRows([raw({ kind, subject_name: "Tolu Bello" })])).toBeNull();
+  });
+
   it("accepts an empty list", () => {
     expect(parseActivityRows([])).toEqual([]);
   });
@@ -167,6 +177,19 @@ describe("toActivityItem (GC-006 S09)", () => {
     expect(item.title).toBe("Names are drawn for Family Christmas 2026.");
     expect(item.sub).toBe("6:40 pm · See who you're buying for");
     expect(item.href).toBe(`/exchanges/${EX}/reveal`);
+  });
+
+  it("words the join-by reminder, the event reminder and the completion with no name (pending copy)", () => {
+    const reminder = toActivityItem(row({ kind: "join_by_reminder", subjectName: "" }), now, "Africa/Lagos");
+    expect(reminder.title).toBe("Joining closes soon for Family Christmas 2026.");
+    expect(reminder.sub).toBe("6:40 pm · Add your wishlist");
+    const event = toActivityItem(row({ kind: "event_reminder", subjectName: "" }), now, "Africa/Lagos");
+    expect(event.title).toBe("Family Christmas 2026 is tomorrow.");
+    expect(event.sub).toBe("6:40 pm · Get your gift ready");
+    const done = toActivityItem(row({ kind: "exchange_completed", subjectName: "" }), now, "Africa/Lagos");
+    expect(done.title).toBe("Family Christmas 2026 is complete.");
+    expect(done.sub).toBe("6:40 pm");
+    for (const item of [reminder, event, done]) expect(item.href).toBe(`/exchanges/${EX}`);
   });
 
   it("sends the people events to the exchange page", () => {

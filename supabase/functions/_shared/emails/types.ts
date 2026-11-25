@@ -2,7 +2,9 @@
 // cannot print what its input has no field for. There is no pair, giver, receiver, reservation, wishlist
 // or item here (E19 and E21 carry a count of people and nothing that says who gives to whom), and the only address is the recipient's own (`toEmail`), which only E06's footer prints.
 
-export const EMAIL_TEMPLATES = ["E06", "E07", "E08", "E09", "E10", "E12", "E19", "E21"] as const;
+// WHY every code the database check allows is listed (slice 12): a template this function does not know fails as
+// unknown_template and gives up after five tries. E15 is the organiser's "couldn't draw", E23 and E24 the two reminders.
+export const EMAIL_TEMPLATES = ["E06", "E07", "E08", "E09", "E10", "E12", "E15", "E19", "E21", "E23", "E24"] as const;
 export type EmailTemplate = (typeof EMAIL_TEMPLATES)[number];
 
 export function isEmailTemplate(value: string): value is EmailTemplate {
@@ -23,8 +25,9 @@ export type RenderInput = {
   inviteToken: string | null;
   /** The recipient's zone (the organiser's, for an invitee with no account). Dates are shown in it. */
   toTimezone: string;
-  /** E06, E19 and E21: what the invite page already shows (budget, gift day). E06 adds join-by and the organiser's note. */
+  /** E06, E19, E21 and E24: what the invite page already shows (budget, gift day). E06 adds join-by and the organiser's note. */
   budgetPreset: string | null;
+  /** E06 and E23: when joining closes. E15: when the scheduled draw was due (the same moment). */
   joinByAt: string | null;
   giftDay: string | null;
   note: string | null;
@@ -34,8 +37,13 @@ export type RenderInput = {
    */
   scheduleMode: string | null;
   scheduleAt: string | null;
-  /** E21 only: how many people the draw covered (GCO-012). A count, never who. */
+  /** E21: how many people the draw covered (GCO-012). E15: how many take part, which decides "too few" or "exclusions". A count, never who. */
   peopleCount: number | null;
+  /**
+   * E24 only: whether the READER has already opened who they got. It picks "View their wishlist" or "Reveal who you got".
+   * WHY a flag and not a name: it is the reader's own flag; the template has no field for a person or a pair (GC-007).
+   */
+  revealed: boolean | null;
 };
 
 export type RenderedEmail = {

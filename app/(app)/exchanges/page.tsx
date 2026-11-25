@@ -21,6 +21,7 @@ import { firstName } from "@/features/joining/copy";
 import { JoinRequestBlock } from "@/features/participants/components/JoinRequestBlock";
 import { getJoinRequests, listMyPendingRequests } from "@/features/participants/queries";
 import { DRAW_COPY } from "@/features/draw/copy";
+import { drawDatePassed } from "@/features/draw/format";
 import { cardKey } from "@/features/draw/card-dismiss";
 import { CardReset } from "@/features/draw/components/CardDismiss";
 import { DismissibleActionCard } from "@/features/draw/components/DismissibleActionCard";
@@ -28,7 +29,7 @@ import { DismissRequestButton } from "@/features/draw/components/DismissRequestB
 import { getMyAssignment } from "@/features/draw/queries";
 import { HowItWorks } from "@/features/onboarding/HowItWorks";
 import { requireProfile } from "@/lib/auth/session";
-import { formatDay, formatYmdDay } from "@/lib/dates/format";
+import { formatDay, formatYmdDay, formatYmdDayYear } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
 
 type SearchParams = Promise<{ view?: string | string[] }>;
@@ -88,23 +89,30 @@ function ExchangesLoading() {
 // GC-008: one written sentence per row (boards Exchanges-joined, Exchanges-active). "Names are drawn {date}."
 // names the draw day in the viewer's zone; the organiser-draws variants are pending copy. Before the draw
 // there are no readiness counts (slice 8), so an organiser's row says how many people are in.
-function rowSub(item: ExchangeListItem, timeZone: string, drawn: boolean): string {
+function rowSub(item: ExchangeListItem, timeZone: string, state: string | undefined): string {
   const copy = EXCHANGE_COPY.list;
+  // Board Exchanges-past (slice 12, GCO-015): an exchange that closed by itself or was completed. WHY no cancelled variant: cancelling
+  // arrives in slice 15, so every past row is a complete one today.
+  if (item.isPast) return copy.rowComplete(formatYmdDayYear(item.giftDay) ?? "");
   // Board Exchanges-active: "Names are drawn. Gifts on Sat 19 Dec." once names are drawn.
-  if (drawn) return DRAW_COPY.rowDrawn(formatYmdDay(item.giftDay) ?? "");
-  const when =
-    item.drawMode === "at_join_by" && item.drawAt
+  if (state === "drawn") return DRAW_COPY.rowDrawn(formatYmdDay(item.giftDay) ?? "");
+  // WHY no day once the automatic draw's moment has passed (Q6, slice 12): it would name a day behind us, and a member must not
+  // learn that the draw failed. Same rule as the exchange page, from the public state and mode only.
+  const when = drawDatePassed(state ?? "", item.drawMode)
+    ? ""
+    : item.drawMode === "at_join_by" && item.drawAt
       ? copy.rowNamesDrawn(formatDay(new Date(item.drawAt), timeZone))
       : item.isOrganiser
         ? copy.rowNamesDrawnManualOrganiser
         : copy.rowNamesDrawnManualMember;
   if (!item.isOrganiser) {
-    return joinedToday(item.joinedAt, new Date(), timeZone) ? copy.rowJoinedToday(when) : copy.rowJoined(when);
+    const line = joinedToday(item.joinedAt, new Date(), timeZone) ? copy.rowJoinedToday(when) : copy.rowJoined(when);
+    return line.trim();
   }
   const others = item.peopleCount - 1;
   if (others <= 0) return item.takingPart ? copy.rowOnlyYouTaking : copy.rowOnlyYouOrganising;
   const n = peopleIn(item.takingPart, item.peopleCount);
-  return item.takingPart ? copy.rowCreated(n, when) : copy.rowJustOrganisingPeople(n, when);
+  return (item.takingPart ? copy.rowCreated(n, when) : copy.rowJustOrganisingPeople(n, when)).trim();
 }
 
 async function ExchangesContent({ viewerId, past }: { viewerId: string; past: boolean }) {
@@ -231,7 +239,7 @@ async function ExchangesContent({ viewerId, past }: { viewerId: string; past: bo
               href={`/exchanges/${item.id}`}
               leading={<ExchangeTag name={item.name} tint={item.tint} />}
               title={item.name}
-              sub={rowSub(item, timeZone, isDrawn(item))}
+              sub={rowSub(item, timeZone, states.get(item.id))}
               divider={index > 0}
             />
           ))}

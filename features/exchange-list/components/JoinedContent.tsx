@@ -8,13 +8,14 @@ import { LoadError } from "@/features/exchanges/components/LoadError";
 import { lastJoinDay } from "@/features/exchanges/timeline";
 import { zoneShortName } from "@/lib/dates/format";
 import { readViewerTimeZone } from "@/lib/dates/viewer-time-zone";
-import { JOINED_COPY, joinedLine, joinedSteps, listStatus } from "../joined";
+import { getNotificationSettings } from "@/features/account/queries";
+import { HOW_COPY, JOINED_COPY, howWeTellYou, isEarlyJoiner, joinedLine, joinedSteps, listStatus } from "../joined";
 import { LIST_COPY } from "../copy";
 import { getExchangeForList, getMyExchangeList } from "../queries";
 import { InviteFrame } from "@/features/joining/components/InviteFrame";
 
-// GC-011 / S12 You're in. Boards: Joining-In-attached, -ideas, -skipped, -noreminders (m, d), without the
-// "How we'll tell you" section and Share (owner decisions Q7, Q8, 2026-11-13). Members who take part
+// GC-011 / S12 You're in. Boards: Joining-In-attached, -ideas, -skipped, -noreminders (m, d), without Share (owner decision Q7,
+// 2026-11-13) and with "How we'll tell you" following the viewer's own email settings (slice 12). Members who take part
 // only; an organiser, a non-member and a drawn or cancelled exchange all get "isn't available" (GC-029).
 // WHY the frame wraps every state: the page is standalone (wordmark and ×), so even the refusal sits in it.
 export async function JoinedContent({ id, viewerId }: { id: string; viewerId: string }) {
@@ -47,7 +48,15 @@ export async function JoinedContent({ id, viewerId }: { id: string; viewerId: st
   }
 
   const timeZone = await readViewerTimeZone();
-  const status = listStatus(myList, lastJoinDay(exchange, timeZone));
+  // WHY its own catch: the promise lines are an extra, and with no answer about the settings none is made.
+  const settings = await getNotificationSettings().catch(() => null);
+  // WHY two extra guards on the join-by reminder (R1-1, R1-2): tick() only queues E23 while
+  // the exchange is open AND the member joined at least 24 h before join-by. Showing the promise
+  // outside those windows is false.
+  const earlyEnough = isEarlyJoiner(exchange.joinedAt, exchange.joinByAt);
+  const joinByReminderOn = settings?.joinByReminder === true && !exchange.joiningClosed && earlyEnough;
+  const status = listStatus(myList, lastJoinDay(exchange, timeZone), joinByReminderOn);
+  const how = howWeTellYou(settings, status.missing, exchange.joiningClosed, earlyEnough);
   const exchangePath = `/exchanges/${exchange.id}`;
   return (
     <InviteFrame
@@ -94,6 +103,24 @@ export async function JoinedContent({ id, viewerId }: { id: string; viewerId: st
           </div>
         ) : null}
       </section>
+
+      {how ? (
+        <section aria-labelledby="how-heading" className="flex flex-col gap-8">
+          <h2 id="how-heading" className="text-body-base-semibold text-text-default">
+            {HOW_COPY.title}
+          </h2>
+          <ul className="flex flex-col gap-4 text-body-sm-regular text-text-secondary">
+            {how.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <div className="flex">
+            <Button variant="link" href="/profile/notifications">
+              {HOW_COPY.chooseEmails}
+            </Button>
+          </div>
+        </section>
+      ) : null}
     </InviteFrame>
   );
 }
